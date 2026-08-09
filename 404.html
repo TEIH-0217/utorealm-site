@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Afterlife</title>
+<script type="text/javascript">
+  // Redirects a deep link (e.g. /afterlife/home/some-slug) that GitHub Pages can't
+  // resolve as a real file into index.html, encoding the original path in the query
+  // string so it survives the redirect. index.html decodes it back on load.
+  // pathSegmentsToKeep = 1 keeps "/afterlife" as the app's mount point.
+  // See: https://github.com/rafgraph/spa-github-pages
+  var pathSegmentsToKeep = 1;
+  var l = window.location;
+  l.replace(
+    l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+    l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+    l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+    (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+    l.hash
+  );
+</script>
+</head>
+<body></body>
+</html>

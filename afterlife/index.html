@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Afterlife</title>
+<script type="text/javascript">
+  // Decodes the redirect ../404.html builds for a deep link (e.g. /afterlife/home/some-slug)
+  // back into a clean URL via history.replaceState, before the router below ever runs.
+  // See: https://github.com/rafgraph/spa-github-pages
+  (function(l) {
+    if (l.search[1] === '/') {
+      var decoded = l.search.slice(1).split('&').map(function(s) {
+        return s.replace(/~and~/g, '&');
+      }).join('?');
+      window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+    }
+  }(window.location));
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0A0F; --surface:#121218; --surface-2:#181822;
+    --border:#2A2A35; --border-strong:#3B3B4A;
+    --text:#F0F0F5; --text-dim:#8A8A99; --text-faint:#55555f;
+    --hot:#FF2E6E; --cool:#2BFFC6;
+    --display:'Chakra Petch', sans-serif; --mono:'JetBrains Mono', monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{ background:var(--bg); color:var(--text); font-family:var(--mono); display:flex; flex-direction:column; min-height:100vh; }
+  h1,h2,h3{ font-family:var(--display); font-weight:700; margin:0; letter-spacing:0.02em; text-transform:uppercase; }
+  button{ font-family:var(--mono); cursor:pointer; }
+  input,select,textarea{ font-family:var(--mono); }
+
+  .bracket{ position:relative; }
+  .bracket::before,.bracket::after{ content:''; position:absolute; width:9px; height:9px; border-color:var(--cool); border-style:solid; opacity:0.65; pointer-events:none; }
+  .bracket::before{ top:-1px; left:-1px; border-width:1px 0 0 1px; }
+  .bracket::after{ bottom:-1px; right:-1px; border-width:0 1px 1px 0; }
+
+  /* ---------- TOP BAR (shared across views) ---------- */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding:0 28px; height:64px; border-bottom:1px solid var(--border); background:var(--surface); position:relative; z-index:20; }
+  .logo{ font-family:var(--display); font-size:18px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .logo span{ color:var(--hot); }
+  .nav-links{ display:flex; gap:36px; }
+  .nav-links a{ color:var(--text-dim); text-decoration:none; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; position:relative; padding-bottom:4px; transition:color .15s; cursor:pointer; }
+  .nav-links a.active{ color:var(--cool); }
+  .nav-links a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-2px; height:1px; background:var(--cool); }
+  .nav-links a:hover{ color:var(--text); }
+  .sync-pill{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; display:flex; align-items:center; gap:6px; }
+  .sync-dot{ width:6px; height:6px; border-radius:50%; background:var(--cool); }
+
+  .topbar-right{ display:flex; align-items:center; gap:20px; }
+  .avatar-wrap{ position:relative; }
+  .avatar{ width:36px; height:36px; border:1px solid var(--border-strong); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:var(--display); font-size:12px; color:var(--cool); background:var(--surface-2); transition:border-color .15s; }
+  .avatar:hover{ border-color:var(--cool); }
+  .user-menu{ position:absolute; top:48px; right:0; width:210px; background:var(--surface-2); border:1px solid var(--border-strong); display:none; flex-direction:column; z-index:30; }
+  .user-menu.open{ display:flex; }
+  .user-menu .who{ padding:12px 16px; border-bottom:1px solid var(--border); }
+  .user-menu .who .name{ color:var(--text); font-family:var(--display); font-size:12px; text-transform:uppercase; }
+  .user-menu .who .role{ color:var(--text-faint); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; margin-top:3px; }
+  .user-menu a{ padding:12px 16px; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; border-bottom:1px solid var(--border); cursor:pointer; }
+  .user-menu a:last-child{ border-bottom:none; color:var(--hot); }
+  .user-menu a:hover{ color:var(--text); background:var(--surface); }
+  .user-menu a.disabled{ color:var(--text-faint); cursor:not-allowed; }
+  .user-menu a.disabled:hover{ background:none; color:var(--text-faint); }
+
+  /* ---------- BUTTONS ---------- */
+  .btn{ font-family:var(--mono); font-size:12px; letter-spacing:0.12em; text-transform:uppercase; padding:12px 22px; border:1px solid var(--border-strong); background:transparent; color:var(--text); clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 100%); }
+  .btn-primary{ border-color:var(--hot); color:var(--hot); }
+  .btn-primary:hover{ background:rgba(255,46,110,0.08); }
+  .btn-cool{ border-color:var(--cool); color:var(--cool); }
+  .btn-cool:hover{ background:rgba(43,255,198,0.08); }
+  .btn-ghost{ color:var(--text-dim); }
+  .btn-ghost:hover{ color:var(--text); }
+  .btn-sm{ padding:8px 14px; font-size:11px; }
+
+  /* ================= PUBLIC VIEW ================= */
+  #publicView{ flex:1; display:none; }
+  #publicView.active{ display:flex; flex-direction:column; flex:1; }
+  main{ flex:1; display:grid; grid-template-columns:340px 1fr; grid-template-rows:1fr auto; gap:1px; background:var(--border); }
+  .panel{ background:var(--bg); padding:24px; overflow:hidden; }
+  .panel-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; }
+  .panel-head h2{ font-size:14px; letter-spacing:0.1em; }
+  .panel-head .count{ font-size:10px; color:var(--text-faint); }
+
+  .timeline-panel{ grid-row:1 / 3; overflow-y:auto; max-height:calc(100vh - 64px - 90px); }
+  .timeline{ position:relative; padding-left:22px; }
+  .timeline::before{ content:''; position:absolute; left:5px; top:4px; bottom:4px; width:1px; background:var(--border-strong); }
+  .t-year{ font-family:var(--display); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-faint); padding-bottom:8px; margin-bottom:16px; border-bottom:1px solid var(--border); }
+  .t-year:not(:first-child){ margin-top:6px; }
+  .t-item{ position:relative; padding-bottom:28px; cursor:pointer; }
+  .t-item:last-child{ padding-bottom:0; }
+  .t-dot{ position:absolute; left:-22px; top:2px; width:11px; height:11px; border-radius:50%; background:var(--surface-2); border:1px solid var(--border-strong); transition:all .15s; }
+  .t-item.active .t-dot{ background:var(--hot); border-color:var(--hot); box-shadow:0 0 0 3px rgba(255,46,110,0.15); }
+  .t-time{ font-size:10px; color:var(--text-faint); letter-spacing:0.08em; margin-bottom:4px; }
+  .t-title-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .t-title{ font-family:var(--display); font-size:14px; text-transform:uppercase; color:var(--text-dim); transition:color .15s; }
+  .t-item.active .t-title{ color:var(--cool); }
+  .t-item:hover .t-title{ color:var(--text); }
+  .t-tag{ font-size:9px; padding:2px 7px; border:1px solid var(--border-strong); color:var(--cool); text-transform:uppercase; letter-spacing:0.06em; white-space:nowrap; flex-shrink:0; }
+  .t-desc{ font-size:11px; color:var(--text-faint); margin-top:4px; line-height:1.5; max-width:260px; }
+  .t-empty{ font-size:11px; color:var(--text-faint); }
+
+  .event-panel{ overflow-y:auto; max-height:calc(100vh - 64px - 90px); }
+  .event-hero{ height:300px; flex-shrink:0; border:1px solid var(--border); position:relative; overflow:hidden;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px),
+      radial-gradient(circle at 25% 30%, rgba(255,46,110,0.22), transparent 55%),
+      radial-gradient(circle at 78% 72%, rgba(43,255,198,0.18), transparent 55%), var(--surface);
+    background-repeat:no-repeat;
+    display:flex; align-items:flex-end; padding:20px; }
+  .event-hero .tag{ font-size:10px; letter-spacing:0.12em; color:var(--hot); text-transform:uppercase; position:absolute; top:16px; left:16px; }
+  .event-hero h3{ font-size:26px; color:var(--text); text-shadow:0 2px 12px rgba(0,0,0,0.6); }
+
+  .event-detail{ display:grid; grid-template-columns:1fr 220px; gap:28px; margin-top:20px; }
+  .event-desc-col{ min-width:0; }
+  .event-desc{ font-size:12px; color:var(--text-dim); line-height:1.7; white-space:pre-wrap;
+    display:-webkit-box; -webkit-line-clamp:9; -webkit-box-orient:vertical; overflow:hidden; }
+  .event-desc.expanded{ -webkit-line-clamp:unset; overflow:visible; }
+  .see-more-btn{ margin-top:12px; }
+
+  .event-side-col{ display:flex; flex-direction:column; gap:16px; }
+  .event-gallery{ display:flex; flex-wrap:wrap; gap:8px; }
+  .event-gallery-tile{ width:56px; height:56px; border:1px solid var(--border-strong); cursor:pointer; background-color:var(--surface-2); background-repeat:no-repeat; flex-shrink:0; opacity:0.6; transition:opacity .15s, border-color .15s; }
+  .event-gallery-tile:hover{ opacity:0.85; }
+  .event-gallery-tile.active{ opacity:1; border-color:var(--cool); box-shadow:0 0 0 1px var(--cool); }
+
+  .event-cta{ align-self:flex-start; }
+  .event-meta{ display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--border); padding-top:14px; }
+  .event-meta-label{ font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:4px; }
+  .event-meta-value{ font-size:12px; color:var(--text); line-height:1.5; }
+
+  .states-panel{ display:flex; gap:24px; align-items:center; padding-top:18px; padding-bottom:18px; }
+  .state-block{ flex:1; border-left:1px solid var(--border); padding-left:18px; }
+  .state-label{ font-size:10px; letter-spacing:0.12em; color:var(--text-faint); text-transform:uppercase; margin-bottom:6px; }
+  .state-value{ font-family:var(--display); font-size:22px; color:var(--text); }
+  .state-value.accent{ color:var(--cool); }
+  .state-sub{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+  footer{ grid-column:1 / 3; border-top:1px solid var(--border); background:var(--surface); display:flex; justify-content:space-between; align-items:center; padding:16px 28px; }
+  .footer-left{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; }
+  .footer-right{ display:flex; gap:20px; }
+  .footer-right a{ color:var(--text-dim); text-decoration:none; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; }
+  .footer-right a:hover{ color:var(--cool); }
+
+  /* ================= ADMIN VIEW ================= */
+  #adminView{ display:none; flex:1; flex-direction:column; }
+  #adminView.active{ display:flex; }
+  #exploreView{ display:none; flex:1; flex-direction:column; }
+  #exploreView.active{ display:flex; }
+  .wrap{ padding:28px; max-width:1200px; margin:0 auto; width:100%; }
+  .explore-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:20px; margin-top:20px; }
+  .explore-card{ background:var(--surface); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; transition:border-color .15s; }
+  .explore-card:hover{ border-color:var(--cool); }
+  .explore-card-cover{ height:150px; background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; flex-shrink:0; }
+  .explore-card-body{ padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
+  .explore-card-title{ font-family:var(--display); font-size:14px; color:var(--text); text-transform:none; letter-spacing:normal; }
+  .explore-card-meta{ display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; }
+  .explore-empty{ color:var(--text-faint); font-size:12px; margin-top:20px; }
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .toolbar-left{ display:flex; gap:20px; align-items:center; }
+  .toolbar-left label{ font-size:11px; color:var(--text-dim); display:flex; align-items:center; gap:6px; }
+  .toolbar-right{ display:flex; gap:10px; }
+  .count-badge{ font-size:11px; color:var(--text-faint); }
+
+  .admin-tabs{ display:flex; gap:28px; border-bottom:1px solid var(--border); margin-bottom:24px; }
+  .admin-tabs a{ padding-bottom:12px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; cursor:pointer; position:relative; }
+  .admin-tabs a.active{ color:var(--cool); }
+  .admin-tabs a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--cool); }
+  .admin-page{ display:none; }
+  .admin-page.active{ display:block; }
+  .login-box{ max-width:360px; margin:60px auto; }
+  .form-error{ color:var(--hot); font-size:12px; margin-bottom:14px; display:none; }
+  .form-error.show{ display:block; }
+  .role-pill{ font-size:10px; padding:3px 8px; border:1px solid var(--border-strong); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; }
+  .role-pill.super{ color:var(--hot); border-color:var(--hot); }
+  .role-pill.user{ color:var(--text-dim); }
+
+  table{ width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); }
+  th{ text-align:left; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); padding:12px 14px; border-bottom:1px solid var(--border-strong); }
+  td{ padding:12px 14px; font-size:12px; border-bottom:1px solid var(--border); color:var(--text-dim); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  tr.deleted-row td{ opacity:0.45; }
+  td.title-cell{ color:var(--text); font-family:var(--display); font-size:13px; letter-spacing:0.02em; text-transform:none; }
+  .cover-thumb{ width:48px; height:34px; border:1px solid var(--border-strong); flex-shrink:0; background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; }
+  .tag-pill{ font-size:10px; padding:3px 8px; border:1px solid var(--border-strong); color:var(--cool); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; }
+  .row-actions{ display:flex; gap:10px; }
+  .row-actions a{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; text-decoration:none; }
+  .row-actions a:hover{ color:var(--cool); }
+  .row-actions a.danger:hover{ color:var(--hot); }
+
+  /* ---------- MODAL ---------- */
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:6px; }
+  .field input, .field select, .field textarea{ width:100%; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text); padding:10px 12px; font-size:13px; outline:none; }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--cool); }
+  .cover-field-preview{ width:100%; height:120px; border:1px solid var(--border-strong); background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .cover-field-preview span{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; text-align:center; padding:0 12px; }
+  .cover-field-actions{ display:flex; gap:10px; align-items:center; }
+  .cover-field-actions input[type="file"]{ font-size:11px; color:var(--text-dim); flex:1; }
+  .cover-hint{ font-size:10px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
+  .cover-gallery-edit{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
+  .cover-gallery-edit-empty{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; }
+  .cover-gallery-edit-tile{ width:64px; height:64px; border:1px solid var(--border-strong); position:relative; background-color:var(--surface-2); background-repeat:no-repeat; }
+  .cover-gallery-edit-tile .remove-x{ position:absolute; top:-7px; right:-7px; width:18px; height:18px; background:var(--hot); color:#0A0A0F; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; cursor:pointer; line-height:1; }
+  .modal-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:100; padding:24px; }
+  .modal-backdrop.open{ display:flex; }
+  .modal{ width:560px; max-width:100%; max-height:88vh; overflow-y:auto; background:var(--surface); border:1px solid var(--border-strong); padding:28px; }
+  .modal h2{ font-size:18px; margin-bottom:20px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:12px; margin-top:22px; }
+  .meta-readout{ font-size:10px; color:var(--text-faint); margin-top:14px; line-height:1.7; border-top:1px solid var(--border); padding-top:12px; }
+  .import-drop{ border:1px dashed var(--border-strong); padding:24px; text-align:center; font-size:11px; color:var(--text-faint); margin-bottom:14px; }
+  .import-result{ font-size:11px; color:var(--text-dim); margin-top:12px; line-height:1.6; white-space:pre-wrap; }
+
+  ::-webkit-scrollbar{ width:6px; } ::-webkit-scrollbar-thumb{ background:var(--border-strong); } ::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="logo">After<span>life</span></div>
+    <div class="nav-links">
+      <a data-path="/home" class="active">Home</a>
+      <a data-path="/explore">Explore</a>
+      <a data-path="/admin">Admin</a>
+    </div>
+    <div class="topbar-right">
+      <div class="sync-pill"><span class="sync-dot"></span><span id="syncStatus">Synced</span></div>
+      <div class="avatar-wrap">
+        <div class="avatar bracket" id="avatarBtn">--</div>
+        <div class="user-menu" id="userMenu">
+          <div class="who"><div class="name" id="menuName">—</div><div class="role" id="menuRole">—</div></div>
+          <a data-action="profile">Profile</a>
+          <a data-action="settings">Settings</a>
+          <a data-action="manage-users" id="menuManageUsers">Manage users</a>
+          <a data-action="signout" id="menuSignout">Sign out</a>
+          <a data-action="signin" id="menuSignin" style="display:none;">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PUBLIC VIEW ================= -->
+  <div id="publicView" class="active">
+    <main>
+      <div class="panel timeline-panel">
+        <div class="panel-head"><h2>Chronicle</h2><span class="count" id="tlCount">0 entries</span></div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div class="panel event-panel">
+        <div class="panel-head"><h2>Event preview</h2><span class="count" id="evTime">—</span></div>
+        <div class="event-hero bracket" id="eventHero"><div class="tag" id="evTag">Tag</div><h3 id="evTitle">Select an entry</h3></div>
+        <div class="event-detail">
+          <div class="event-desc-col">
+            <div class="event-desc" id="evBody">Choose an item on the timeline to preview its details here.</div>
+            <button type="button" class="btn btn-ghost btn-sm see-more-btn" id="evSeeMoreBtn" style="display:none;">See more</button>
+          </div>
+          <div class="event-side-col">
+            <div class="event-gallery" id="eventGallery"></div>
+            <a class="btn btn-cool btn-sm event-cta" id="evCtaBtn" href="#" target="_blank" rel="noopener" style="display:none;">Learn more</a>
+            <div class="event-meta">
+              <div><div class="event-meta-label">Date</div><div class="event-meta-value" id="evDateMeta">—</div></div>
+              <div><div class="event-meta-label">Location</div><div class="event-meta-value" id="evLocationMeta">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel states-panel">
+        <div class="state-block"><div class="state-label">Date</div><div class="state-value" id="stDate">—</div></div>
+        <div class="state-block"><div class="state-label">Time</div><div class="state-value accent" id="stTime">—</div></div>
+        <div class="state-block"><div class="state-label">Weather</div><div class="state-value" id="stTemp">—</div><div class="state-sub" id="stCond">Loading…</div></div>
+      </div>
+      <footer>
+        <div class="footer-left">AFTERLIFE INDUSTRIAL // SYSTEM ONLINE // BUILD 2077.08</div>
+        <div class="footer-right"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Status</a></div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- ================= EXPLORE VIEW ================= -->
+  <div id="exploreView">
+    <div class="wrap">
+      <div class="panel-head"><h2>Explore</h2><span class="count" id="exploreCount">0 entries</span></div>
+      <div class="explore-grid" id="exploreGrid"></div>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN VIEW ================= -->
+  <div id="adminView">
+    <div class="wrap">
+      <div class="admin-tabs">
+        <a data-admin-page="events" class="active">Events</a>
+        <a data-admin-page="users" id="usersTabLink">Users</a>
+      </div>
+
+      <div class="admin-page active" id="adminEventsPage">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h2 style="font-size:16px;">Events</h2>
+            <span class="count-badge" id="countBadge">0 entries</span>
+            <label><input type="checkbox" id="showDeleted"> Show deleted</label>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-ghost btn-sm" id="downloadCsvTemplateBtn">Download CSV template</button>
+            <button class="btn btn-ghost btn-sm" id="downloadXlsxTemplateBtn">Download Excel template</button>
+            <button class="btn btn-cool btn-sm" id="importBtn">Batch import</button>
+            <button class="btn btn-primary btn-sm" id="newEventBtn">+ New event</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th></th><th>Title</th><th>Category</th><th>Published</th><th>Country</th><th>Ver</th><th></th></tr></thead>
+          <tbody id="eventsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-page" id="adminUsersPage">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h2 style="font-size:16px;">Users</h2>
+            <span class="count-badge" id="userCountBadge">0 users</span>
+            <label><input type="checkbox" id="showDeletedUsers"> Show deleted</label>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary btn-sm" id="newUserBtn">+ New user</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Username</th><th>Profile name</th><th>Role</th><th>Added</th><th>Last login</th><th></th></tr></thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-page" id="loginGate">
+        <div class="login-box bracket">
+          <h2 style="font-size:16px; margin-bottom:20px;">Admin sign in</h2>
+          <div class="form-error" id="loginError"></div>
+          <div class="field"><label>Username</label><input type="text" id="loginUsername" autocomplete="username"></div>
+          <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+          <button class="btn btn-primary btn-sm" id="loginSubmit">Sign in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DESCRIPTION MODAL (public "See more") ================= -->
+  <div class="modal-backdrop" id="descModalBackdrop">
+    <div class="modal bracket">
+      <h2 id="descModalTitle">Title</h2>
+      <div style="white-space:pre-wrap; font-size:12px; color:var(--text-dim); line-height:1.8;" id="descModalBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="descModalClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= EVENT FORM MODAL ================= -->
+  <div class="modal-backdrop" id="formBackdrop">
+    <div class="modal bracket">
+      <h2 id="formTitle">New event</h2>
+      <input type="hidden" id="fId">
+      <div class="field"><label>Title *</label><input type="text" id="fTitle"></div>
+      <div class="field"><label>Subtitle</label><input type="text" id="fSubtitle"></div>
+      <div class="field"><label>Description *</label><textarea id="fDescription" rows="3"></textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Category *</label>
+          <select id="fCategory"><option>General</option><option>Art</option><option>Movies</option><option>Music</option><option>Video Games</option><option>Literature</option><option>Events</option></select>
+        </div>
+        <div class="field"><label>Published at</label><input type="datetime-local" id="fPublished"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
+        <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
+      </div>
+      <div class="field"><label>Learn more link (CTA)</label><input type="url" id="fCtaUrl" placeholder="https://example.com/event"></div>
+      <div class="field"><label>Cover images</label>
+        <div class="cover-gallery-edit" id="coverGalleryEdit"><span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span></div>
+        <div class="cover-field-actions">
+          <input type="file" id="fCoverFile" accept="image/*" multiple>
+        </div>
+        <div class="cover-hint">Each image max 1.5MB. First image is used as the hero/thumbnail; add 2+ to enable the gallery carousel.</div>
+      </div>
+      <div class="meta-readout" id="metaReadout"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="formCancel">Cancel</button>
+        <button class="btn btn-primary" id="formSave">Save event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= USER FORM MODAL ================= -->
+  <div class="modal-backdrop" id="userFormBackdrop">
+    <div class="modal bracket">
+      <h2 id="userFormTitle">New user</h2>
+      <input type="hidden" id="uId">
+      <div class="field-row">
+        <div class="field"><label>Username *</label><input type="text" id="uUsername"></div>
+        <div class="field"><label>Profile name *</label><input type="text" id="uProfileName"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label id="uPasswordLabel">Password *</label><input type="password" id="uPassword" placeholder="Leave blank to keep current"></div>
+        <div class="field"><label>Role *</label>
+          <select id="uRole"><option value="user">user</option><option value="superAdmin">superAdmin</option></select>
+        </div>
+      </div>
+      <div class="meta-readout" id="userMetaReadout"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="userFormCancel">Cancel</button>
+        <button class="btn btn-primary" id="userFormSave">Save user</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= BATCH IMPORT MODAL ================= -->
+  <div class="modal-backdrop" id="importBackdrop">
+    <div class="modal bracket">
+      <h2>Batch import</h2>
+      <div class="import-drop">Upload a .csv, .xlsx, .xls, or .json file — or paste a JSON array below.<br>Columns/keys: title*, subtitle, description*, category, country, location, cta_url, cover_image, published_at.<br>Not sure of the format? Use "Download CSV template" or "Download Excel template" first.</div>
+      <input type="file" id="importFile" accept=".csv,.xlsx,.xls,.json,application/json,text/csv">
+      <div class="field" style="margin-top:14px;">
+        <label>Or paste JSON</label>
+        <textarea id="importText" rows="8" placeholder='[
+  {"title":"Example event","description":"Details here","category":"Art","country":"US"}
+]'></textarea>
+      </div>
+      <div class="import-result" id="importResult"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="importCancel">Close</button>
+        <button class="btn btn-primary" id="importRun">Import</button>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  const SESSION_KEY = "afterlife_session";
+  // localhost during dev; the Render-hosted API's custom subdomain everywhere else.
+  // Update the production branch once the backend is actually deployed (see DEPLOYMENT.md).
+  const API_BASE = location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://api.utorealm.com';
+
+  let currentUser = null;
+  let authToken = null;
+
+  function nowIso(){ return new Date().toISOString(); }
+  function escapeHtml(s){
+    return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function flashSync(msg){
+    const el = document.getElementById('syncStatus');
+    el.textContent = msg;
+  }
+
+  // ---------------- API CLIENT ----------------
+  async function apiFetch(path, { method = 'GET', body, auth = true } = {}){
+    const headers = { 'Content-Type': 'application/json' };
+    if(auth && authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    let res;
+    try{
+      res = await fetch(`${API_BASE}${path}`, {
+        method, headers, body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+    } catch(e){
+      throw new Error('Could not reach the server. Is it running?');
+    }
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok){
+      if(res.status === 401 && auth) clearSession();
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    return data;
+  }
+
+  // ---------------- SESSION ----------------
+  function saveSession(token, user){
+    authToken = token;
+    currentUser = user;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token, user }));
+  }
+  function clearSession(){
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem(SESSION_KEY);
+    refreshCurrentUserUI();
+    if(document.getElementById('adminView').classList.contains('active')){
+      navigate('/home');
+    }
+  }
+  async function restoreSession(){
+    const raw = localStorage.getItem(SESSION_KEY);
+    if(!raw) return;
+    try{
+      const { token, user } = JSON.parse(raw);
+      authToken = token;
+      currentUser = user;
+      const { user: fresh } = await apiFetch('/api/auth/me');
+      currentUser = fresh;
+    } catch(e){
+      clearSession();
+    }
+  }
+
+  // ---------------- ROUTER ----------------
+  // URL scheme (BASE_PATH-relative): /home, /home/<slug>, /explore, /admin(#events|#users).
+  // switchView()/switchAdminTab() are pure "apply this UI state" functions with no URL
+  // knowledge; navigate() is the only thing that touches history, and applyRoute() is
+  // the only thing that reads the URL back into UI state — used by both the initial
+  // load and popstate, so every navigation path stays in sync with the address bar.
+  const BASE_PATH = '/afterlife';
+
+  function currentRoute(){
+    let path = location.pathname;
+    if(path.startsWith(BASE_PATH)) path = path.slice(BASE_PATH.length);
+    path = path.replace(/^\/|\/$/g, '');
+    return { parts: path.split('/').filter(Boolean) };
+  }
+  function navLinkForView(view){
+    const path = view === 'admin' ? '/admin' : view === 'explore' ? '/explore' : '/home';
+    return document.querySelector(`.nav-links a[data-path="${path}"]`);
+  }
+  function navigate(path, { replace = false } = {}){
+    const url = BASE_PATH + path;
+    if(!replace && location.pathname + location.hash === url) return; // already there
+    if(replace) history.replaceState({}, '', url);
+    else history.pushState({}, '', url);
+    applyRoute();
+  }
+  function applyRoute(){
+    const { parts } = currentRoute();
+    const [section, sub] = parts;
+    if(section === 'admin'){
+      switchView('admin', navLinkForView('admin'));
+    } else if(section === 'explore'){
+      switchView('explore', navLinkForView('explore'));
+    } else {
+      if(!section) history.replaceState({}, '', BASE_PATH + '/home');
+      switchView('home', navLinkForView('home'));
+      if(sub) selectEventBySlug(sub);
+    }
+  }
+  window.addEventListener('popstate', applyRoute);
+
+  // ---------------- INIT ----------------
+  async function initApp(){
+    await restoreSession();
+    refreshCurrentUserUI();
+    await renderTimeline();
+    applyRoute();
+  }
+
+  // Re-fetches the public timeline and, if the admin events table is on screen, that too.
+  async function renderAll(){
+    await renderTimeline();
+    if(document.getElementById('adminEventsPage').classList.contains('active')) await renderTable();
+  }
+
+  function refreshCurrentUserUI(){
+    const loggedIn = !!currentUser;
+    document.getElementById('avatarBtn').textContent = loggedIn
+      ? currentUser.profile_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+      : '—';
+    document.querySelector('.user-menu .who').style.display = loggedIn ? '' : 'none';
+    document.querySelector('.user-menu a[data-action="profile"]').style.display = loggedIn ? '' : 'none';
+    document.querySelector('.user-menu a[data-action="settings"]').style.display = loggedIn ? '' : 'none';
+    document.getElementById('menuManageUsers').style.display = loggedIn ? '' : 'none';
+    document.getElementById('menuSignout').style.display = loggedIn ? '' : 'none';
+    document.getElementById('menuSignin').style.display = loggedIn ? 'none' : '';
+    if(loggedIn){
+      document.getElementById('menuName').textContent = currentUser.profile_name;
+      document.getElementById('menuRole').textContent = currentUser.role;
+      const isSuper = currentUser.role === 'superAdmin';
+      document.getElementById('menuManageUsers').classList.toggle('disabled', !isSuper);
+      document.getElementById('usersTabLink').style.display = isSuper ? '' : 'none';
+    } else {
+      document.getElementById('usersTabLink').style.display = 'none';
+    }
+  }
+
+  // ================= VIEW SWITCHING =================
+  // Pure UI-state functions — no history/URL manipulation happens in here. Only
+  // navigate() (above) touches the address bar; these just make the DOM match it.
+  function switchView(view, clickedEl){
+    document.querySelectorAll('.nav-links a').forEach(x => x.classList.remove('active'));
+    if(clickedEl) clickedEl.classList.add('active');
+    document.getElementById('publicView').classList.toggle('active', view === 'home');
+    document.getElementById('exploreView').classList.toggle('active', view === 'explore');
+    document.getElementById('adminView').classList.toggle('active', view === 'admin');
+    if(view === 'explore') renderExplore();
+    if(view === 'admin') renderAdminView();
+  }
+  document.querySelectorAll('.nav-links a[data-path]').forEach(a => {
+    a.addEventListener('click', () => navigate(a.dataset.path));
+  });
+
+  // Shows the login gate when signed out, otherwise the admin tabs/pages — the tab
+  // itself comes from the URL hash (#events/#users), so a deep link like
+  // /admin#users lands on the right tab even after going through the login gate.
+  function renderAdminView(){
+    const loggedIn = !!currentUser;
+    document.querySelector('.admin-tabs').style.display = loggedIn ? '' : 'none';
+    document.getElementById('loginGate').classList.toggle('active', !loggedIn);
+    if(loggedIn){
+      switchAdminTab(location.hash === '#users' ? 'users' : 'events');
+    } else {
+      document.getElementById('adminEventsPage').classList.remove('active');
+      document.getElementById('adminUsersPage').classList.remove('active');
+      document.querySelectorAll('.admin-tabs a').forEach(x => x.classList.remove('active'));
+      document.getElementById('loginError').classList.remove('show');
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+    }
+  }
+
+  async function handleLogin(){
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.classList.remove('show');
+    if(!username || !password){
+      errEl.textContent = 'Username and password are required.';
+      errEl.classList.add('show');
+      return;
+    }
+    try{
+      const { token, user } = await apiFetch('/api/auth/login', { method: 'POST', body: { username, password }, auth: false });
+      saveSession(token, user);
+      refreshCurrentUserUI();
+      renderAdminView(); // picks up whichever tab the URL hash already points at
+    } catch(e){
+      errEl.textContent = e.message;
+      errEl.classList.add('show');
+    }
+  }
+  document.getElementById('loginSubmit').addEventListener('click', handleLogin);
+  document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); });
+
+  function switchAdminTab(page){
+    document.querySelectorAll('.admin-tabs a').forEach(x => x.classList.toggle('active', x.dataset.adminPage === page));
+    document.getElementById('adminEventsPage').classList.toggle('active', page === 'events');
+    document.getElementById('adminUsersPage').classList.toggle('active', page === 'users');
+    if(page === 'events') renderTable();
+    if(page === 'users') renderUsers();
+  }
+  document.querySelectorAll('.admin-tabs a').forEach(a => {
+    a.addEventListener('click', () => navigate('/admin#' + a.dataset.adminPage));
+  });
+
+  // ================= AVATAR / USER MENU =================
+  document.getElementById('avatarBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('userMenu').classList.toggle('open');
+  });
+  document.addEventListener('click', () => document.getElementById('userMenu').classList.remove('open'));
+
+  document.getElementById('userMenu').addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if(!a) return;
+    const action = a.dataset.action;
+    if(action === 'manage-users'){
+      if(!currentUser || currentUser.role !== 'superAdmin'){ alert('Only a superAdmin can manage users.'); return; }
+      navigate('/admin#users');
+    } else if(action === 'profile'){
+      alert(`Signed in as ${currentUser.profile_name} (@${currentUser.username})\nRole: ${currentUser.role}`);
+    } else if(action === 'settings'){
+      alert('Settings panel is a placeholder for now — tell me what should live here.');
+    } else if(action === 'signout'){
+      clearSession();
+    } else if(action === 'signin'){
+      navigate('/admin');
+    }
+  });
+
+  // ================= PUBLIC: TIMELINE =================
+  let timelineRows = [];
+  let selectedIdx = 0;
+  let hasSetDefaultSelection = false;
+
+  function closestToTodayIndex(rows){
+    const now = Date.now();
+    let idx = 0, smallestDiff = Infinity;
+    rows.forEach((r, i) => {
+      const diff = Math.abs(new Date(r.published_at).getTime() - now);
+      if(diff < smallestDiff){ smallestDiff = diff; idx = i; }
+    });
+    return idx;
+  }
+
+  // Permalink slug — a pure function of title + published year, computed on the fly
+  // (not stored server-side). Renaming a published event's title changes its slug.
+  function slugify(title){
+    return (title || '').toString().toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  function slugFor(row){
+    const year = new Date(row.published_at).getFullYear();
+    const base = slugify(row.title) || 'event';
+    return isNaN(year) ? base : `${base}-${year}`;
+  }
+  function selectEventBySlug(slug){
+    const idx = timelineRows.findIndex(r => slugFor(r) === slug);
+    if(idx === -1) return; // unknown/stale link — leave the default selection in place
+    selectedIdx = idx;
+    hasSetDefaultSelection = true;
+    highlightSelected();
+    showEventPreview(timelineRows[idx]);
+  }
+
+  async function renderTimeline(){
+    // Latest first; public endpoint, no auth needed.
+    try{
+      const { events } = await apiFetch('/api/events', { auth: false });
+      timelineRows = events;
+    } catch(e){
+      flashSync('Sync failed');
+      console.error('Failed to load events:', e);
+      timelineRows = [];
+    }
+    document.getElementById('tlCount').textContent = timelineRows.length + ' entries';
+    const el = document.getElementById('timeline');
+    el.innerHTML = '';
+    if(!timelineRows.length){
+      el.innerHTML = '<div class="t-empty">No events yet.</div>';
+      clearEventPreview();
+      return;
+    }
+
+    // Default selection is whichever entry is closest to today; re-renders after that
+    // (switching tabs, editing, etc.) keep whatever the person last selected.
+    if(!hasSetDefaultSelection){
+      selectedIdx = closestToTodayIndex(timelineRows);
+      hasSetDefaultSelection = true;
+    } else if(selectedIdx >= timelineRows.length){
+      selectedIdx = 0;
+    }
+
+    let currentYear = null;
+    timelineRows.forEach((r, i) => {
+      const year = new Date(r.published_at).getFullYear();
+      const yearLabel = isNaN(year) ? 'Undated' : String(year);
+      if(yearLabel !== currentYear){
+        currentYear = yearLabel;
+        const yearHeader = document.createElement('div');
+        yearHeader.className = 't-year';
+        yearHeader.textContent = yearLabel;
+        el.appendChild(yearHeader);
+      }
+      const item = document.createElement('div');
+      item.className = 't-item';
+      const dateLabel = formatDate(r.published_at);
+      const desc = r.subtitle || (r.description || '').slice(0,80) + ((r.description||'').length>80 ? '…' : '');
+      item.innerHTML = `
+        <div class="t-dot"></div>
+        <div class="t-time">${dateLabel}</div>
+        <div class="t-title-row">
+          <div class="t-title">${escapeHtml(r.title)}</div>
+          <span class="t-tag">${escapeHtml(r.category)}</span>
+        </div>
+        <div class="t-desc">${escapeHtml(desc)}</div>`;
+      item.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+      el.appendChild(item);
+    });
+
+    highlightSelected();
+    showEventPreview(timelineRows[selectedIdx]);
+  }
+  function highlightSelected(){
+    document.querySelectorAll('.t-item').forEach((el,i)=> el.classList.toggle('active', i===selectedIdx));
+  }
+  function getEventImages(row){
+    if(row && row.cover_images){
+      try{
+        const arr = JSON.parse(row.cover_images);
+        if(Array.isArray(arr)){
+          const filtered = arr.filter(Boolean);
+          if(filtered.length) return filtered;
+        }
+      } catch(e){ /* fall through to legacy field */ }
+    }
+    if(row && row.cover_image) return [row.cover_image];
+    return [];
+  }
+
+  // ================= EXPLORE: GRID =================
+  // Reuses timelineRows (already fetched by renderTimeline) — no separate API call.
+  function renderExplore(){
+    document.getElementById('exploreCount').textContent = timelineRows.length + ' entries';
+    const el = document.getElementById('exploreGrid');
+    el.innerHTML = '';
+    if(!timelineRows.length){
+      el.innerHTML = '<div class="explore-empty">No events yet.</div>';
+      return;
+    }
+    timelineRows.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'explore-card';
+      const cover = document.createElement('div');
+      cover.className = 'explore-card-cover';
+      const img = getEventImages(r)[0];
+      if(img && img.startsWith('data:')) cover.style.backgroundImage = `url("${img}")`;
+      const body = document.createElement('div');
+      body.className = 'explore-card-body';
+      body.innerHTML = `
+        <div class="explore-card-title">${escapeHtml(r.title)}</div>
+        <div class="explore-card-meta"><span>${formatDate(r.published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>`;
+      card.appendChild(cover);
+      card.appendChild(body);
+      card.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+      el.appendChild(card);
+    });
+  }
+
+  function setBackgroundFit(el, image, mode){
+    mode = mode || 'contain';
+    if(image && image.startsWith('data:')){
+      el.style.backgroundImage = `url("${image}")`;
+      el.style.backgroundSize = mode;
+      el.style.backgroundPosition = 'center';
+      el.style.backgroundRepeat = 'no-repeat';
+    } else {
+      el.style.backgroundImage = '';
+      el.style.backgroundSize = '';
+      el.style.backgroundPosition = '';
+      el.style.backgroundRepeat = '';
+    }
+  }
+  function renderGallery(images){
+    const el = document.getElementById('eventGallery');
+    el.innerHTML = '';
+    if(images.length > 1){
+      el.style.display = 'flex';
+      images.forEach((img, i) => {
+        const tile = document.createElement('div');
+        tile.className = 'event-gallery-tile' + (i === 0 ? ' active' : '');
+        setBackgroundFit(tile, img, 'contain');
+        tile.addEventListener('click', () => {
+          document.querySelectorAll('.event-gallery-tile').forEach((t, idx) => t.classList.toggle('active', idx === i));
+          setBackgroundFit(document.getElementById('eventHero'), img, 'contain');
+        });
+        el.appendChild(tile);
+      });
+    } else {
+      el.style.display = 'none';
+    }
+    setBackgroundFit(document.getElementById('eventHero'), images[0] || null, 'contain');
+  }
+  function showEventPreview(r){
+    document.getElementById('evTitle').textContent = r.title;
+    document.getElementById('evTag').textContent = r.category;
+    document.getElementById('evTime').textContent = formatFullDate(r.published_at);
+
+    const descEl = document.getElementById('evBody');
+    descEl.textContent = r.description;
+    descEl.classList.remove('expanded');
+    const seeMoreBtn = document.getElementById('evSeeMoreBtn');
+    seeMoreBtn.onclick = () => openDescriptionModal(r);
+    requestAnimationFrame(() => {
+      seeMoreBtn.style.display = descEl.scrollHeight > descEl.clientHeight + 2 ? 'inline-block' : 'none';
+    });
+
+    renderGallery(getEventImages(r));
+
+    const ctaBtn = document.getElementById('evCtaBtn');
+    if(r.cta_url){ ctaBtn.style.display = 'inline-block'; ctaBtn.href = r.cta_url; }
+    else { ctaBtn.style.display = 'none'; ctaBtn.removeAttribute('href'); }
+
+    document.getElementById('evDateMeta').textContent = formatFullDate(r.published_at);
+    document.getElementById('evLocationMeta').textContent = r.location || r.country || '—';
+  }
+  function clearEventPreview(){
+    document.getElementById('evTitle').textContent = 'No events yet';
+    document.getElementById('evTag').textContent = '—';
+    document.getElementById('evBody').textContent = 'Add events from the Admin view to populate the chronicle.';
+    document.getElementById('evSeeMoreBtn').style.display = 'none';
+    document.getElementById('evTime').textContent = '—';
+    document.getElementById('evDateMeta').textContent = '—';
+    document.getElementById('evLocationMeta').textContent = '—';
+    document.getElementById('evCtaBtn').style.display = 'none';
+    renderGallery([]);
+  }
+  function openDescriptionModal(r){
+    document.getElementById('descModalTitle').textContent = r.title;
+    document.getElementById('descModalBody').textContent = r.description;
+    document.getElementById('descModalBackdrop').classList.add('open');
+  }
+  document.getElementById('descModalClose').addEventListener('click', () => document.getElementById('descModalBackdrop').classList.remove('open'));
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function formatDate(iso){
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  }
+  function formatFullDate(iso){
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  }
+
+  // ================= PUBLIC: STATES PANEL =================
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function updateClock(){
+    const now = new Date();
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('stDate').textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
+    document.getElementById('stTime').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+  document.getElementById('stTemp').textContent = '18°C';
+  document.getElementById('stCond').textContent = 'Overcast · London';
+
+  // ================= ADMIN: TABLE =================
+  const showDeletedBox = document.getElementById('showDeleted');
+  showDeletedBox.addEventListener('change', renderTable);
+
+  let adminEventRows = [];
+  async function renderTable(){
+    const includeDeleted = showDeletedBox.checked;
+    let rows;
+    try{
+      const data = await apiFetch(`/api/events?includeDeleted=${includeDeleted}`);
+      rows = data.events;
+    } catch(e){
+      alert('Could not load events: ' + e.message);
+      return;
+    }
+    adminEventRows = rows;
+    document.getElementById('countBadge').textContent = rows.length + ' entries';
+    const tbody = document.getElementById('eventsBody');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      if(r.deleted_at) tr.className = 'deleted-row';
+      const thumbImg = getEventImages(r)[0];
+      const thumbStyle = (thumbImg && thumbImg.startsWith('data:'))
+        ? ` style="background-image:url('${thumbImg}'); background-size:cover; background-position:center;"` : '';
+      tr.innerHTML = `
+        <td><div class="cover-thumb"${thumbStyle}></div></td>
+        <td class="title-cell">${escapeHtml(r.title)}</td>
+        <td><span class="tag-pill">${escapeHtml(r.category)}</span></td>
+        <td>${(r.published_at||'').replace('T',' ').slice(0,16)}</td>
+        <td>${r.country || '—'}</td>
+        <td>${r.version}</td>
+        <td><div class="row-actions">
+          ${r.deleted_at ? `<a data-action="restore" data-id="${r.id}">Restore</a>` :
+            `<a data-action="edit" data-id="${r.id}">Edit</a><a class="danger" data-action="delete" data-id="${r.id}">Delete</a>`}
+        </div></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('eventsBody').addEventListener('click', e => {
+    const t = e.target;
+    if(t.tagName !== 'A') return;
+    const id = t.dataset.id, action = t.dataset.action;
+    if(action === 'edit') openForm(id);
+    if(action === 'delete') deleteEvent(id);
+    if(action === 'restore') restoreEvent(id);
+  });
+
+  // ================= ADMIN: CREATE / EDIT FORM =================
+  const formBackdrop = document.getElementById('formBackdrop');
+  document.getElementById('newEventBtn').addEventListener('click', () => openForm(null));
+  document.getElementById('formCancel').addEventListener('click', () => formBackdrop.classList.remove('open'));
+
+  const MAX_COVER_BYTES = 1.5 * 1024 * 1024; // 1.5MB — images are stored inline in the db/localStorage
+  let pendingCoverImages = []; // array of data URIs (or legacy path strings when editing old rows untouched)
+
+  function renderCoverGalleryEdit(){
+    const el = document.getElementById('coverGalleryEdit');
+    el.innerHTML = '';
+    if(!pendingCoverImages.length){
+      el.innerHTML = '<span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span>';
+      return;
+    }
+    pendingCoverImages.forEach((img, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'cover-gallery-edit-tile';
+      if(img && img.startsWith('data:')){
+        tile.style.backgroundImage = `url("${img}")`;
+        tile.style.backgroundSize = 'contain';
+        tile.style.backgroundPosition = 'center';
+        tile.style.backgroundRepeat = 'no-repeat';
+      } else {
+        tile.title = 'Referenced path (no preview): ' + img;
+      }
+      const x = document.createElement('div');
+      x.className = 'remove-x';
+      x.textContent = '×';
+      x.addEventListener('click', () => { pendingCoverImages.splice(i, 1); renderCoverGalleryEdit(); });
+      tile.appendChild(x);
+      el.appendChild(tile);
+    });
+  }
+
+  document.getElementById('fCoverFile').addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    if(!files.length) return;
+    files.forEach(file => {
+      if(!file.type.startsWith('image/')){ alert(`Skipped "${file.name}": not an image.`); return; }
+      if(file.size > MAX_COVER_BYTES){ alert(`Skipped "${file.name}": larger than 1.5MB. Compress or resize it first.`); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingCoverImages.push(reader.result);
+        renderCoverGalleryEdit();
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  });
+
+  function openForm(id){
+    document.getElementById('fId').value = id || '';
+    document.getElementById('metaReadout').textContent = '';
+    document.getElementById('fCoverFile').value = '';
+    if(id){
+      const row = adminEventRows.find(r => r.id === id);
+      document.getElementById('formTitle').textContent = 'Edit event';
+      document.getElementById('fTitle').value = row.title || '';
+      document.getElementById('fSubtitle').value = row.subtitle || '';
+      document.getElementById('fDescription').value = row.description || '';
+      document.getElementById('fCategory').value = row.category || 'General';
+      document.getElementById('fCountry').value = row.country || '';
+      document.getElementById('fLocation').value = row.location || '';
+      document.getElementById('fCtaUrl').value = row.cta_url || '';
+      document.getElementById('fPublished').value = (row.published_at || '').slice(0,16);
+      pendingCoverImages = getEventImages(row).slice();
+      renderCoverGalleryEdit();
+      document.getElementById('metaReadout').textContent = `id: ${row.id}\ncreated: ${row.created_at}\nupdated: ${row.updated_at}\nversion: ${row.version}`;
+    } else {
+      document.getElementById('formTitle').textContent = 'New event';
+      ['fTitle','fSubtitle','fDescription','fCountry','fLocation','fCtaUrl'].forEach(fid => document.getElementById(fid).value = '');
+      document.getElementById('fCategory').value = 'General';
+      document.getElementById('fPublished').value = new Date().toISOString().slice(0,16);
+      pendingCoverImages = [];
+      renderCoverGalleryEdit();
+    }
+    formBackdrop.classList.add('open');
+  }
+
+  document.getElementById('formSave').addEventListener('click', async () => {
+    const id = document.getElementById('fId').value;
+    const title = document.getElementById('fTitle').value.trim();
+    const description = document.getElementById('fDescription').value.trim();
+    if(!title || !description){ alert('Title and description are required.'); return; }
+    const subtitle = document.getElementById('fSubtitle').value.trim() || null;
+    const category = document.getElementById('fCategory').value;
+    const country = document.getElementById('fCountry').value.trim().toUpperCase() || null;
+    const location = document.getElementById('fLocation').value.trim() || null;
+    const ctaUrl = document.getElementById('fCtaUrl').value.trim() || null;
+    const publishedRaw = document.getElementById('fPublished').value;
+    const published_at = publishedRaw ? new Date(publishedRaw).toISOString() : nowIso();
+    const payload = {
+      title, subtitle, description, category, country, location,
+      cta_url: ctaUrl, cover_images: pendingCoverImages, published_at,
+    };
+
+    flashSync('Saving…');
+    try{
+      if(id) await apiFetch(`/api/events/${id}`, { method: 'PUT', body: payload });
+      else await apiFetch('/api/events', { method: 'POST', body: payload });
+      flashSync('Synced');
+    } catch(e){
+      flashSync('Sync failed');
+      alert('Could not save event: ' + e.message);
+      return;
+    }
+    formBackdrop.classList.remove('open');
+    renderAll();
+  });
+
+  async function deleteEvent(id){
+    if(!confirm('Soft-delete this event? It will be hidden but recoverable.')) return;
+    try{
+      await apiFetch(`/api/events/${id}`, { method: 'DELETE' });
+      flashSync('Synced');
+    } catch(e){
+      flashSync('Sync failed');
+      alert('Could not delete event: ' + e.message);
+      return;
+    }
+    renderAll();
+  }
+  async function restoreEvent(id){
+    try{
+      await apiFetch(`/api/events/${id}/restore`, { method: 'POST' });
+      flashSync('Synced');
+    } catch(e){
+      flashSync('Sync failed');
+      alert('Could not restore event: ' + e.message);
+      return;
+    }
+    renderAll();
+  }
+
+  // ================= ADMIN: TEMPLATE DOWNLOADS =================
+  const TEMPLATE_HEADERS = ['title','subtitle','description','category','country','location','cta_url','cover_image','published_at'];
+  const TEMPLATE_EXAMPLE = {
+    title: 'Gallery opening: Neon Static',
+    subtitle: 'Downtown exhibit hall',
+    description: 'A mixed-media exhibit exploring light and decay opens to the public this week.',
+    category: 'Art',
+    country: 'US',
+    location: 'The Vault Gallery, 88 Lexington Ave, New York',
+    cta_url: 'https://example.com/events/neon-static',
+    cover_image: '/assets/covers/neon-static.jpg',
+    published_at: '2026-08-10T18:00:00+00:00'
+  };
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+  function csvEscape(v){
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }
+
+  document.getElementById('downloadCsvTemplateBtn').addEventListener('click', () => {
+    const rows = [TEMPLATE_HEADERS, TEMPLATE_HEADERS.map(h => TEMPLATE_EXAMPLE[h])];
+    const csv = rows.map(row => row.map(csvEscape).join(',')).join('\r\n');
+    downloadBlob(new Blob([csv], { type: 'text/csv' }), 'chronicle-events-template.csv');
+  });
+
+  document.getElementById('downloadXlsxTemplateBtn').addEventListener('click', () => {
+    const ws = XLSX.utils.json_to_sheet([TEMPLATE_EXAMPLE], { header: TEMPLATE_HEADERS });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Events');
+    XLSX.writeFile(wb, 'chronicle-events-template.xlsx');
+  });
+
+  // ================= ADMIN: BATCH IMPORT =================
+  function normalizePublishedAt(value){
+    if(value === undefined || value === null || value === ''){ return nowIso(); }
+    if(value instanceof Date && !isNaN(value)) return value.toISOString();
+    if(typeof value === 'number' && window.XLSX && XLSX.SSF){
+      const parsed = XLSX.SSF.parse_date_code(value);
+      if(parsed){
+        const d = new Date(Date.UTC(parsed.y, (parsed.m||1)-1, parsed.d||1, parsed.H||0, parsed.M||0, Math.floor(parsed.S||0)));
+        if(!isNaN(d)) return d.toISOString();
+      }
+    }
+    const d = new Date(String(value).trim());
+    return isNaN(d) ? nowIso() : d.toISOString();
+  }
+
+  // Reads .json (raw text), or .csv/.xlsx/.xls (parsed via SheetJS into row objects),
+  // and always resolves to a JSON array string so the same textarea + Import flow handles all formats.
+  function parseImportFile(file){
+    const ext = file.name.split('.').pop().toLowerCase();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error('Could not read file.'));
+
+      if(ext === 'json'){
+        reader.onload = () => resolve(reader.result);
+        reader.readAsText(file);
+      } else if(ext === 'csv'){
+        reader.onload = () => {
+          try{
+            const wb = XLSX.read(reader.result, { type: 'string' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            resolve(JSON.stringify(rows, null, 2));
+          } catch(e){ reject(e); }
+        };
+        reader.readAsText(file);
+      } else if(ext === 'xlsx' || ext === 'xls'){
+        reader.onload = () => {
+          try{
+            const wb = XLSX.read(new Uint8Array(reader.result), { type: 'array', cellDates: true });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            resolve(JSON.stringify(rows, null, 2));
+          } catch(e){ reject(e); }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        reject(new Error(`Unsupported file type ".${ext}" — use .csv, .xlsx, .xls, or .json.`));
+      }
+    });
+  }
+
+  const importBackdrop = document.getElementById('importBackdrop');
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importText').value = '';
+    document.getElementById('importResult').textContent = '';
+    document.getElementById('importFile').value = '';
+    importBackdrop.classList.add('open');
+  });
+  document.getElementById('importCancel').addEventListener('click', () => importBackdrop.classList.remove('open'));
+  document.getElementById('importFile').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const resultEl = document.getElementById('importResult');
+    try{
+      const jsonText = await parseImportFile(file);
+      document.getElementById('importText').value = jsonText;
+      resultEl.textContent = `Loaded ${file.name} — review below, then click Import.`;
+    } catch(err){
+      resultEl.textContent = 'Could not read file: ' + err.message;
+    }
+  });
+
+  document.getElementById('importRun').addEventListener('click', async () => {
+    const raw = document.getElementById('importText').value.trim();
+    const resultEl = document.getElementById('importResult');
+    if(!raw){ resultEl.textContent = 'Nothing to import — paste or upload a file first.'; return; }
+    let items;
+    try { items = JSON.parse(raw); } catch(e){ resultEl.textContent = 'Invalid JSON: ' + e.message; return; }
+    if(!Array.isArray(items)){ resultEl.textContent = 'Data must be an array of event objects/rows.'; return; }
+
+    // Normalize published_at client-side (handles Excel serial dates etc. from parseImportFile);
+    // the server handles the rest of the field validation/defaulting.
+    const normalized = items.map(item => ({ ...item, published_at: normalizePublishedAt(item.published_at) }));
+
+    resultEl.textContent = 'Importing…';
+    try{
+      const { imported, total, skipped } = await apiFetch('/api/events/import', { method: 'POST', body: normalized });
+      let summary = `Imported ${imported} of ${total} rows.`;
+      if(skipped.length) summary += `\nSkipped:\n` + skipped.join('\n');
+      resultEl.textContent = summary;
+    } catch(e){
+      resultEl.textContent = 'Import failed: ' + e.message;
+      return;
+    }
+    renderAll();
+  });
+
+  // ================= ADMIN: USERS =================
+  const showDeletedUsersBox = document.getElementById('showDeletedUsers');
+  showDeletedUsersBox.addEventListener('change', renderUsers);
+
+  let adminUserRows = [];
+  async function renderUsers(){
+    const includeDeleted = showDeletedUsersBox.checked;
+    let rows;
+    try{
+      const data = await apiFetch(`/api/users?includeDeleted=${includeDeleted}`);
+      rows = data.users;
+    } catch(e){
+      alert('Could not load users: ' + e.message);
+      return;
+    }
+    adminUserRows = rows;
+    document.getElementById('userCountBadge').textContent = rows.length + ' users';
+    const tbody = document.getElementById('usersBody');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const isRoot = r.id === '000';
+      const tr = document.createElement('tr');
+      if(r.deleted_at) tr.className = 'deleted-row';
+      const actions = r.deleted_at
+        ? `<a data-user-action="restore" data-id="${r.id}">Restore</a>`
+        : `<a data-user-action="edit" data-id="${r.id}">Edit</a>` + (isRoot ? '' : `<a class="danger" data-user-action="delete" data-id="${r.id}">Delete</a>`);
+      tr.innerHTML = `
+        <td class="title-cell">${escapeHtml(r.username)}${isRoot ? ' <span style="color:var(--text-faint);font-size:10px;">(root)</span>' : ''}</td>
+        <td>${escapeHtml(r.profile_name)}</td>
+        <td><span class="role-pill ${r.role === 'superAdmin' ? 'super' : 'user'}">${r.role}</span></td>
+        <td>${(r.created_at||'').replace('T',' ').slice(0,16)}</td>
+        <td>${r.last_login_at ? r.last_login_at.replace('T',' ').slice(0,16) : '—'}</td>
+        <td><div class="row-actions">${actions}</div></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('usersBody').addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if(!a) return;
+    const id = a.dataset.id, action = a.dataset.userAction;
+    if(action === 'edit') openUserForm(id);
+    if(action === 'delete') deleteUser(id);
+    if(action === 'restore') restoreUser(id);
+  });
+
+  const userFormBackdrop = document.getElementById('userFormBackdrop');
+  document.getElementById('newUserBtn').addEventListener('click', () => openUserForm(null));
+  document.getElementById('userFormCancel').addEventListener('click', () => userFormBackdrop.classList.remove('open'));
+
+  function openUserForm(id){
+    document.getElementById('uId').value = id || '';
+    document.getElementById('userMetaReadout').textContent = '';
+    const roleSelect = document.getElementById('uRole');
+    if(id){
+      const row = adminUserRows.find(r => r.id === id);
+      const isRoot = id === '000';
+      document.getElementById('userFormTitle').textContent = 'Edit user';
+      document.getElementById('uUsername').value = row.username;
+      document.getElementById('uProfileName').value = row.profile_name;
+      document.getElementById('uPassword').value = '';
+      document.getElementById('uPasswordLabel').textContent = 'Password (leave blank to keep current)';
+      roleSelect.value = row.role;
+      roleSelect.disabled = isRoot;
+      document.getElementById('userMetaReadout').textContent =
+        `id: ${row.id}\ncreated: ${row.created_at}\nupdated: ${row.updated_at}\nlast login: ${row.last_login_at || '—'}` +
+        (isRoot ? '\n\nRoot super admin — role locked, cannot be deleted.' : '');
+    } else {
+      document.getElementById('userFormTitle').textContent = 'New user';
+      document.getElementById('uUsername').value = '';
+      document.getElementById('uProfileName').value = '';
+      document.getElementById('uPassword').value = '';
+      document.getElementById('uPasswordLabel').textContent = 'Password *';
+      roleSelect.value = 'user';
+      roleSelect.disabled = false;
+    }
+    userFormBackdrop.classList.add('open');
+  }
+
+  document.getElementById('userFormSave').addEventListener('click', async () => {
+    const id = document.getElementById('uId').value;
+    const username = document.getElementById('uUsername').value.trim();
+    const profileName = document.getElementById('uProfileName').value.trim();
+    const password = document.getElementById('uPassword').value;
+    const role = document.getElementById('uRole').value;
+
+    if(!username || !profileName){ alert('Username and profile name are required.'); return; }
+    if(!id && !password){ alert('Password is required for a new user.'); return; }
+
+    const payload = { username, profile_name: profileName, role };
+    if(password) payload.password = password;
+
+    let result;
+    try{
+      result = id
+        ? await apiFetch(`/api/users/${id}`, { method: 'PUT', body: payload })
+        : await apiFetch('/api/users', { method: 'POST', body: payload });
+    } catch(e){
+      alert('Could not save user: ' + e.message);
+      return;
+    }
+
+    userFormBackdrop.classList.remove('open');
+    renderUsers();
+    if(currentUser && id === currentUser.id){
+      currentUser = result.user;
+      refreshCurrentUserUI();
+    }
+  });
+
+  async function deleteUser(id){
+    if(!confirm('Soft-delete this user? They will be hidden but recoverable.')) return;
+    try{
+      await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
+    } catch(e){
+      alert(e.message);
+      return;
+    }
+    renderUsers();
+  }
+  async function restoreUser(id){
+    try{
+      await apiFetch(`/api/users/${id}/restore`, { method: 'POST' });
+    } catch(e){
+      alert(e.message);
+      return;
+    }
+    renderUsers();
+  }
+
+  initApp();
+</script>
+</body>
+</html>
