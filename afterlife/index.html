@@ -931,20 +931,29 @@
     rows.forEach(r => {
       const tr = document.createElement('tr');
       if(r.deleted_at) tr.className = 'deleted-row';
-      const thumbImg = getEventImages(r)[0];
-      const thumbStyle = (thumbImg && thumbImg.startsWith('data:'))
-        ? ` style="background-image:url('${thumbImg}'); background-size:cover; background-position:center;"` : '';
       tr.innerHTML = `
-        <td><div class="cover-thumb"${thumbStyle}></div></td>
+        <td></td>
         <td class="title-cell">${escapeHtml(r.title)}</td>
         <td><span class="tag-pill">${escapeHtml(r.category)}</span></td>
-        <td>${(r.published_at||'').replace('T',' ').slice(0,16)}</td>
-        <td>${r.country || '—'}</td>
+        <td>${escapeHtml((r.published_at||'').replace('T',' ').slice(0,16))}</td>
+        <td>${escapeHtml(r.country || '—')}</td>
         <td>${r.version}</td>
         <td><div class="row-actions">
           ${r.deleted_at ? `<a data-action="restore" data-id="${r.id}">Restore</a>` :
             `<a data-action="edit" data-id="${r.id}">Edit</a><a class="danger" data-action="delete" data-id="${r.id}">Delete</a>`}
         </div></td>`;
+      // Built as a real element with a property assignment, not an HTML string, so a
+      // malicious cover_image value (e.g. from a direct API call or import) can't break
+      // out of an attribute — CSSOM property assignment never gets HTML-parsed.
+      const thumb = document.createElement('div');
+      thumb.className = 'cover-thumb';
+      const thumbImg = getEventImages(r)[0];
+      if(thumbImg && thumbImg.startsWith('data:')){
+        thumb.style.backgroundImage = `url("${thumbImg}")`;
+        thumb.style.backgroundSize = 'cover';
+        thumb.style.backgroundPosition = 'center';
+      }
+      tr.children[0].appendChild(thumb);
       tbody.appendChild(tr);
     });
   }
