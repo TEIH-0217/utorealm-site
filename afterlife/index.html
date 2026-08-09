@@ -223,7 +223,6 @@
     <div class="nav-links">
       <a data-path="/home" class="active">Home</a>
       <a data-path="/explore">Explore</a>
-      <a data-path="/admin">Admin</a>
     </div>
     <div class="topbar-right">
       <div class="sync-pill"><span class="sync-dot"></span><span id="syncStatus">Synced</span></div>
@@ -233,6 +232,7 @@
           <div class="who"><div class="name" id="menuName">—</div><div class="role" id="menuRole">—</div></div>
           <a data-action="profile">Profile</a>
           <a data-action="settings">Settings</a>
+          <a data-action="admin-panel" id="menuAdminPanel" style="display:none;">Admin panel</a>
           <a data-action="manage-users" id="menuManageUsers">Manage users</a>
           <a data-action="signout" id="menuSignout">Sign out</a>
           <a data-action="signin" id="menuSignin" style="display:none;">Sign in</a>
@@ -273,7 +273,7 @@
       </div>
       <footer>
         <div class="footer-left">AFTERLIFE INDUSTRIAL // SYSTEM ONLINE // BUILD 2077.08</div>
-        <div class="footer-right"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Status</a></div>
+        <div class="footer-right"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Status</a><a data-path="/admin" id="footerAdminLink" style="display:none;">Admin</a></div>
       </footer>
     </main>
   </div>
@@ -561,6 +561,8 @@
     document.querySelector('.user-menu .who').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="profile"]').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="settings"]').style.display = loggedIn ? '' : 'none';
+    document.getElementById('menuAdminPanel').style.display = loggedIn ? '' : 'none';
+    document.getElementById('footerAdminLink').style.display = loggedIn ? '' : 'none';
     document.getElementById('menuManageUsers').style.display = loggedIn ? '' : 'none';
     document.getElementById('menuSignout').style.display = loggedIn ? '' : 'none';
     document.getElementById('menuSignin').style.display = loggedIn ? 'none' : '';
@@ -587,7 +589,7 @@
     if(view === 'explore') renderExplore();
     if(view === 'admin') renderAdminView();
   }
-  document.querySelectorAll('.nav-links a[data-path]').forEach(a => {
+  document.querySelectorAll('a[data-path]').forEach(a => {
     a.addEventListener('click', () => navigate(a.dataset.path));
   });
 
@@ -655,7 +657,10 @@
     const a = e.target.closest('a');
     if(!a) return;
     const action = a.dataset.action;
-    if(action === 'manage-users'){
+    if(action === 'admin-panel'){
+      if(!currentUser){ alert('Sign in to access the admin panel.'); return; }
+      navigate('/admin');
+    } else if(action === 'manage-users'){
       if(!currentUser || currentUser.role !== 'superAdmin'){ alert('Only a superAdmin can manage users.'); return; }
       navigate('/admin#users');
     } else if(action === 'profile'){
