@@ -18,6 +18,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 <style>
   :root{
     --bg:#0A0A0F; --surface:#121218; --surface-2:#181822;
@@ -201,12 +202,18 @@
   .cover-hint{ font-size:10px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
   .cover-gallery-edit{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
   .cover-gallery-edit-empty{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; }
-  .cover-gallery-edit-tile{ width:64px; height:64px; border:1px solid var(--border-strong); position:relative; background-color:var(--surface-2); background-repeat:no-repeat; }
+  .cover-gallery-edit-tile{ width:64px; height:64px; border:1px solid var(--border-strong); position:relative; background-color:var(--surface-2); background-repeat:no-repeat; cursor:pointer; }
   .cover-gallery-edit-tile .remove-x{ position:absolute; top:-7px; right:-7px; width:18px; height:18px; background:var(--hot); color:#0A0A0F; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; cursor:pointer; line-height:1; }
   .modal-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:100; padding:24px; }
   .modal-backdrop.open{ display:flex; }
   .modal{ width:560px; max-width:100%; max-height:88vh; overflow-y:auto; background:var(--surface); border:1px solid var(--border-strong); padding:28px; }
   .modal h2{ font-size:18px; margin-bottom:20px; }
+  .crop-modal{ width:640px; }
+  .crop-stage{ width:100%; height:340px; background:#000; overflow:hidden; }
+  .crop-stage img{ display:block; max-width:100%; }
+  .crop-controls{ display:flex; align-items:center; gap:12px; margin-top:16px; }
+  .crop-controls label{ font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); }
+  .crop-controls input[type="range"]{ flex:1; }
   .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .modal-actions{ display:flex; justify-content:flex-end; gap:12px; margin-top:22px; }
   .meta-readout{ font-size:10px; color:var(--text-faint); margin-top:14px; line-height:1.7; border-top:1px solid var(--border); padding-top:12px; }
@@ -378,12 +385,28 @@
         <div class="cover-field-actions">
           <input type="file" id="fCoverFile" accept="image/*" multiple>
         </div>
-        <div class="cover-hint">Each image max 1.5MB. First image is used as the hero/thumbnail; add 2+ to enable the gallery carousel.</div>
+        <div class="cover-hint">Each image is cropped to 16:9 on upload — drag to reposition, use the slider to zoom. Click an added image to re-edit it. First image is used as the hero/thumbnail; add 2+ to enable the gallery carousel.</div>
       </div>
       <div class="meta-readout" id="metaReadout"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="formCancel">Cancel</button>
         <button class="btn btn-primary" id="formSave">Save event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= COVER IMAGE CROP MODAL ================= -->
+  <div class="modal-backdrop" id="cropBackdrop">
+    <div class="modal bracket crop-modal">
+      <h2>Adjust cover image</h2>
+      <div class="crop-stage"><img id="cropImage" alt=""></div>
+      <div class="crop-controls">
+        <label for="cropZoom">Zoom</label>
+        <input type="range" id="cropZoom" min="0" max="3" step="0.01" value="0">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="cropCancel">Cancel</button>
+        <button class="btn btn-primary" id="cropApply">Apply</button>
       </div>
     </div>
   </div>
@@ -432,6 +455,7 @@
   </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script>
   const SESSION_KEY = "afterlife_session";
   // localhost during dev; the Render-hosted API's custom subdomain everywhere else.
@@ -815,7 +839,7 @@
   }
 
   function setBackgroundFit(el, image, mode){
-    mode = mode || 'contain';
+    mode = mode || 'cover';
     if(image && image.startsWith('data:')){
       el.style.backgroundImage = `url("${image}")`;
       el.style.backgroundSize = mode;
@@ -836,17 +860,17 @@
       images.forEach((img, i) => {
         const tile = document.createElement('div');
         tile.className = 'event-gallery-tile' + (i === 0 ? ' active' : '');
-        setBackgroundFit(tile, img, 'contain');
+        setBackgroundFit(tile, img, 'cover');
         tile.addEventListener('click', () => {
           document.querySelectorAll('.event-gallery-tile').forEach((t, idx) => t.classList.toggle('active', idx === i));
-          setBackgroundFit(document.getElementById('eventHero'), img, 'contain');
+          setBackgroundFit(document.getElementById('eventHero'), img, 'cover');
         });
         el.appendChild(tile);
       });
     } else {
       el.style.display = 'none';
     }
-    setBackgroundFit(document.getElementById('eventHero'), images[0] || null, 'contain');
+    setBackgroundFit(document.getElementById('eventHero'), images[0] || null, 'cover');
   }
   function showEventPreview(r){
     document.getElementById('evTitle').textContent = r.title;
@@ -978,6 +1002,7 @@
   document.getElementById('formCancel').addEventListener('click', () => formBackdrop.classList.remove('open'));
 
   const MAX_COVER_BYTES = 1.5 * 1024 * 1024; // 1.5MB — images are stored inline in the db/localStorage
+  const MAX_COVER_SOURCE_BYTES = 8 * 1024 * 1024; // generous pre-filter; the cropped OUTPUT is what must fit MAX_COVER_BYTES
   let pendingCoverImages = []; // array of data URIs (or legacy path strings when editing old rows untouched)
 
   function renderCoverGalleryEdit(){
@@ -995,16 +1020,103 @@
         tile.style.backgroundSize = 'contain';
         tile.style.backgroundPosition = 'center';
         tile.style.backgroundRepeat = 'no-repeat';
+        tile.title = 'Click to reposition/zoom';
+        tile.addEventListener('click', () => {
+          openCropper(img, croppedUrl => {
+            pendingCoverImages[i] = croppedUrl;
+            renderCoverGalleryEdit();
+          });
+        });
       } else {
         tile.title = 'Referenced path (no preview): ' + img;
       }
       const x = document.createElement('div');
       x.className = 'remove-x';
       x.textContent = '×';
-      x.addEventListener('click', () => { pendingCoverImages.splice(i, 1); renderCoverGalleryEdit(); });
+      x.addEventListener('click', e => { e.stopPropagation(); pendingCoverImages.splice(i, 1); renderCoverGalleryEdit(); });
       tile.appendChild(x);
       el.appendChild(tile);
     });
+  }
+
+  // ---------------- COVER IMAGE CROPPER ----------------
+  const cropBackdrop = document.getElementById('cropBackdrop');
+  const cropImageEl = document.getElementById('cropImage');
+  const cropZoomEl = document.getElementById('cropZoom');
+  let cropperInstance = null;
+  let cropBaseZoom = 0;
+  let cropOnApply = null;
+  let cropQueue = []; // Files still waiting for their turn in the cropper
+
+  function openCropper(srcDataUrl, onApply){
+    cropOnApply = onApply;
+    cropImageEl.src = srcDataUrl;
+    cropBackdrop.classList.add('open');
+    if(cropperInstance) cropperInstance.destroy();
+    cropperInstance = new Cropper(cropImageEl, {
+      aspectRatio: 16 / 9,
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 1,
+      background: false,
+      ready(){
+        const data = cropperInstance.getImageData();
+        cropBaseZoom = data.width / data.naturalWidth;
+        cropZoomEl.value = 0;
+      },
+      zoom(e){
+        cropZoomEl.value = Math.max(0, (e.detail.ratio - cropBaseZoom).toFixed(2));
+      },
+    });
+  }
+  function closeCropper(){
+    cropBackdrop.classList.remove('open');
+    if(cropperInstance){ cropperInstance.destroy(); cropperInstance = null; }
+    cropOnApply = null;
+    cropImageEl.src = '';
+  }
+  cropZoomEl.addEventListener('input', () => {
+    if(cropperInstance) cropperInstance.zoomTo(cropBaseZoom + parseFloat(cropZoomEl.value));
+  });
+  document.getElementById('cropCancel').addEventListener('click', () => {
+    closeCropper();
+    processNextCropQueueItem();
+  });
+  document.getElementById('cropApply').addEventListener('click', () => {
+    if(!cropperInstance) return;
+    const canvas = cropperInstance.getCroppedCanvas({ width: 1280, height: 720 });
+    const finalUrl = exportCroppedCanvas(canvas);
+    const onApply = cropOnApply;
+    closeCropper();
+    if(finalUrl && onApply) onApply(finalUrl);
+    processNextCropQueueItem();
+  });
+
+  // Renders to JPEG, stepping quality down until it fits the existing 1.5MB cap.
+  function exportCroppedCanvas(canvas){
+    const qualities = [0.85, 0.7, 0.55, 0.4];
+    let dataUrl = canvas.toDataURL('image/jpeg', qualities[0]);
+    for(let i = 1; i < qualities.length && dataUrl.length > MAX_COVER_BYTES; i++){
+      dataUrl = canvas.toDataURL('image/jpeg', qualities[i]);
+    }
+    if(dataUrl.length > MAX_COVER_BYTES){
+      alert('This image is still too large after cropping — try a smaller/simpler source image.');
+      return null;
+    }
+    return dataUrl;
+  }
+
+  function processNextCropQueueItem(){
+    if(!cropQueue.length) return;
+    const file = cropQueue.shift();
+    const reader = new FileReader();
+    reader.onload = () => {
+      openCropper(reader.result, croppedUrl => {
+        pendingCoverImages.push(croppedUrl);
+        renderCoverGalleryEdit();
+      });
+    };
+    reader.readAsDataURL(file);
   }
 
   document.getElementById('fCoverFile').addEventListener('change', e => {
@@ -1012,15 +1124,11 @@
     if(!files.length) return;
     files.forEach(file => {
       if(!file.type.startsWith('image/')){ alert(`Skipped "${file.name}": not an image.`); return; }
-      if(file.size > MAX_COVER_BYTES){ alert(`Skipped "${file.name}": larger than 1.5MB. Compress or resize it first.`); return; }
-      const reader = new FileReader();
-      reader.onload = () => {
-        pendingCoverImages.push(reader.result);
-        renderCoverGalleryEdit();
-      };
-      reader.readAsDataURL(file);
+      if(file.size > MAX_COVER_SOURCE_BYTES){ alert(`Skipped "${file.name}": larger than 8MB. Use a smaller source image.`); return; }
+      cropQueue.push(file);
     });
     e.target.value = '';
+    if(!cropperInstance) processNextCropQueueItem();
   });
 
   function openForm(id){
