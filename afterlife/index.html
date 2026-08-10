@@ -273,9 +273,54 @@
   .login-box{ max-width:360px; margin:60px auto; }
   .form-error{ color:var(--hot); font-size:12px; margin-bottom:14px; display:none; }
   .form-error.show{ display:block; }
+  .form-success{ color:var(--cool); font-size:12px; margin-bottom:14px; line-height:1.6; display:none; }
+  .form-success.show{ display:block; }
   .role-pill{ font-size:10px; padding:3px 8px; border:1px solid var(--border-strong); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; }
   .role-pill.super{ color:var(--hot); border-color:var(--hot); }
   .role-pill.user{ color:var(--text-dim); }
+  .unverified-pill{ color:var(--hot); border-color:var(--hot); }
+
+  /* ================= AUTH VIEWS (log-in / register / verify / reset) ================= */
+  .auth-view{ display:none; flex:1; flex-direction:column; overflow-y:auto; }
+  .auth-view.active{ display:flex; }
+  .auth-view .wrap{ display:flex; flex-direction:column; justify-content:center; flex:1; }
+  .auth-state{ display:none; }
+  .auth-state.active{ display:block; }
+  .field-hint{ font-size:10px; color:var(--text-faint); margin-top:-10px; margin-bottom:16px; line-height:1.5; }
+  .auth-links{ display:flex; justify-content:space-between; margin-top:18px; font-size:11px; letter-spacing:0.04em; }
+  .auth-links a{ color:var(--cool); text-decoration:none; cursor:pointer; }
+  .auth-links a:hover{ color:var(--text); }
+  .auth-spinner{ font-size:12px; color:var(--text-faint); letter-spacing:0.08em; text-transform:uppercase; }
+
+  .pw-field{ position:relative; }
+  .pw-field input{ padding-right:38px; }
+  .pw-toggle{
+    position:absolute; top:0; right:0; bottom:0; width:36px;
+    display:flex; align-items:center; justify-content:center;
+    background:transparent; border:none; color:var(--text-faint); cursor:pointer; padding:0;
+  }
+  .pw-toggle:hover{ color:var(--cool); }
+  .pw-toggle:focus-visible{ outline:1px solid var(--cool); outline-offset:-2px; }
+  .pw-toggle svg{ width:15px; height:15px; }
+  .pw-toggle .icon-eye-off{ display:none; }
+  .pw-toggle.showing .icon-eye{ display:none; }
+  .pw-toggle.showing .icon-eye-off{ display:block; }
+
+  .pw-meter{ display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .pw-bar{ display:flex; gap:3px; flex:1; }
+  .pw-bar i{ height:4px; flex:1; background:var(--border-strong); border-radius:1px; transition:background-color .15s; }
+  .pw-label{ font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); white-space:nowrap; min-width:40px; text-align:right; transition:color .15s; }
+  .pw-meter[data-level="weak"] .pw-bar i.on{ background:var(--hot); }
+  .pw-meter[data-level="weak"] .pw-label{ color:var(--hot); }
+  .pw-meter[data-level="fair"] .pw-bar i.on{ background:#D9A441; }
+  .pw-meter[data-level="fair"] .pw-label{ color:#D9A441; }
+  .pw-meter[data-level="good"] .pw-bar i.on, .pw-meter[data-level="strong"] .pw-bar i.on{ background:var(--cool); }
+  .pw-meter[data-level="good"] .pw-label, .pw-meter[data-level="strong"] .pw-label{ color:var(--cool); }
+  .pw-checklist{ list-style:none; margin:8px 0 16px; padding:0; font-size:10px; color:var(--text-faint); line-height:1.9; }
+  .pw-checklist li{ transition:color .15s; }
+  .pw-checklist li::before{ content:'○ '; }
+  .pw-checklist li.met{ color:var(--cool); }
+  .pw-checklist li.met::before{ content:'● '; }
 
   /* ---------- TOAST ---------- */
   .toast-stack{ position:fixed; bottom:20px; right:20px; z-index:200; display:flex; flex-direction:column; gap:8px; }
@@ -476,15 +521,125 @@
           <tbody id="usersBody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
 
-      <div class="admin-page" id="loginGate">
-        <div class="login-box bracket">
-          <h2 style="font-size:16px; margin-bottom:20px;">Admin sign in</h2>
-          <div class="form-error" id="loginError"></div>
-          <div class="field"><label>Username</label><input type="text" id="loginUsername" autocomplete="username"></div>
-          <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
-          <button class="btn btn-primary btn-sm" id="loginSubmit">Sign in</button>
+  <!-- ================= LOG IN ================= -->
+  <div class="auth-view" id="loginView">
+    <div class="wrap">
+      <div class="login-box bracket">
+        <h2 style="font-size:16px; margin-bottom:20px;">Sign in</h2>
+        <div class="form-error" id="loginError"></div>
+        <div class="field"><label>Username or email</label><input type="text" id="loginUsername" autocomplete="username"></div>
+        <div class="field"><label>Password</label><div class="pw-field"><input type="password" id="loginPassword" autocomplete="current-password"><button type="button" class="pw-toggle" data-toggle-for="loginPassword" aria-label="Show password"></button></div></div>
+        <button class="btn btn-primary btn-sm" id="loginSubmit" style="width:100%;">Sign in</button>
+        <div class="auth-links">
+          <a data-auth-link="register">Register</a>
+          <a data-auth-link="forgot-password">Forgot password?</a>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= REGISTER ================= -->
+  <div class="auth-view" id="registerView">
+    <div class="wrap">
+      <div class="login-box bracket auth-state active" id="registerFormState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Create an account</h2>
+        <div class="form-error" id="registerError"></div>
+        <div class="field"><label>Email</label><input type="email" id="regEmail" autocomplete="email"></div>
+        <div class="field"><label>Username</label><input type="text" id="regUsername" autocomplete="username"></div>
+        <div class="field-hint">3-32 characters: letters, numbers, dots, underscores, hyphens.</div>
+        <div class="field"><label>Display name</label><input type="text" id="regProfileName" autocomplete="name"></div>
+        <div class="field">
+          <label>Password</label>
+          <div class="pw-field"><input type="password" id="regPassword" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="regPassword" aria-label="Show password"></button></div>
+          <div class="pw-meter" id="regPasswordMeter"><div class="pw-bar"><i></i><i></i><i></i><i></i></div><div class="pw-label" id="regPasswordLabel">—</div></div>
+          <ul class="pw-checklist" id="regPasswordChecklist">
+            <li data-check="length">At least 10 characters</li>
+            <li data-check="variety">3+ of: lowercase, uppercase, number, symbol</li>
+            <li data-check="common">Not a common or predictable password</li>
+            <li data-check="context">Doesn't contain your username or email</li>
+          </ul>
+        </div>
+        <div class="field"><label>Confirm password</label><div class="pw-field"><input type="password" id="regPasswordConfirm" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="regPasswordConfirm" aria-label="Show password"></button></div></div>
+        <button class="btn btn-primary btn-sm" id="registerSubmit" style="width:100%;">Create account</button>
+        <div class="auth-links"><span></span><a data-auth-link="log-in">Already have an account? Sign in</a></div>
+      </div>
+      <div class="login-box bracket auth-state" id="registerSuccessState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Check your email</h2>
+        <div class="form-success show" id="registerSuccessMsg"></div>
+        <button class="btn btn-ghost btn-sm" id="resendVerificationBtn" style="width:100%;">Resend verification email</button>
+        <div class="form-success" id="resendSuccessMsg" style="margin-top:12px;">Sent — check your inbox.</div>
+        <div class="auth-links"><span></span><a data-auth-link="log-in">Back to sign in</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= EMAIL VERIFICATION LANDING ================= -->
+  <div class="auth-view" id="verifyEmailView">
+    <div class="wrap">
+      <div class="login-box bracket auth-state active" id="verifyLoadingState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Verifying…</h2>
+        <div class="auth-spinner">Confirming your email address</div>
+      </div>
+      <div class="login-box bracket auth-state" id="verifySuccessState">
+        <h2 style="font-size:16px; margin-bottom:20px;" id="verifySuccessTitle">You're verified</h2>
+        <div class="form-success show" id="verifySuccessMsg">Your email is confirmed and you're signed in.</div>
+        <a class="btn btn-primary btn-sm" id="verifyContinueBtn" style="width:100%; text-align:center; display:block; box-sizing:border-box;">Continue</a>
+      </div>
+      <div class="login-box bracket auth-state" id="verifyErrorState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Link expired</h2>
+        <div class="form-error show" id="verifyErrorMsg">This verification link is invalid or has expired.</div>
+        <div class="field"><label>Email</label><input type="email" id="verifyResendEmail" autocomplete="email"></div>
+        <button class="btn btn-primary btn-sm" id="verifyResendBtn" style="width:100%;">Send a new link</button>
+        <div class="form-success" id="verifyResendSuccessMsg" style="margin-top:12px;">Sent — check your inbox.</div>
+        <div class="auth-links"><span></span><a data-auth-link="log-in">Back to sign in</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FORGOT PASSWORD ================= -->
+  <div class="auth-view" id="forgotPasswordView">
+    <div class="wrap">
+      <div class="login-box bracket auth-state active" id="forgotFormState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Reset your password</h2>
+        <div class="form-error" id="forgotError"></div>
+        <div class="field"><label>Username or email</label><input type="text" id="forgotIdentifier" autocomplete="username"></div>
+        <button class="btn btn-primary btn-sm" id="forgotSubmit" style="width:100%;">Send reset link</button>
+        <div class="auth-links"><span></span><a data-auth-link="log-in">Back to sign in</a></div>
+      </div>
+      <div class="login-box bracket auth-state" id="forgotSuccessState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Check your email</h2>
+        <div class="form-success show">If an account matches, we've sent a link to reset the password.</div>
+        <div class="auth-links"><span></span><a data-auth-link="log-in">Back to sign in</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RESET PASSWORD ================= -->
+  <div class="auth-view" id="resetPasswordView">
+    <div class="wrap">
+      <div class="login-box bracket auth-state active" id="resetFormState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Set a new password</h2>
+        <div class="form-error" id="resetError"></div>
+        <div class="field">
+          <label>New password</label>
+          <div class="pw-field"><input type="password" id="resetPassword" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="resetPassword" aria-label="Show password"></button></div>
+          <div class="pw-meter" id="resetPasswordMeter"><div class="pw-bar"><i></i><i></i><i></i><i></i></div><div class="pw-label" id="resetPasswordLabel">—</div></div>
+          <ul class="pw-checklist" id="resetPasswordChecklist">
+            <li data-check="length">At least 10 characters</li>
+            <li data-check="variety">3+ of: lowercase, uppercase, number, symbol</li>
+            <li data-check="common">Not a common or predictable password</li>
+          </ul>
+        </div>
+        <div class="field"><label>Confirm password</label><div class="pw-field"><input type="password" id="resetPasswordConfirm" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="resetPasswordConfirm" aria-label="Show password"></button></div></div>
+        <button class="btn btn-primary btn-sm" id="resetSubmit" style="width:100%;">Set password</button>
+      </div>
+      <div class="login-box bracket auth-state" id="resetInvalidState">
+        <h2 style="font-size:16px; margin-bottom:20px;">Link expired</h2>
+        <div class="form-error show">This reset link is invalid or has expired.</div>
+        <div class="auth-links"><span></span><a data-auth-link="forgot-password">Request a new link</a></div>
       </div>
     </div>
   </div>
@@ -560,7 +715,7 @@
         <div class="field"><label>Profile name *</label><input type="text" id="uProfileName"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label id="uPasswordLabel">Password *</label><input type="password" id="uPassword" placeholder="Leave blank to keep current"></div>
+        <div class="field"><label id="uPasswordLabel">Password *</label><div class="pw-field"><input type="password" id="uPassword" placeholder="Leave blank to keep current"><button type="button" class="pw-toggle" data-toggle-for="uPassword" aria-label="Show password"></button></div></div>
         <div class="field"><label>Role *</label>
           <select id="uRole"><option value="user">user</option><option value="superAdmin">superAdmin</option></select>
         </div>
@@ -708,13 +863,44 @@
     else history.pushState({}, '', url);
     applyRoute();
   }
+  // Only ever follow a `?next=` value that's a same-app, BASE_PATH-relative path (e.g.
+  // "/admin", "/home/some-slug") — anything else (a bare protocol-relative "//evil.com",
+  // an absolute "https://..." URL, or garbage) falls back to '/home' instead of being
+  // used as a redirect target, so this can't be turned into an open-redirect phishing vector.
+  function safeNextPath(raw){
+    if(typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('://')) return '/home';
+    return raw;
+  }
+  function currentNextParam(){
+    return safeNextPath(new URLSearchParams(location.search).get('next') || '');
+  }
+  function loginUrlWithNext(next){
+    return '/log-in?next=' + encodeURIComponent(next);
+  }
+
   function applyRoute(){
     const { parts } = currentRoute();
     const [section, sub] = parts;
     if(section === 'admin'){
+      if(!currentUser){ navigate(loginUrlWithNext('/admin'), { replace: true }); return; }
+      if(currentUser.role !== 'superAdmin'){
+        alert('You do not have access to the admin panel.');
+        navigate('/home', { replace: true });
+        return;
+      }
       switchView('admin', navLinkForView('admin'));
     } else if(section === 'explore'){
       switchView('explore', navLinkForView('explore'));
+    } else if(section === 'log-in'){
+      switchView('login');
+    } else if(section === 'register'){
+      switchView('register');
+    } else if(section === 'verify-email'){
+      switchView('verify-email');
+    } else if(section === 'forgot-password'){
+      switchView('forgot-password');
+    } else if(section === 'reset-password'){
+      switchView('reset-password');
     } else {
       if(!section) history.replaceState({}, '', BASE_PATH + '/home');
       switchView('home', navLinkForView('home'));
@@ -739,23 +925,37 @@
 
   function refreshCurrentUserUI(){
     const loggedIn = !!currentUser;
+    const isSuperAdmin = loggedIn && currentUser.role === 'superAdmin';
     document.getElementById('avatarBtn').textContent = loggedIn
       ? currentUser.profile_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
       : '—';
     document.querySelector('.user-menu .who').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="profile"]').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="settings"]').style.display = loggedIn ? '' : 'none';
-    document.getElementById('menuAdminPanel').style.display = loggedIn ? '' : 'none';
-    document.getElementById('footerAdminLink').style.display = loggedIn ? '' : 'none';
-    document.getElementById('menuManageUsers').style.display = loggedIn ? '' : 'none';
+    // Admin panel is superAdmin-only — a self-registered "user" account should never see
+    // these entry points, even though the same person could still type the URL directly
+    // (harmless: applyRoute() bounces them, and the backend enforces the real boundary).
+    document.getElementById('menuAdminPanel').style.display = isSuperAdmin ? '' : 'none';
+    document.getElementById('footerAdminLink').style.display = isSuperAdmin ? '' : 'none';
+    document.getElementById('menuManageUsers').style.display = isSuperAdmin ? '' : 'none';
     document.getElementById('menuSignout').style.display = loggedIn ? '' : 'none';
     document.getElementById('menuSignin').style.display = loggedIn ? 'none' : '';
     if(loggedIn){
       document.getElementById('menuName').textContent = currentUser.profile_name;
+      const isUnverified = currentUser.email && !currentUser.email_verified_at;
+      document.getElementById('menuRole').innerHTML = '';
       document.getElementById('menuRole').textContent = currentUser.role;
-      const isSuper = currentUser.role === 'superAdmin';
-      document.getElementById('menuManageUsers').classList.toggle('disabled', !isSuper);
-      document.getElementById('usersTabLink').style.display = isSuper ? '' : 'none';
+      if(isUnverified){
+        const pill = document.createElement('a');
+        pill.className = 'role-pill unverified-pill';
+        pill.style.marginLeft = '8px';
+        pill.style.cursor = 'pointer';
+        pill.textContent = 'Unverified — resend';
+        pill.dataset.action = 'resend-verification';
+        document.getElementById('menuRole').appendChild(pill);
+      }
+      document.getElementById('menuManageUsers').classList.toggle('disabled', !isSuperAdmin);
+      document.getElementById('usersTabLink').style.display = isSuperAdmin ? '' : 'none';
     } else {
       document.getElementById('usersTabLink').style.display = 'none';
     }
@@ -770,50 +970,64 @@
     document.getElementById('publicView').classList.toggle('active', view === 'home');
     document.getElementById('exploreView').classList.toggle('active', view === 'explore');
     document.getElementById('adminView').classList.toggle('active', view === 'admin');
+    document.getElementById('loginView').classList.toggle('active', view === 'login');
+    document.getElementById('registerView').classList.toggle('active', view === 'register');
+    document.getElementById('verifyEmailView').classList.toggle('active', view === 'verify-email');
+    document.getElementById('forgotPasswordView').classList.toggle('active', view === 'forgot-password');
+    document.getElementById('resetPasswordView').classList.toggle('active', view === 'reset-password');
     if(view === 'explore') renderExplore();
     if(view === 'admin') renderAdminView();
+    if(view === 'login') resetLoginView();
+    if(view === 'register') resetRegisterView();
+    if(view === 'verify-email') runEmailVerification();
+    if(view === 'forgot-password') resetForgotPasswordView();
+    if(view === 'reset-password') resetResetPasswordView();
   }
   document.querySelectorAll('a[data-path]').forEach(a => {
     a.addEventListener('click', () => navigate(a.dataset.path));
   });
+  // "Register" / "Forgot password?" / "Back to sign in" links shared across auth pages —
+  // preserve whatever ?next= the visitor arrived with so it survives hopping between them.
+  document.querySelectorAll('a[data-auth-link]').forEach(a => {
+    a.addEventListener('click', () => navigate('/' + a.dataset.authLink + '?next=' + encodeURIComponent(currentNextParam())));
+  });
 
-  // Shows the login gate when signed out, otherwise the admin tabs/pages — the tab
-  // itself comes from the URL hash (#events/#users), so a deep link like
-  // /admin#users lands on the right tab even after going through the login gate.
+  // The admin tabs/pages are only ever shown once applyRoute() has confirmed the visitor
+  // is signed in (it redirects to /log-in otherwise) — no signed-out branch needed here.
   function renderAdminView(){
-    const loggedIn = !!currentUser;
-    document.querySelector('.admin-tabs').style.display = loggedIn ? '' : 'none';
-    document.getElementById('loginGate').classList.toggle('active', !loggedIn);
-    if(loggedIn){
-      switchAdminTab(location.hash === '#users' ? 'users' : 'events');
-    } else {
-      document.getElementById('adminEventsPage').classList.remove('active');
-      document.getElementById('adminUsersPage').classList.remove('active');
-      document.querySelectorAll('.admin-tabs a').forEach(x => x.classList.remove('active'));
-      document.getElementById('loginError').classList.remove('show');
-      document.getElementById('loginUsername').value = '';
-      document.getElementById('loginPassword').value = '';
-    }
+    document.querySelector('.admin-tabs').style.display = '';
+    switchAdminTab(location.hash === '#users' ? 'users' : 'events');
   }
 
+  // ================= AUTH: LOG IN =================
+  function resetLoginView(){
+    const errEl = document.getElementById('loginError');
+    errEl.classList.remove('show');
+    errEl.style.color = ''; // undo the one-off green "password updated" styling below, if set
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+  }
   async function handleLogin(){
-    const username = document.getElementById('loginUsername').value.trim();
+    const identifier = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
     const errEl = document.getElementById('loginError');
     errEl.classList.remove('show');
-    if(!username || !password){
-      errEl.textContent = 'Username and password are required.';
+    if(!identifier || !password){
+      errEl.textContent = 'Username/email and password are required.';
       errEl.classList.add('show');
       return;
     }
     try{
-      const { token, user } = await apiFetch('/api/auth/login', { method: 'POST', body: { username, password }, auth: false });
+      const { token, user } = await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password }, auth: false });
       saveSession(token, user);
       refreshCurrentUserUI();
-      renderAdminView(); // picks up whichever tab the URL hash already points at
+      const next = currentNextParam();
       if(pendingSubmitIntent){
         pendingSubmitIntent = false;
+        navigate(next);
         openForm(null); // continue what they came here to do
+      } else {
+        navigate(next);
       }
     } catch(e){
       errEl.textContent = e.message;
@@ -822,6 +1036,259 @@
   }
   document.getElementById('loginSubmit').addEventListener('click', handleLogin);
   document.getElementById('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); });
+
+  // ================= PASSWORD SHOW/HIDE TOGGLE =================
+  const EYE_ICON = '<svg class="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>'
+    + '<svg class="icon-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a20.28 20.28 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a20.32 20.32 0 0 1-3.22 4.62M1 1l22 22"/><path d="M10.58 10.58a2 2 0 1 0 2.83 2.83"/></svg>';
+  document.querySelectorAll('.pw-toggle').forEach(btn => {
+    btn.innerHTML = EYE_ICON;
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.toggleFor);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.classList.toggle('showing', !showing);
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+  });
+
+  // ================= AUTH: PASSWORD STRENGTH =================
+  // UX-only mirror of server/src/password-policy.js — the server is the real gate;
+  // this just gives live feedback so people don't have to submit-and-fail to find out.
+  // Keep both in sync if the rules ever change.
+  const PW_COMMON = new Set([
+    'password','password1','password123','passw0rd','12345678','123456789','1234567890',
+    '123123123','111111111','000000000','qwertyuiop','qwerty123','1qaz2wsx','q1w2e3r4',
+    'letmein123','welcome123','iloveyou1','trustno1','starwars1','football1','baseball1',
+    'superman1','batman123','princess1','sunshine1','dragon123','monkey123','shadow123',
+    'master123','whatever1','hello1234','freedom123','jennifer1','michael1','jordan23',
+    'abc123456','a1b2c3d4','changeme1','letmein1','admin1234','administrator','rootroot',
+    'passwordpassword','correcthorsebatterystaple','iloveyou123','myspace1','12qwaszx',
+  ]);
+  const PW_WEAK_SUBSTRINGS = ['qwerty','asdfgh','zxcvbn','qazwsx','qwertz','1qaz2wsx','asdfghjkl','1234567890','0987654321','abcdefgh','password'];
+  function pwHasSequentialRun(pw, minRun = 4){
+    const lower = pw.toLowerCase();
+    let ascL=1, descL=1, ascD=1, descD=1;
+    for(let i=1;i<lower.length;i++){
+      const prev = lower.charCodeAt(i-1), curr = lower.charCodeAt(i);
+      const bothLetters = /[a-z]/.test(lower[i-1]) && /[a-z]/.test(lower[i]);
+      const bothDigits = /[0-9]/.test(lower[i-1]) && /[0-9]/.test(lower[i]);
+      ascL = bothLetters && curr===prev+1 ? ascL+1 : (bothLetters?1:0);
+      descL = bothLetters && curr===prev-1 ? descL+1 : (bothLetters?1:0);
+      ascD = bothDigits && curr===prev+1 ? ascD+1 : (bothDigits?1:0);
+      descD = bothDigits && curr===prev-1 ? descD+1 : (bothDigits?1:0);
+      if(Math.max(ascL,descL,ascD,descD) >= minRun) return true;
+    }
+    return false;
+  }
+  function pwCharClassCount(pw){ return [/[a-z]/,/[A-Z]/,/[0-9]/,/[^a-zA-Z0-9]/].filter(re => re.test(pw)).length; }
+  function pwIsWeakPattern(pw){
+    const lower = pw.toLowerCase();
+    if(PW_COMMON.has(lower)) return true;
+    if(PW_WEAK_SUBSTRINGS.some(s => lower.includes(s))) return true;
+    if(/(.)\1{3,}/.test(pw)) return true;
+    if(pwHasSequentialRun(pw)) return true;
+    return false;
+  }
+  function estimatePasswordStrength(pw, context = {}){
+    pw = pw || '';
+    const checks = {
+      length: pw.length >= 10 && pw.length <= 128,
+      variety: pwCharClassCount(pw) >= 3,
+      common: pw.length > 0 && !pwIsWeakPattern(pw),
+      context: true,
+    };
+    const username = (context.username || '').toLowerCase();
+    const emailLocal = (context.email || '').split('@')[0].toLowerCase();
+    const lower = pw.toLowerCase();
+    if((username.length >= 4 && lower.includes(username)) || (emailLocal.length >= 4 && lower.includes(emailLocal))){
+      checks.context = false;
+    }
+    const valid = pw.length > 0 && Object.values(checks).every(Boolean);
+    let score = 0;
+    if(!pw){ score = 0; }
+    else if(pwIsWeakPattern(pw)){ score = pw.length >= 10 ? 1 : 0; }
+    else{
+      if(pw.length >= 10) score++;
+      if(pw.length >= 14) score++;
+      if(pw.length >= 20) score++;
+      if(pwCharClassCount(pw) >= 3) score++;
+      score = Math.min(score, 4);
+    }
+    const level = score <= 1 ? 'weak' : score === 2 ? 'fair' : score === 3 ? 'good' : 'strong';
+    const label = score <= 1 ? 'Weak' : score === 2 ? 'Fair' : score === 3 ? 'Good' : 'Strong';
+    return { valid, checks, score, level, label };
+  }
+  function wirePasswordMeter(inputId, meterId, labelId, checklistId, getContext){
+    const input = document.getElementById(inputId);
+    const meter = document.getElementById(meterId);
+    const label = document.getElementById(labelId);
+    const checklist = document.getElementById(checklistId);
+    const bars = meter.querySelectorAll('.pw-bar i');
+    input.addEventListener('input', () => {
+      const pw = input.value;
+      const result = estimatePasswordStrength(pw, getContext ? getContext() : {});
+      meter.dataset.level = pw ? result.level : '';
+      label.textContent = pw ? result.label : '—';
+      bars.forEach((bar, i) => bar.classList.toggle('on', i < (pw ? Math.max(result.score, 1) : 0)));
+      checklist.querySelectorAll('li[data-check]').forEach(li => {
+        li.classList.toggle('met', !!result.checks[li.dataset.check]);
+      });
+    });
+    return () => { // reset helper
+      meter.dataset.level = '';
+      label.textContent = '—';
+      bars.forEach(bar => bar.classList.remove('on'));
+      checklist.querySelectorAll('li[data-check]').forEach(li => li.classList.remove('met'));
+    };
+  }
+  const resetRegPasswordMeter = wirePasswordMeter('regPassword', 'regPasswordMeter', 'regPasswordLabel', 'regPasswordChecklist',
+    () => ({ username: document.getElementById('regUsername').value, email: document.getElementById('regEmail').value }));
+  const resetResetPasswordMeter = wirePasswordMeter('resetPassword', 'resetPasswordMeter', 'resetPasswordLabel', 'resetPasswordChecklist');
+
+  // ================= AUTH: REGISTER =================
+  function showAuthState(viewPrefix, stateId){
+    document.querySelectorAll(`#${viewPrefix} .auth-state`).forEach(el => el.classList.toggle('active', el.id === stateId));
+  }
+  function resetRegisterView(){
+    showAuthState('registerView', 'registerFormState');
+    document.getElementById('registerError').classList.remove('show');
+    document.getElementById('resendSuccessMsg').classList.remove('show');
+    ['regEmail','regUsername','regProfileName','regPassword','regPasswordConfirm'].forEach(id => document.getElementById(id).value = '');
+    resetRegPasswordMeter();
+  }
+  let lastRegisteredEmail = '';
+  async function handleRegister(){
+    const email = document.getElementById('regEmail').value.trim();
+    const username = document.getElementById('regUsername').value.trim();
+    const profileName = document.getElementById('regProfileName').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+    const errEl = document.getElementById('registerError');
+    errEl.classList.remove('show');
+
+    if(!email || !username || !profileName || !password){
+      errEl.textContent = 'All fields are required.'; errEl.classList.add('show'); return;
+    }
+    const strength = estimatePasswordStrength(password, { username, email });
+    if(!strength.valid){
+      errEl.textContent = 'Password does not meet the requirements below.'; errEl.classList.add('show'); return;
+    }
+    if(password !== passwordConfirm){
+      errEl.textContent = 'Passwords do not match.'; errEl.classList.add('show'); return;
+    }
+    try{
+      await apiFetch('/api/auth/register', {
+        method: 'POST', auth: false,
+        body: { email, username, profile_name: profileName, password },
+      });
+      lastRegisteredEmail = email;
+      document.getElementById('registerSuccessMsg').textContent = `We sent a verification link to ${email}. Click it to finish setting up your account.`;
+      document.getElementById('verifyResendEmail') && (document.getElementById('verifyResendEmail').value = email);
+      showAuthState('registerView', 'registerSuccessState');
+    } catch(e){
+      errEl.textContent = e.message; errEl.classList.add('show');
+    }
+  }
+  document.getElementById('registerSubmit').addEventListener('click', handleRegister);
+
+  document.getElementById('resendVerificationBtn').addEventListener('click', async () => {
+    document.getElementById('resendSuccessMsg').classList.remove('show');
+    try{
+      await apiFetch('/api/auth/resend-verification', { method: 'POST', auth: false, body: { email: lastRegisteredEmail } });
+      document.getElementById('resendSuccessMsg').classList.add('show');
+    } catch(e){ /* generic endpoint — nothing meaningful to show on failure beyond a network error, which apiFetch already surfaces via console */ }
+  });
+
+  // ================= AUTH: EMAIL VERIFICATION LANDING =================
+  async function runEmailVerification(){
+    showAuthState('verifyEmailView', 'verifyLoadingState');
+    const token = new URLSearchParams(location.search).get('token');
+    if(!token){
+      document.getElementById('verifyErrorMsg').textContent = 'This verification link is missing its token.';
+      showAuthState('verifyEmailView', 'verifyErrorState');
+      return;
+    }
+    try{
+      const { token: sessionToken, user, alreadyVerified } = await apiFetch('/api/auth/verify-email', { method: 'POST', auth: false, body: { token } });
+      saveSession(sessionToken, user);
+      refreshCurrentUserUI();
+      document.getElementById('verifySuccessTitle').textContent = alreadyVerified ? 'Already verified' : "You're verified";
+      document.getElementById('verifySuccessMsg').textContent = alreadyVerified
+        ? 'This account was already confirmed — you\'re signed in.'
+        : 'Your email is confirmed and you\'re signed in.';
+      const next = currentNextParam();
+      const continueBtn = document.getElementById('verifyContinueBtn');
+      continueBtn.onclick = e => { e.preventDefault(); navigate(next); };
+      continueBtn.href = BASE_PATH + next;
+      showAuthState('verifyEmailView', 'verifySuccessState');
+    } catch(e){
+      document.getElementById('verifyErrorMsg').textContent = e.message;
+      document.getElementById('verifyResendSuccessMsg').classList.remove('show');
+      showAuthState('verifyEmailView', 'verifyErrorState');
+    }
+  }
+  document.getElementById('verifyResendBtn').addEventListener('click', async () => {
+    const email = document.getElementById('verifyResendEmail').value.trim();
+    if(!email) return;
+    document.getElementById('verifyResendSuccessMsg').classList.remove('show');
+    try{
+      await apiFetch('/api/auth/resend-verification', { method: 'POST', auth: false, body: { email } });
+      document.getElementById('verifyResendSuccessMsg').classList.add('show');
+    } catch(e){ /* generic endpoint, nothing account-specific to surface */ }
+  });
+
+  // ================= AUTH: FORGOT PASSWORD =================
+  function resetForgotPasswordView(){
+    showAuthState('forgotPasswordView', 'forgotFormState');
+    document.getElementById('forgotError').classList.remove('show');
+    document.getElementById('forgotIdentifier').value = '';
+  }
+  document.getElementById('forgotSubmit').addEventListener('click', async () => {
+    const identifier = document.getElementById('forgotIdentifier').value.trim();
+    const errEl = document.getElementById('forgotError');
+    errEl.classList.remove('show');
+    if(!identifier){ errEl.textContent = 'Enter your username or email.'; errEl.classList.add('show'); return; }
+    try{
+      await apiFetch('/api/auth/forgot-password', { method: 'POST', auth: false, body: { identifier } });
+      showAuthState('forgotPasswordView', 'forgotSuccessState');
+    } catch(e){
+      errEl.textContent = e.message; errEl.classList.add('show');
+    }
+  });
+
+  // ================= AUTH: RESET PASSWORD =================
+  let resetPasswordToken = null;
+  function resetResetPasswordView(){
+    resetPasswordToken = new URLSearchParams(location.search).get('token');
+    document.getElementById('resetError').classList.remove('show');
+    document.getElementById('resetPassword').value = '';
+    document.getElementById('resetPasswordConfirm').value = '';
+    resetResetPasswordMeter();
+    showAuthState('resetPasswordView', resetPasswordToken ? 'resetFormState' : 'resetInvalidState');
+  }
+  document.getElementById('resetSubmit').addEventListener('click', async () => {
+    const password = document.getElementById('resetPassword').value;
+    const passwordConfirm = document.getElementById('resetPasswordConfirm').value;
+    const errEl = document.getElementById('resetError');
+    errEl.classList.remove('show');
+    const strength = estimatePasswordStrength(password);
+    if(!strength.valid){ errEl.textContent = 'Password does not meet the requirements below.'; errEl.classList.add('show'); return; }
+    if(password !== passwordConfirm){ errEl.textContent = 'Passwords do not match.'; errEl.classList.add('show'); return; }
+    try{
+      await apiFetch('/api/auth/reset-password', { method: 'POST', auth: false, body: { token: resetPasswordToken, newPassword: password } });
+      navigate('/log-in');
+      const errEl2 = document.getElementById('loginError');
+      errEl2.textContent = 'Password updated — sign in with your new password.';
+      errEl2.style.color = 'var(--cool)';
+      errEl2.classList.add('show');
+    } catch(e){
+      if(e.message && e.message.includes('expired')){
+        showAuthState('resetPasswordView', 'resetInvalidState');
+      } else {
+        errEl.textContent = e.message; errEl.classList.add('show');
+      }
+    }
+  });
 
   function switchAdminTab(page){
     document.querySelectorAll('.admin-tabs a').forEach(x => x.classList.toggle('active', x.dataset.adminPage === page));
@@ -847,6 +1314,7 @@
     const action = a.dataset.action;
     if(action === 'admin-panel'){
       if(!currentUser){ alert('Sign in to access the admin panel.'); return; }
+      if(currentUser.role !== 'superAdmin'){ alert('You do not have access to the admin panel.'); return; }
       navigate('/admin');
     } else if(action === 'manage-users'){
       if(!currentUser || currentUser.role !== 'superAdmin'){ alert('Only a superAdmin can manage users.'); return; }
@@ -858,7 +1326,12 @@
     } else if(action === 'signout'){
       clearSession();
     } else if(action === 'signin'){
-      navigate('/admin');
+      navigate('/log-in');
+    } else if(action === 'resend-verification'){
+      if(!currentUser || !currentUser.email) return;
+      apiFetch('/api/auth/resend-verification', { method: 'POST', auth: false, body: { email: currentUser.email } })
+        .then(() => showToast('Verification email sent — check your inbox.'))
+        .catch(() => {});
     }
   });
 
@@ -1186,7 +1659,7 @@
       openForm(null);
     } else {
       pendingSubmitIntent = true;
-      navigate('/admin'); // shows the real login gate; handleLogin() picks this flag back up
+      navigate(loginUrlWithNext('/home')); // handleLogin() picks this flag back up on success
     }
   });
   document.getElementById('formCancel').addEventListener('click', () => formBackdrop.classList.remove('open'));
