@@ -249,7 +249,35 @@
   #adminView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
   #exploreView{ display:none; flex:1; flex-direction:column; min-height:0; }
   #exploreView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
+  #dashboardView{ display:none; flex:1; flex-direction:column; min-height:0; }
+  #dashboardView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
+
+  /* status / review-status badges — same visual language as .tag-pill/.role-pill */
+  .status-pill, .review-pill{ font-size:9px; padding:3px 7px; border:1px solid var(--border-strong); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; white-space:nowrap; }
+  .status-draft{ color:var(--text-faint); }
+  .status-published{ color:var(--text); }
+  .status-archived{ color:var(--text-faint); text-decoration:line-through; }
+  .review-pending{ color:#D9A441; border-color:#D9A441; }
+  .review-approved{ color:var(--cool); border-color:var(--cool); }
+  .review-rejected{ color:var(--hot); border-color:var(--hot); }
+  .review-locked{ color:var(--hot); border-color:var(--hot); }
+  .review-none{ color:var(--text-faint); }
+  .visibility-public{ color:var(--text-faint); }
+  .visibility-private{ color:var(--hot); border-color:var(--hot); }
+  .locked-note{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
+  .ev-author{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; margin-top:10px; }
+  .explore-card-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:4px; }
+  .t-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:2px; }
+  .batch-bar{ display:none; align-items:center; gap:12px; padding:10px 0; margin-bottom:10px; border-bottom:1px solid var(--border); font-size:11px; color:var(--text-dim); }
+  .batch-bar.show{ display:flex; }
+  .batch-bar a{ letter-spacing:0.06em; text-transform:uppercase; color:var(--cool); cursor:pointer; text-decoration:none; font-size:10px; }
+  .batch-bar a:hover{ color:var(--text); }
+  .batch-bar #eventsBatchClear{ color:var(--text-faint); margin-left:auto; }
   .wrap{ padding:28px; max-width:1200px; margin:0 auto; width:100%; }
+  /* Admin + "My entries" tables have far more columns now (status/review/visibility/
+     created-by, plus grouped action buttons) — give them more breathing room than the
+     narrower explore/auth-page use of .wrap. */
+  #adminView .wrap, #dashboardView .wrap{ max-width:1760px; }
   .explore-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:20px; margin-top:20px; }
   .explore-card{ background:var(--surface); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; transition:border-color .15s; }
   .explore-card:hover{ border-color:var(--cool); }
@@ -342,10 +370,18 @@
   td.title-cell{ color:var(--text); font-family:var(--display); font-size:13px; letter-spacing:0.02em; text-transform:none; }
   .cover-thumb{ width:48px; height:34px; border:1px solid var(--border-strong); flex-shrink:0; background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; }
   .tag-pill{ font-size:10px; padding:3px 8px; border:1px solid var(--border-strong); color:var(--cool); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; }
-  .row-actions{ display:flex; gap:10px; }
-  .row-actions a{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; text-decoration:none; }
-  .row-actions a:hover{ color:var(--cool); }
-  .row-actions a.danger:hover{ color:var(--hot); }
+  .row-actions{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+  .row-actions a{
+    font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-dim);
+    cursor:pointer; text-decoration:none; white-space:nowrap;
+    padding:3px 7px; border:1px solid var(--border-strong); display:inline-block;
+  }
+  .row-actions a:hover{ color:var(--cool); border-color:var(--cool); }
+  .row-actions a.danger:hover{ color:var(--hot); border-color:var(--hot); }
+  /* Groups actions (Edit | status | review | visibility | Delete) into visually distinct
+     clusters — a divider between groups instead of one undifferentiated row of links. */
+  .action-group{ display:inline-flex; gap:6px; padding-right:10px; margin-right:4px; border-right:1px solid var(--border); }
+  .action-group:last-child{ border-right:none; padding-right:0; margin-right:0; }
 
   /* ---------- MODAL ---------- */
   .field{ margin-bottom:16px; }
@@ -406,6 +442,7 @@
           <div class="who"><div class="name" id="menuName">—</div><div class="role" id="menuRole">—</div></div>
           <a data-action="profile">Profile</a>
           <a data-action="settings">Settings</a>
+          <a data-action="my-entries" id="menuMyEntries" style="display:none;">My entries</a>
           <a data-action="admin-panel" id="menuAdminPanel" style="display:none;">Admin panel</a>
           <a data-action="manage-users" id="menuManageUsers">Manage users</a>
           <a data-action="signout" id="menuSignout">Sign out</a>
@@ -441,6 +478,7 @@
           <div class="event-desc-wrap">
             <div class="event-desc" id="evBody">Choose an item on the timeline to preview its details here.</div>
             <button type="button" class="btn btn-ghost btn-sm see-more-btn" id="evSeeMoreBtn" style="display:none;">See more</button>
+            <div class="ev-author" id="evAuthor" style="display:none;"></div>
           </div>
         </div>
         <div class="event-meta-row">
@@ -491,6 +529,15 @@
             <h2 style="font-size:16px;">Events</h2>
             <span class="count-badge" id="countBadge">0 entries</span>
             <label><input type="checkbox" id="showDeleted"> Show deleted</label>
+            <label>Review:
+              <select id="reviewFilter">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="locked">Locked</option>
+              </select>
+            </label>
           </div>
           <div class="toolbar-right">
             <button class="btn btn-ghost btn-sm" id="downloadCsvTemplateBtn">Download CSV template</button>
@@ -499,8 +546,15 @@
             <button class="btn btn-primary btn-sm" id="newEventBtn">+ New event</button>
           </div>
         </div>
+        <div class="batch-bar" id="eventsBatchBar">
+          <span id="eventsBatchCount">0 selected</span>
+          <a data-batch-review="approved">Approve selected</a>
+          <a data-batch-review="rejected">Reject selected</a>
+          <a data-batch-review="locked">Lock selected</a>
+          <a id="eventsBatchClear">Clear selection</a>
+        </div>
         <table>
-          <thead><tr><th></th><th>Title</th><th>Category</th><th>Published</th><th>Country</th><th>Ver</th><th></th></tr></thead>
+          <thead><tr><th><input type="checkbox" id="eventsSelectAll"></th><th></th><th>Title</th><th>Category</th><th>Status</th><th>Review</th><th>Visibility</th><th>Created by</th><th>Published</th><th>Country</th><th>Ver</th><th></th></tr></thead>
           <tbody id="eventsBody"></tbody>
         </table>
       </div>
@@ -521,6 +575,25 @@
           <tbody id="usersBody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- ================= MY ENTRIES (dashboard) ================= -->
+  <div id="dashboardView">
+    <div class="wrap">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <h2 style="font-size:16px;">My entries</h2>
+          <span class="count-badge" id="myEntriesCountBadge">0 entries</span>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-primary btn-sm" id="myEntriesNewBtn">+ New entry</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Title</th><th>Status</th><th>Review</th><th>Visibility</th><th>Published</th><th></th></tr></thead>
+        <tbody id="myEntriesBody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -682,9 +755,35 @@
         <div class="cover-hint">Each image is cropped to 16:9 on upload — drag to reposition, use the slider to zoom. Click an added image to re-edit it. First image is used as the hero/thumbnail; add 2+ to enable the gallery carousel.</div>
       </div>
       <div class="meta-readout" id="metaReadout"></div>
+      <div id="formNote" style="display:none; color:var(--cool); font-size:11px; line-height:1.6; margin-top:10px;"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="formCancel">Cancel</button>
+        <button class="btn btn-ghost" id="formSaveDraft" style="display:none;">Save as draft</button>
         <button class="btn btn-primary" id="formSave">Save event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FIRST-PUBLISH NOTICE ================= -->
+  <div class="modal-backdrop" id="publishedNoticeBackdrop">
+    <div class="modal bracket">
+      <h2 style="font-size:16px; margin-bottom:14px;">Submitted for review</h2>
+      <p style="font-size:12px; color:var(--text-dim); line-height:1.7; margin:0 0 22px;">Your event has been submitted and will be reviewed by an admin before it appears publicly. You can check its status anytime from "My entries."</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="publishedNoticeContinue">Continue exploring</button>
+        <button class="btn btn-primary" id="publishedNoticeAnother">Create another event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= CONFIRM DIALOG (replaces native confirm()) ================= -->
+  <div class="modal-backdrop" id="confirmBackdrop">
+    <div class="modal bracket">
+      <h2 style="font-size:16px; margin-bottom:14px;" id="confirmTitle">Confirm</h2>
+      <p style="font-size:12px; color:var(--text-dim); line-height:1.7; margin:0 0 22px;" id="confirmMessage"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="confirmCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="confirmOkBtn">OK</button>
       </div>
     </div>
   </div>
@@ -891,6 +990,9 @@
       switchView('admin', navLinkForView('admin'));
     } else if(section === 'explore'){
       switchView('explore', navLinkForView('explore'));
+    } else if(section === 'my-entries'){
+      if(!currentUser){ navigate(loginUrlWithNext('/my-entries'), { replace: true }); return; }
+      switchView('dashboard');
     } else if(section === 'log-in'){
       switchView('login');
     } else if(section === 'register'){
@@ -917,10 +1019,17 @@
     applyRoute();
   }
 
-  // Re-fetches the public timeline and, if the admin events table is on screen, that too.
+  // Re-fetches the public timeline and, if the admin events table or "My entries"
+  // dashboard is on screen, that too. adminEventsPage carries the "active" class as its
+  // static HTML default (it's just which *tab* is selected within /admin) and never loses
+  // it just because you navigate away from /admin entirely — so this must also check that
+  // the admin view itself is on screen, or renderTable() (superAdmin-only) fires for any
+  // signed-in user saving an event from anywhere else in the app.
   async function renderAll(){
     await renderTimeline();
-    if(document.getElementById('adminEventsPage').classList.contains('active')) await renderTable();
+    const adminOnScreen = document.getElementById('adminView').classList.contains('active');
+    if(adminOnScreen && document.getElementById('adminEventsPage').classList.contains('active')) await renderTable();
+    if(document.getElementById('dashboardView').classList.contains('active')) await renderMyEntries();
   }
 
   function refreshCurrentUserUI(){
@@ -932,6 +1041,7 @@
     document.querySelector('.user-menu .who').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="profile"]').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="settings"]').style.display = loggedIn ? '' : 'none';
+    document.getElementById('menuMyEntries').style.display = loggedIn ? '' : 'none';
     // Admin panel is superAdmin-only — a self-registered "user" account should never see
     // these entry points, even though the same person could still type the URL directly
     // (harmless: applyRoute() bounces them, and the backend enforces the real boundary).
@@ -970,13 +1080,20 @@
     document.getElementById('publicView').classList.toggle('active', view === 'home');
     document.getElementById('exploreView').classList.toggle('active', view === 'explore');
     document.getElementById('adminView').classList.toggle('active', view === 'admin');
+    document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
     document.getElementById('loginView').classList.toggle('active', view === 'login');
     document.getElementById('registerView').classList.toggle('active', view === 'register');
     document.getElementById('verifyEmailView').classList.toggle('active', view === 'verify-email');
     document.getElementById('forgotPasswordView').classList.toggle('active', view === 'forgot-password');
     document.getElementById('resetPasswordView').classList.toggle('active', view === 'reset-password');
-    if(view === 'explore') renderExplore();
+    // Re-fetch on every arrival at Home/Explore (not just at initial page load) so status/
+    // review/visibility changes made elsewhere — the admin table, My entries, another tab —
+    // are reflected as soon as you navigate back, instead of showing whatever was cached
+    // from the last fetch.
+    if(view === 'home') renderTimeline();
+    if(view === 'explore') renderTimeline().then(renderExplore);
     if(view === 'admin') renderAdminView();
+    if(view === 'dashboard') renderMyEntries();
     if(view === 'login') resetLoginView();
     if(view === 'register') resetRegisterView();
     if(view === 'verify-email') runEmailVerification();
@@ -1316,6 +1433,9 @@
       if(!currentUser){ alert('Sign in to access the admin panel.'); return; }
       if(currentUser.role !== 'superAdmin'){ alert('You do not have access to the admin panel.'); return; }
       navigate('/admin');
+    } else if(action === 'my-entries'){
+      if(!currentUser) return;
+      navigate('/my-entries');
     } else if(action === 'manage-users'){
       if(!currentUser || currentUser.role !== 'superAdmin'){ alert('Only a superAdmin can manage users.'); return; }
       navigate('/admin#users');
@@ -1427,7 +1547,8 @@
           <div class="t-title">${escapeHtml(r.title)}</div>
           <span class="t-tag">${escapeHtml(r.category)}</span>
         </div>
-        <div class="t-desc">${escapeHtml(desc)}</div>`;
+        <div class="t-desc">${escapeHtml(desc)}</div>
+        ${r.created_by_name ? `<div class="t-author">Submitted by ${escapeHtml(r.created_by_name)}</div>` : ''}`;
       item.addEventListener('click', () => navigate('/home/' + slugFor(r)));
       el.appendChild(item);
     });
@@ -1473,7 +1594,8 @@
       body.className = 'explore-card-body';
       body.innerHTML = `
         <div class="explore-card-title">${escapeHtml(r.title)}</div>
-        <div class="explore-card-meta"><span>${formatDate(r.published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>`;
+        <div class="explore-card-meta"><span>${formatDate(r.published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
+        ${r.created_by_name ? `<div class="explore-card-author">Submitted by ${escapeHtml(r.created_by_name)}</div>` : ''}`;
       card.appendChild(cover);
       card.appendChild(body);
       card.addEventListener('click', () => navigate('/home/' + slugFor(r)));
@@ -1548,12 +1670,20 @@
 
     document.getElementById('evDateMeta').textContent = formatFullDate(r.published_at);
     document.getElementById('evLocationMeta').textContent = r.location || r.country || '—';
+    const authorEl = document.getElementById('evAuthor');
+    if(r.created_by_name){
+      authorEl.textContent = `Submitted by ${r.created_by_name}`;
+      authorEl.style.display = '';
+    } else {
+      authorEl.style.display = 'none';
+    }
   }
   function clearEventPreview(){
     document.getElementById('evTitle').textContent = 'No events yet';
     document.getElementById('evTag').textContent = '—';
     document.getElementById('evBody').textContent = 'Add events from the Admin view to populate the chronicle.';
     document.getElementById('evSeeMoreBtn').style.display = 'none';
+    document.getElementById('evAuthor').style.display = 'none';
     document.getElementById('evTime').textContent = '—';
     document.getElementById('evDateMeta').textContent = '—';
     document.getElementById('evLocationMeta').textContent = '—';
@@ -1596,36 +1726,70 @@
   // ================= ADMIN: TABLE =================
   const showDeletedBox = document.getElementById('showDeleted');
   showDeletedBox.addEventListener('change', renderTable);
+  const reviewFilterSelect = document.getElementById('reviewFilter');
+  reviewFilterSelect.addEventListener('change', renderTable);
 
   let adminEventRows = [];
+  let selectedEventIds = new Set();
+
+  function updateEventsBatchBar(){
+    const bar = document.getElementById('eventsBatchBar');
+    const count = selectedEventIds.size;
+    bar.classList.toggle('show', count > 0);
+    document.getElementById('eventsBatchCount').textContent = count + ' selected';
+  }
+
   async function renderTable(){
-    const includeDeleted = showDeletedBox.checked;
+    // Always fetches the full superAdmin view (every status, every review_status, deleted
+    // rows included) — the admin dashboard needs to see drafts/pending/rejected entries
+    // to moderate them, unlike the public feed's includeDeleted=false path which now also
+    // filters by status/review_status. "Show deleted" and the review filter are both
+    // applied client-side against that same full set.
     let rows;
     try{
-      const data = await apiFetch(`/api/events?includeDeleted=${includeDeleted}`);
+      const data = await apiFetch(`/api/events?includeDeleted=true`);
       rows = data.events;
     } catch(e){
       alert('Could not load events: ' + e.message);
       return;
     }
+    if(!showDeletedBox.checked) rows = rows.filter(r => !r.deleted_at);
+    const reviewFilter = reviewFilterSelect.value;
+    if(reviewFilter) rows = rows.filter(r => r.review_status === reviewFilter);
     adminEventRows = rows;
+    selectedEventIds = new Set([...selectedEventIds].filter(id => rows.some(r => r.id === id)));
+    document.getElementById('eventsSelectAll').checked = false;
+    updateEventsBatchBar();
     document.getElementById('countBadge').textContent = rows.length + ' entries';
     const tbody = document.getElementById('eventsBody');
     tbody.innerHTML = '';
     rows.forEach(r => {
       const tr = document.createElement('tr');
       if(r.deleted_at) tr.className = 'deleted-row';
+      const reviewGroup = `<span class="action-group">
+        ${r.review_status !== 'approved' ? `<a data-action="review" data-review="approved" data-id="${r.id}">Approve</a>` : ''}
+        ${r.review_status !== 'rejected' ? `<a data-action="review" data-review="rejected" data-id="${r.id}">Reject</a>` : ''}
+        ${r.review_status !== 'locked' ? `<a data-action="review" data-review="locked" data-id="${r.id}">Lock</a>` : `<a data-action="review" data-review="pending" data-id="${r.id}">Unlock</a>`}
+      </span>`;
+      const visibilityGroup = `<span class="action-group">
+        ${r.visibility === 'private' ? `<a data-action="visibility" data-visibility="public" data-id="${r.id}">Make public</a>` : `<a data-action="visibility" data-visibility="private" data-id="${r.id}">Hide</a>`}
+      </span>`;
+      const rowActions = r.deleted_at
+        ? `<span class="action-group"><a data-action="restore" data-id="${r.id}">Restore</a></span>`
+        : `<span class="action-group"><a data-action="edit" data-id="${r.id}">Edit</a></span>${reviewGroup}${visibilityGroup}<span class="action-group"><a class="danger" data-action="delete" data-id="${r.id}">Delete</a></span>`;
       tr.innerHTML = `
+        <td><input type="checkbox" class="row-select" data-id="${r.id}"></td>
         <td></td>
         <td class="title-cell">${escapeHtml(r.title)}</td>
         <td><span class="tag-pill">${escapeHtml(r.category)}</span></td>
+        <td>${statusPill(r.status)}</td>
+        <td>${reviewPill(r.review_status)}</td>
+        <td>${visibilityPill(r.visibility)}</td>
+        <td>${escapeHtml(r.created_by_name || '—')}</td>
         <td>${escapeHtml((r.published_at||'').replace('T',' ').slice(0,16))}</td>
         <td>${escapeHtml(r.country || '—')}</td>
         <td>${r.version}</td>
-        <td><div class="row-actions">
-          ${r.deleted_at ? `<a data-action="restore" data-id="${r.id}">Restore</a>` :
-            `<a data-action="edit" data-id="${r.id}">Edit</a><a class="danger" data-action="delete" data-id="${r.id}">Delete</a>`}
-        </div></td>`;
+        <td><div class="row-actions">${rowActions}</div></td>`;
       // Built as a real element with a property assignment, not an HTML string, so a
       // malicious cover_image value (e.g. from a direct API call or import) can't break
       // out of an attribute — CSSOM property assignment never gets HTML-parsed.
@@ -1637,7 +1801,8 @@
         thumb.style.backgroundSize = 'cover';
         thumb.style.backgroundPosition = 'center';
       }
-      tr.children[0].appendChild(thumb);
+      tr.children[1].appendChild(thumb);
+      tr.querySelector('.row-select').checked = selectedEventIds.has(r.id);
       tbody.appendChild(tr);
     });
   }
@@ -1649,7 +1814,184 @@
     if(action === 'edit') openForm(id);
     if(action === 'delete') deleteEvent(id);
     if(action === 'restore') restoreEvent(id);
+    if(action === 'review') setEventReviewStatus(id, t.dataset.review);
+    if(action === 'visibility') setEventVisibility(id, t.dataset.visibility);
   });
+
+  document.getElementById('eventsBody').addEventListener('change', e => {
+    if(!e.target.classList.contains('row-select')) return;
+    const id = e.target.dataset.id;
+    if(e.target.checked) selectedEventIds.add(id);
+    else selectedEventIds.delete(id);
+    updateEventsBatchBar();
+  });
+
+  document.getElementById('eventsSelectAll').addEventListener('change', e => {
+    document.querySelectorAll('#eventsBody .row-select').forEach(cb => {
+      cb.checked = e.target.checked;
+      if(e.target.checked) selectedEventIds.add(cb.dataset.id);
+      else selectedEventIds.delete(cb.dataset.id);
+    });
+    updateEventsBatchBar();
+  });
+
+  document.getElementById('eventsBatchClear').addEventListener('click', () => {
+    selectedEventIds.clear();
+    renderTable();
+  });
+
+  document.getElementById('eventsBatchBar').addEventListener('click', async e => {
+    const a = e.target.closest('a[data-batch-review]');
+    if(!a) return;
+    const reviewStatus = a.dataset.batchReview;
+    const ids = [...selectedEventIds];
+    if(!ids.length) return;
+    try{
+      await apiFetch('/api/events/review-batch', { method: 'POST', body: { ids, review_status: reviewStatus } });
+    } catch(e2){
+      alert('Batch review update failed: ' + e2.message);
+      return;
+    }
+    selectedEventIds.clear();
+    renderTable();
+  });
+
+  async function setEventReviewStatus(id, reviewStatus){
+    try{
+      await apiFetch(`/api/events/${id}`, { method: 'PUT', body: { review_status: reviewStatus } });
+    } catch(e){
+      alert('Could not update review status: ' + e.message);
+      return;
+    }
+    renderTable();
+  }
+
+  async function setEventVisibility(id, visibility){
+    try{
+      await apiFetch(`/api/events/${id}`, { method: 'PUT', body: { visibility } });
+    } catch(e){
+      alert('Could not update visibility: ' + e.message);
+      return;
+    }
+    renderTable();
+  }
+
+  // ================= MY ENTRIES (dashboard) =================
+  let myEventRows = [];
+
+  function statusPill(status){
+    return `<span class="status-pill status-${escapeHtml(status)}">${escapeHtml(status)}</span>`;
+  }
+  function reviewPill(reviewStatus){
+    if(!reviewStatus) return `<span class="review-pill review-none">—</span>`;
+    return `<span class="review-pill review-${escapeHtml(reviewStatus)}">${escapeHtml(reviewStatus)}</span>`;
+  }
+  function visibilityPill(visibility){
+    return `<span class="status-pill visibility-${escapeHtml(visibility)}">${escapeHtml(visibility)}</span>`;
+  }
+
+  async function renderMyEntries(){
+    let rows;
+    try{
+      const data = await apiFetch('/api/events?mine=true');
+      rows = data.events;
+    } catch(e){
+      alert('Could not load your entries: ' + e.message);
+      return;
+    }
+    myEventRows = rows;
+    document.getElementById('myEntriesCountBadge').textContent = rows.length + ' entries';
+    const tbody = document.getElementById('myEntriesBody');
+    tbody.innerHTML = '';
+    if(!rows.length){
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-faint); font-size:12px;">No entries yet — submit your first one from the homepage or the button above.</td></tr>';
+      return;
+    }
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      let actions;
+      if(r.status === 'published' && r.review_status === 'locked'){
+        actions = '<span class="locked-note">Locked by admin</span>';
+      } else {
+        let statusGroup = '';
+        if(r.status === 'draft'){
+          statusGroup = `<a data-action="submit" data-id="${r.id}">Submit for review</a>`;
+        } else if(r.status === 'published' && r.review_status === 'rejected'){
+          statusGroup = `<a data-action="submit" data-id="${r.id}">Resubmit</a>`;
+        } else if(r.status === 'published'){
+          statusGroup = `<a data-action="archive" data-id="${r.id}">Archive</a>`;
+        } else if(r.status === 'archived'){
+          statusGroup = `<a data-action="unarchive" data-id="${r.id}">Unarchive</a>`;
+        }
+        // Show/hide is independent of status/review — doesn't force re-review, so it's
+        // offered alongside whatever other action a published entry already has.
+        const visibilityGroup = r.status === 'published'
+          ? (r.visibility === 'private'
+              ? `<a data-action="visibility" data-visibility="public" data-id="${r.id}">Make public</a>`
+              : `<a data-action="visibility" data-visibility="private" data-id="${r.id}">Hide</a>`)
+          : '';
+        actions = `<span class="action-group"><a data-action="edit" data-id="${r.id}">Edit</a></span>`
+          + (statusGroup ? `<span class="action-group">${statusGroup}</span>` : '')
+          + (visibilityGroup ? `<span class="action-group">${visibilityGroup}</span>` : '')
+          + `<span class="action-group"><a class="danger" data-action="delete" data-id="${r.id}">Delete</a></span>`;
+      }
+      tr.innerHTML = `
+        <td class="title-cell">${escapeHtml(r.title)}</td>
+        <td>${statusPill(r.status)}</td>
+        <td>${reviewPill(r.review_status)}</td>
+        <td>${visibilityPill(r.visibility)}</td>
+        <td>${escapeHtml((r.published_at||'').replace('T',' ').slice(0,16))}</td>
+        <td><div class="row-actions">${actions}</div></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Submit for review / Resubmit / Unarchive are all the same underlying transition —
+  // a plain PUT {status:'published'}, resolved server-side by the core status/review rule.
+  async function setMyEntryStatus(id, status){
+    try{
+      await apiFetch(`/api/events/${id}`, { method: 'PUT', body: { status } });
+    } catch(e){
+      alert('Could not update entry: ' + e.message);
+      return;
+    }
+    renderMyEntries();
+  }
+
+  async function setMyEntryVisibility(id, visibility){
+    try{
+      await apiFetch(`/api/events/${id}`, { method: 'PUT', body: { visibility } });
+    } catch(e){
+      alert('Could not update visibility: ' + e.message);
+      return;
+    }
+    renderMyEntries();
+  }
+
+  async function deleteMyEntry(id){
+    if(!(await confirmDialog('Delete this entry? It will be hidden but recoverable by an admin.', { title: 'Delete entry', okLabel: 'Delete' }))) return;
+    try{
+      await apiFetch(`/api/events/${id}`, { method: 'DELETE' });
+    } catch(e){
+      alert('Could not delete entry: ' + e.message);
+      return;
+    }
+    renderMyEntries();
+  }
+
+  document.getElementById('myEntriesBody').addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if(!a) return;
+    const id = a.dataset.id, action = a.dataset.action;
+    if(action === 'edit') openForm(id, myEventRows);
+    else if(action === 'submit') setMyEntryStatus(id, 'published');
+    else if(action === 'archive') setMyEntryStatus(id, 'archived');
+    else if(action === 'unarchive') setMyEntryStatus(id, 'published');
+    else if(action === 'visibility') setMyEntryVisibility(id, a.dataset.visibility);
+    else if(action === 'delete') deleteMyEntry(id);
+  });
+
+  document.getElementById('myEntriesNewBtn').addEventListener('click', () => openForm(null));
 
   // ================= ADMIN: CREATE / EDIT FORM =================
   const formBackdrop = document.getElementById('formBackdrop');
@@ -1794,12 +2136,27 @@
     if(!cropperInstance) processNextCropQueueItem();
   });
 
-  function openForm(id){
+  // `rows` lets callers outside the admin table (the "My entries" dashboard) supply their
+  // own row cache to look the entry up in — defaults to the admin table's cache.
+  // Tracks the status of whatever entry is currently loaded in the form — null when
+  // creating new. Drives whether Save-as-draft/Publish show (draft, or a brand-new entry)
+  // vs a single Save changes (anything already past draft).
+  let editingEntryStatus = null;
+
+  function openForm(id, rows){
+    const sourceRows = rows || adminEventRows;
     document.getElementById('fId').value = id || '';
     document.getElementById('metaReadout').textContent = '';
     document.getElementById('fCoverFile').value = '';
+    const draftBtn = document.getElementById('formSaveDraft');
+    const saveBtn = document.getElementById('formSave');
+    const note = document.getElementById('formNote');
+    const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
+    note.style.display = 'none';
+
     if(id){
-      const row = adminEventRows.find(r => r.id === id);
+      const row = sourceRows.find(r => r.id === id);
+      editingEntryStatus = row.status;
       document.getElementById('formTitle').textContent = 'Edit event';
       document.getElementById('fTitle').value = row.title || '';
       document.getElementById('fSubtitle').value = row.subtitle || '';
@@ -1812,18 +2169,45 @@
       pendingCoverImages = getEventImages(row).slice();
       renderCoverGalleryEdit();
       document.getElementById('metaReadout').textContent = `id: ${row.id}\ncreated: ${row.created_at}\nupdated: ${row.updated_at}\nversion: ${row.version}`;
+      if(row.status === 'draft'){
+        // A draft hasn't been submitted yet — same two-button choice as creating new.
+        draftBtn.style.display = '';
+        saveBtn.textContent = 'Publish';
+      } else {
+        // Already past draft — status transitions (resubmit, archive, unarchive) live as
+        // one-click row actions outside this form, not buried in it.
+        draftBtn.style.display = 'none';
+        saveBtn.textContent = 'Save changes';
+        if(!isSuperAdmin && row.status === 'published' && row.review_status === 'approved'){
+          note.textContent = 'This entry is live — saving changes will send it back for review before they go live.';
+          note.style.display = '';
+        }
+      }
     } else {
+      editingEntryStatus = null;
       document.getElementById('formTitle').textContent = 'New event';
       ['fTitle','fSubtitle','fDescription','fCountry','fLocation','fCtaUrl'].forEach(fid => document.getElementById(fid).value = '');
       document.getElementById('fCategory').value = 'General';
       document.getElementById('fPublished').value = new Date().toISOString().slice(0,16);
       pendingCoverImages = [];
       renderCoverGalleryEdit();
+      if(isSuperAdmin){
+        draftBtn.style.display = 'none';
+        saveBtn.textContent = 'Save event';
+      } else {
+        draftBtn.style.display = '';
+        saveBtn.textContent = 'Publish';
+      }
     }
     formBackdrop.classList.add('open');
   }
 
-  document.getElementById('formSave').addEventListener('click', async () => {
+  // Called by both the primary button (Save event/Publish/Save changes) and the
+  // "Save as draft" button. `explicitStatus` is only ever sent when creating new or
+  // publishing a draft for the first time — a content-only edit to an already-submitted
+  // entry never includes a status field, letting the server's core rule decide it from
+  // whatever the entry's current status already is.
+  async function saveEventForm(explicitStatus){
     const id = document.getElementById('fId').value;
     const title = document.getElementById('fTitle').value.trim();
     const description = document.getElementById('fDescription').value.trim();
@@ -1839,6 +2223,12 @@
       title, subtitle, description, category, country, location,
       cta_url: ctaUrl, cover_images: pendingCoverImages, published_at,
     };
+    if(explicitStatus) payload.status = explicitStatus;
+    const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
+    // A superAdmin publishing someone else's draft (e.g. via the admin table) should
+    // auto-approve, same as any other admin-created content — otherwise it'd end up
+    // published with a stale null review_status left over from being a draft.
+    if(explicitStatus === 'published' && isSuperAdmin) payload.review_status = 'approved';
 
     flashSync('Saving…');
     try{
@@ -1851,8 +2241,37 @@
       return;
     }
     formBackdrop.classList.remove('open');
-    if(!id) showToast(`"${title}" was created successfully.`);
-    renderAll();
+    // A regular user's entry just entered the review queue for the first time (whether
+    // brand new or a draft being published) — the notice modal covers that case instead
+    // of the usual toast, which is enough for silent edits/drafts.
+    const enteringReviewFirstTime = explicitStatus === 'published' && !isSuperAdmin;
+    if(enteringReviewFirstTime){
+      renderAll();
+      showPublishedNotice();
+    } else {
+      if(!id) showToast(explicitStatus === 'draft' ? `"${title}" was saved as a draft.` : `"${title}" was created successfully.`);
+      renderAll();
+    }
+  }
+
+  document.getElementById('formSave').addEventListener('click', () => {
+    const id = document.getElementById('fId').value;
+    const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
+    const publishing = (!id && !isSuperAdmin) || editingEntryStatus === 'draft';
+    saveEventForm(publishing ? 'published' : undefined);
+  });
+  document.getElementById('formSaveDraft').addEventListener('click', () => saveEventForm('draft'));
+
+  function showPublishedNotice(){
+    document.getElementById('publishedNoticeBackdrop').classList.add('open');
+  }
+  document.getElementById('publishedNoticeContinue').addEventListener('click', () => {
+    document.getElementById('publishedNoticeBackdrop').classList.remove('open');
+    navigate('/home');
+  });
+  document.getElementById('publishedNoticeAnother').addEventListener('click', () => {
+    document.getElementById('publishedNoticeBackdrop').classList.remove('open');
+    openForm(null);
   });
 
   function showToast(message){
@@ -1868,8 +2287,33 @@
     }, 3600);
   }
 
+  // In-app replacement for the native confirm() — matches the rest of the modal styling
+  // instead of the browser's own "localhost:5500 says" dialog. Resolves true/false.
+  function confirmDialog(message, { title = 'Confirm', okLabel = 'OK', cancelLabel = 'Cancel' } = {}){
+    return new Promise(resolve => {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      const okBtn = document.getElementById('confirmOkBtn');
+      const cancelBtn = document.getElementById('confirmCancelBtn');
+      okBtn.textContent = okLabel;
+      cancelBtn.textContent = cancelLabel;
+      const backdrop = document.getElementById('confirmBackdrop');
+      backdrop.classList.add('open');
+      function cleanup(result){
+        backdrop.classList.remove('open');
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        resolve(result);
+      }
+      function onOk(){ cleanup(true); }
+      function onCancel(){ cleanup(false); }
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+    });
+  }
+
   async function deleteEvent(id){
-    if(!confirm('Soft-delete this event? It will be hidden but recoverable.')) return;
+    if(!(await confirmDialog('Soft-delete this event? It will be hidden but recoverable.', { title: 'Delete event', okLabel: 'Delete' }))) return;
     try{
       await apiFetch(`/api/events/${id}`, { method: 'DELETE' });
       flashSync('Synced');
@@ -2138,7 +2582,7 @@
   });
 
   async function deleteUser(id){
-    if(!confirm('Soft-delete this user? They will be hidden but recoverable.')) return;
+    if(!(await confirmDialog('Soft-delete this user? They will be hidden but recoverable.', { title: 'Delete user', okLabel: 'Delete' }))) return;
     try{
       await apiFetch(`/api/users/${id}`, { method: 'DELETE' });
     } catch(e){
