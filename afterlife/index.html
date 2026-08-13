@@ -92,8 +92,11 @@
 
   /* ---------- TOP BAR (shared across views) ---------- */
   .topbar{ display:flex; align-items:center; justify-content:space-between; padding:0 28px; height:64px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:20; }
-  .logo{ font-family:var(--display); font-size:18px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
-  .logo span{ color:var(--hot); }
+  .logo{ display:flex; align-items:center; cursor:pointer; }
+  .logo-img{ height:34px; width:auto; display:block; }
+  .logo-img--light{ display:none; }
+  :root[data-theme="light"] .logo-img--dark{ display:none; }
+  :root[data-theme="light"] .logo-img--light{ display:block; }
   .nav-links{ display:flex; gap:36px; }
   .nav-links a{ color:var(--text-dim); text-decoration:none; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; position:relative; padding-bottom:4px; transition:color .15s; cursor:pointer; }
   .nav-links a.active{ color:var(--cool); }
@@ -424,7 +427,10 @@
 
   <div class="topbar reticle">
     <div class="rt-mark rt-tl"></div><div class="rt-mark rt-tr"></div>
-    <div class="logo">After<span>life</span></div>
+    <a data-path="/home" class="logo" aria-label="Afterlife home">
+      <img src="logo-dark.svg" alt="Afterlife" class="logo-img logo-img--dark">
+      <img src="logo-light.svg" alt="Afterlife" class="logo-img logo-img--light">
+    </a>
     <div class="nav-links">
       <a data-path="/home" class="active">Home</a>
       <a data-path="/explore">Explore</a>
