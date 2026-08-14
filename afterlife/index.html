@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Afterlife</title>
+<!-- Pins every relative URL in this document (currently just the two logo <img> srcs) to
+     the app root, regardless of how deep the actual browser path is. Without this, a
+     relative src resolves against whatever nested route the page loaded on — e.g. loading
+     /afterlife/u/<id> directly (via the GitHub Pages 404→redirect trick below) would
+     resolve "logo-dark.svg" to /afterlife/u/logo-dark.svg (404) instead of
+     /afterlife/logo-dark.svg. Doesn't affect the router: navigate()/pushState always build
+     full paths via BASE_PATH explicitly, never relying on <base>. -->
+<base href="/afterlife/">
 <script type="text/javascript">
   // Decodes the redirect ../404.html builds for a deep link (e.g. /afterlife/home/some-slug)
   // back into a clean URL via history.replaceState, before the router below ever runs.
