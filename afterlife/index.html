@@ -299,6 +299,32 @@
   .admin-tabs a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--cool); }
   .admin-page{ display:none; }
   .admin-page.active{ display:block; }
+
+  /* ---------- TAXONOMY (categories/genres) ADMIN PAGE ---------- */
+  .taxonomy-columns{ display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start; }
+  .taxonomy-col .toolbar-left{ margin-bottom:16px; }
+  .taxonomy-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .taxonomy-list-empty{ font-size:11px; color:var(--text-faint); }
+  .taxonomy-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 12px; border:1px solid var(--border-strong); background:var(--surface-2); font-size:13px;
+  }
+  .taxonomy-row .taxonomy-locked{ font-size:9px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); border:1px solid var(--border); padding:3px 7px; }
+  .taxonomy-row .taxonomy-name-input{
+    flex:1; min-width:0; background:transparent; border:1px solid transparent; color:var(--text);
+    font-family:var(--mono); font-size:13px; padding:3px 5px; outline:none; margin:-3px -5px;
+  }
+  .taxonomy-row .taxonomy-name-input:hover{ border-color:var(--border); }
+  .taxonomy-row .taxonomy-name-input:focus{ border-color:var(--cool); background:var(--surface); }
+  .taxonomy-row .remove-x{ position:static; cursor:pointer; color:var(--text-faint); font-size:14px; font-weight:700; line-height:1; }
+  .taxonomy-row .remove-x:hover{ color:var(--hot); }
+  .taxonomy-add-row{ display:flex; gap:10px; }
+  .taxonomy-add-row input{
+    flex:1; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+    padding:10px 12px; font-size:13px; outline:none;
+  }
+  .taxonomy-add-row input:focus{ border-color:var(--cool); }
+  @media (max-width: 720px){ .taxonomy-columns{ grid-template-columns:1fr; } }
   .login-box{ max-width:360px; margin:60px auto; }
   .form-error{ color:var(--hot); font-size:12px; margin-bottom:14px; display:none; }
   .form-error.show{ display:block; }
@@ -558,7 +584,6 @@
           <a data-action="settings">Settings</a>
           <a data-action="my-entries" id="menuMyEntries" style="display:none;">My entries</a>
           <a data-action="admin-panel" id="menuAdminPanel" style="display:none;">Admin panel</a>
-          <a data-action="manage-users" id="menuManageUsers">Manage users</a>
           <a data-action="signout" id="menuSignout">Sign out</a>
           <a data-action="signin" id="menuSignin" style="display:none;">Sign in</a>
         </div>
@@ -571,7 +596,7 @@
     <main>
       <div class="panel timeline-panel reticle">
         <div class="rt-mark rt-tl"></div><div class="rt-mark rt-bl"></div>
-        <div class="panel-head"><h2>Chronicle</h2><span class="count" id="tlCount">0 entries</span></div>
+        <div class="panel-head"><h2>Timeline</h2><span class="count" id="tlCount">0 entries</span></div>
         <div class="timeline" id="timeline"></div>
         <button type="button" class="submit-event-btn" id="submitEventBtn"><span class="plus">+</span>Submit a new event</button>
       </div>
@@ -636,6 +661,7 @@
       <div class="admin-tabs">
         <a data-admin-page="events" class="active">Events</a>
         <a data-admin-page="users" id="usersTabLink">Users</a>
+        <a data-admin-page="taxonomy" id="taxonomyTabLink">Categories &amp; Genres</a>
       </div>
 
       <div class="admin-page active" id="adminEventsPage">
@@ -669,7 +695,7 @@
           <a id="eventsBatchClear">Clear selection</a>
         </div>
         <table>
-          <thead><tr><th><input type="checkbox" id="eventsSelectAll"></th><th></th><th>Title</th><th>Category</th><th>Status</th><th>Review</th><th>Visibility</th><th>Created by</th><th>Published</th><th>Country</th><th>Ver</th><th></th></tr></thead>
+          <thead><tr><th><input type="checkbox" id="eventsSelectAll"></th><th></th><th>Title</th><th>Category</th><th>Genre</th><th>Status</th><th>Review</th><th>Visibility</th><th>Created by</th><th>Published</th><th>Country</th><th>Ver</th><th></th></tr></thead>
           <tbody id="eventsBody"></tbody>
         </table>
       </div>
@@ -689,6 +715,27 @@
           <thead><tr><th>Username</th><th>Profile name</th><th>Role</th><th>Added</th><th>Last login</th><th></th></tr></thead>
           <tbody id="usersBody"></tbody>
         </table>
+      </div>
+
+      <div class="admin-page" id="adminTaxonomyPage">
+        <div class="taxonomy-columns">
+          <div class="taxonomy-col">
+            <div class="toolbar-left"><h2 style="font-size:16px;">Genres</h2><span class="count-badge" id="genreCountBadge">0</span></div>
+            <div class="taxonomy-list" id="genreList"></div>
+            <div class="taxonomy-add-row">
+              <input type="text" id="newGenreInput" placeholder="New genre name" maxlength="40">
+              <button class="btn btn-primary btn-sm" id="addGenreBtn">Add</button>
+            </div>
+          </div>
+          <div class="taxonomy-col">
+            <div class="toolbar-left"><h2 style="font-size:16px;">Categories</h2><span class="count-badge" id="categoryCountBadge">0</span></div>
+            <div class="taxonomy-list" id="categoryList"></div>
+            <div class="taxonomy-add-row">
+              <input type="text" id="newCategoryInput" placeholder="New category name" maxlength="40">
+              <button class="btn btn-primary btn-sm" id="addCategoryBtn">Add</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -882,15 +929,18 @@
             <div class="tag-hint">Tags are shared globally — anyone can apply a tag someone else already created.</div>
           </div>
           <div class="field-row">
-            <div class="field"><label>Category *</label>
-              <select id="fCategory"><option>General</option><option>Art</option><option>Movies</option><option>Music</option><option>Video Games</option><option>Literature</option><option>Events</option></select>
+            <div class="field"><label>Genre *</label>
+              <select id="fGenre"></select>
             </div>
-            <div class="field"><label>Published at</label><input type="datetime-local" id="fPublished"></div>
+            <div class="field"><label>Category *</label>
+              <select id="fCategory"></select>
+            </div>
           </div>
           <div class="field-row">
+            <div class="field"><label>Published at</label><input type="datetime-local" id="fPublished"></div>
             <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
-            <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
           </div>
+          <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
           <div class="field"><label>Learn more link (CTA)</label><input type="url" id="fCtaUrl" placeholder="https://example.com/event"></div>
           <div class="field"><label>Cover images</label>
             <div class="cover-gallery-edit" id="coverGalleryEdit"><span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span></div>
@@ -978,7 +1028,7 @@
   <div class="modal-backdrop" id="importBackdrop">
     <div class="modal bracket">
       <h2>Batch import</h2>
-      <div class="import-drop">Upload a .csv, .xlsx, .xls, or .json file — or paste a JSON array below.<br>Columns/keys: title*, subtitle, description*, category, country, location, cta_url, cover_image, published_at.<br>Not sure of the format? Use "Download CSV template" or "Download Excel template" first.</div>
+      <div class="import-drop">Upload a .csv, .xlsx, .xls, or .json file — or paste a JSON array below.<br>Columns/keys: title*, subtitle, description*, category, genre, country, location, cta_url, cover_image, published_at.<br>Not sure of the format? Use "Download CSV template" or "Download Excel template" first.</div>
       <input type="file" id="importFile" accept=".csv,.xlsx,.xls,.json,application/json,text/csv">
       <div class="field" style="margin-top:14px;">
         <label>Or paste JSON</label>
@@ -1202,7 +1252,6 @@
     // (harmless: applyRoute() bounces them, and the backend enforces the real boundary).
     document.getElementById('menuAdminPanel').style.display = isSuperAdmin ? '' : 'none';
     document.getElementById('footerAdminLink').style.display = isSuperAdmin ? '' : 'none';
-    document.getElementById('menuManageUsers').style.display = isSuperAdmin ? '' : 'none';
     document.getElementById('menuSignout').style.display = loggedIn ? '' : 'none';
     document.getElementById('menuSignin').style.display = loggedIn ? 'none' : '';
     if(loggedIn){
@@ -1219,7 +1268,6 @@
         pill.dataset.action = 'resend-verification';
         document.getElementById('menuRole').appendChild(pill);
       }
-      document.getElementById('menuManageUsers').classList.toggle('disabled', !isSuperAdmin);
       document.getElementById('usersTabLink').style.display = isSuperAdmin ? '' : 'none';
     } else {
       document.getElementById('usersTabLink').style.display = 'none';
@@ -1268,7 +1316,7 @@
   // is signed in (it redirects to /log-in otherwise) — no signed-out branch needed here.
   function renderAdminView(){
     document.querySelector('.admin-tabs').style.display = '';
-    switchAdminTab(location.hash === '#users' ? 'users' : 'events');
+    switchAdminTab(location.hash === '#users' ? 'users' : location.hash === '#taxonomy' ? 'taxonomy' : 'events');
   }
 
   // ================= AUTH: LOG IN =================
@@ -1566,8 +1614,10 @@
     document.querySelectorAll('.admin-tabs a').forEach(x => x.classList.toggle('active', x.dataset.adminPage === page));
     document.getElementById('adminEventsPage').classList.toggle('active', page === 'events');
     document.getElementById('adminUsersPage').classList.toggle('active', page === 'users');
+    document.getElementById('adminTaxonomyPage').classList.toggle('active', page === 'taxonomy');
     if(page === 'events') renderTable();
     if(page === 'users') renderUsers();
+    if(page === 'taxonomy') renderTaxonomyPage();
   }
   document.querySelectorAll('.admin-tabs a').forEach(a => {
     a.addEventListener('click', () => navigate('/admin#' + a.dataset.adminPage));
@@ -1591,9 +1641,6 @@
     } else if(action === 'my-entries'){
       if(!currentUser) return;
       navigate('/my-entries');
-    } else if(action === 'manage-users'){
-      if(!currentUser || currentUser.role !== 'superAdmin'){ alert('Only a superAdmin can manage users.'); return; }
-      navigate('/admin#users');
     } else if(action === 'profile'){
       alert(`Signed in as ${currentUser.profile_name} (@${currentUser.username})\nRole: ${currentUser.role}`);
     } else if(action === 'settings'){
@@ -1816,7 +1863,7 @@
   });
   function showEventPreview(r){
     document.getElementById('evTitle').textContent = r.title;
-    document.getElementById('evTag').textContent = r.category;
+    document.getElementById('evTag').textContent = (r.genre && r.genre !== 'General') ? `${r.category} · ${r.genre}` : r.category;
     document.getElementById('evTime').textContent = formatFullDate(r.published_at);
 
     const descEl = document.getElementById('evBody');
@@ -1946,6 +1993,7 @@
         <td></td>
         <td class="title-cell">${escapeHtml(r.title)}</td>
         <td><span class="tag-pill">${escapeHtml(r.category)}</span></td>
+        <td><span class="tag-pill">${escapeHtml(r.genre || 'General')}</span></td>
         <td>${statusPill(r.status)}</td>
         <td>${reviewPill(r.review_status)}</td>
         <td>${visibilityPill(r.visibility)}</td>
@@ -2600,7 +2648,20 @@
   // vs a single Save changes (anything already past draft).
   let editingEntryStatus = null;
 
-  function openForm(id, rows){
+  // Categories/genres are admin-managed lists rather than a fixed set of <option>s — fetched
+  // fresh each time the form opens so a just-added category shows up without a page reload.
+  // Falls back to "General" alone if the fetch fails, so the form still stays usable.
+  async function populateTaxonomySelect(selectEl, path){
+    try{
+      const data = await apiFetch(`/api/${path}`, { auth: false });
+      const entries = data[path];
+      selectEl.innerHTML = entries.map(e => `<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
+    } catch(e){
+      selectEl.innerHTML = '<option>General</option>';
+    }
+  }
+
+  async function openForm(id, rows){
     const sourceRows = rows || adminEventRows;
     document.getElementById('fId').value = id || '';
     document.getElementById('metaReadout').textContent = '';
@@ -2613,6 +2674,11 @@
     const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
     note.style.display = 'none';
 
+    await Promise.all([
+      populateTaxonomySelect(document.getElementById('fCategory'), 'categories'),
+      populateTaxonomySelect(document.getElementById('fGenre'), 'genres'),
+    ]);
+
     if(id){
       const row = sourceRows.find(r => r.id === id);
       editingEntryStatus = row.status;
@@ -2624,6 +2690,7 @@
       restoreImageCaptions(row.description || '');
       updateDescriptionCount();
       document.getElementById('fCategory').value = row.category || 'General';
+      document.getElementById('fGenre').value = row.genre || 'General';
       document.getElementById('fCountry').value = row.country || '';
       document.getElementById('fLocation').value = row.location || '';
       document.getElementById('fCtaUrl').value = row.cta_url || '';
@@ -2654,6 +2721,7 @@
       descQuill.setContents([]);
       updateDescriptionCount();
       document.getElementById('fCategory').value = 'General';
+      document.getElementById('fGenre').value = 'General';
       document.getElementById('fPublished').value = new Date().toISOString().slice(0,16);
       pendingCoverImages = [];
       renderCoverGalleryEdit();
@@ -2687,13 +2755,14 @@
     const description = descQuill.root.innerHTML;
     const subtitle = document.getElementById('fSubtitle').value.trim() || null;
     const category = document.getElementById('fCategory').value;
+    const genre = document.getElementById('fGenre').value;
     const country = document.getElementById('fCountry').value.trim().toUpperCase() || null;
     const location = document.getElementById('fLocation').value.trim() || null;
     const ctaUrl = document.getElementById('fCtaUrl').value.trim() || null;
     const publishedRaw = document.getElementById('fPublished').value;
     const published_at = publishedRaw ? new Date(publishedRaw).toISOString() : nowIso();
     const payload = {
-      title, subtitle, description, category, country, location,
+      title, subtitle, description, category, genre, country, location,
       cta_url: ctaUrl, cover_images: pendingCoverImages, published_at, tags: pendingTags,
     };
     if(explicitStatus) payload.status = explicitStatus;
@@ -2810,12 +2879,13 @@
   }
 
   // ================= ADMIN: TEMPLATE DOWNLOADS =================
-  const TEMPLATE_HEADERS = ['title','subtitle','description','category','country','location','cta_url','cover_image','published_at'];
+  const TEMPLATE_HEADERS = ['title','subtitle','description','category','genre','country','location','cta_url','cover_image','published_at'];
   const TEMPLATE_EXAMPLE = {
     title: 'Gallery opening: Neon Static',
     subtitle: 'Downtown exhibit hall',
     description: 'A mixed-media exhibit exploring light and decay opens to the public this week.',
     category: 'Art',
+    genre: 'General',
     country: 'US',
     location: 'The Vault Gallery, 88 Lexington Ave, New York',
     cta_url: 'https://example.com/events/neon-static',
@@ -2980,6 +3050,112 @@
       tbody.appendChild(tr);
     });
   }
+
+  // ================= ADMIN: TAXONOMY (categories/genres) =================
+  const TAXONOMY_KINDS = {
+    category: { path: 'categories', listId: 'categoryList', badgeId: 'categoryCountBadge', inputId: 'newCategoryInput', addBtnId: 'addCategoryBtn' },
+    genre:    { path: 'genres',     listId: 'genreList',    badgeId: 'genreCountBadge',    inputId: 'newGenreInput',    addBtnId: 'addGenreBtn' },
+  };
+  async function renderTaxonomyList(kind){
+    const cfg = TAXONOMY_KINDS[kind];
+    let entries;
+    try{
+      const data = await apiFetch(`/api/${cfg.path}`, { auth: false });
+      entries = data[cfg.path];
+    } catch(e){
+      alert(`Could not load ${cfg.path}: ` + e.message);
+      return;
+    }
+    document.getElementById(cfg.badgeId).textContent = String(entries.length);
+    const el = document.getElementById(cfg.listId);
+    el.innerHTML = '';
+    if(!entries.length){
+      el.innerHTML = '<span class="taxonomy-list-empty">None yet.</span>';
+      return;
+    }
+    entries.forEach(entry => {
+      const isGeneral = entry.id === 'general';
+      const row = document.createElement('div');
+      row.className = 'taxonomy-row';
+      if(isGeneral){
+        const name = document.createElement('span');
+        name.textContent = entry.name;
+        row.appendChild(name);
+        const locked = document.createElement('span');
+        locked.className = 'taxonomy-locked';
+        locked.textContent = 'Default';
+        row.appendChild(locked);
+      } else {
+        // Renaming in place (rather than delete+recreate a new one) keeps every event
+        // already using this name attached to it instead of losing the association.
+        const name = document.createElement('input');
+        name.type = 'text';
+        name.className = 'taxonomy-name-input';
+        name.maxLength = 40;
+        name.value = entry.name;
+        name.addEventListener('keydown', e => {
+          if(e.key === 'Enter') name.blur();
+          else if(e.key === 'Escape'){ name.value = entry.name; name.blur(); }
+        });
+        name.addEventListener('blur', () => renameTaxonomyEntry(kind, entry, name));
+        row.appendChild(name);
+        const x = document.createElement('span');
+        x.className = 'remove-x';
+        x.textContent = '×';
+        x.title = `Remove "${entry.name}"`;
+        x.addEventListener('click', () => deleteTaxonomyEntry(kind, entry));
+        row.appendChild(x);
+      }
+      el.appendChild(row);
+    });
+  }
+  function renderTaxonomyPage(){
+    renderTaxonomyList('category');
+    renderTaxonomyList('genre');
+  }
+  async function addTaxonomyEntry(kind){
+    const cfg = TAXONOMY_KINDS[kind];
+    const input = document.getElementById(cfg.inputId);
+    const name = input.value.trim();
+    if(!name) return;
+    try{
+      await apiFetch(`/api/${cfg.path}`, { method: 'POST', body: { name } });
+    } catch(e){
+      alert(`Could not add ${kind}: ` + e.message);
+      return;
+    }
+    input.value = '';
+    renderTaxonomyList(kind);
+  }
+  async function renameTaxonomyEntry(kind, entry, inputEl){
+    const cfg = TAXONOMY_KINDS[kind];
+    const newName = inputEl.value.trim();
+    if(!newName || newName === entry.name){ inputEl.value = entry.name; return; }
+    try{
+      await apiFetch(`/api/${cfg.path}/${entry.id}`, { method: 'PUT', body: { name: newName } });
+    } catch(e){
+      alert(`Could not rename "${entry.name}": ` + e.message);
+      inputEl.value = entry.name;
+      return;
+    }
+    renderTaxonomyList(kind);
+  }
+  async function deleteTaxonomyEntry(kind, entry){
+    const cfg = TAXONOMY_KINDS[kind];
+    const ok = await confirmDialog(`Events using "${entry.name}" must be reassigned first — this only succeeds if none currently use it.`, { title: `Remove ${kind} "${entry.name}"?`, okLabel: 'Remove' });
+    if(!ok) return;
+    try{
+      await apiFetch(`/api/${cfg.path}/${entry.id}`, { method: 'DELETE' });
+    } catch(e){
+      alert(`Could not remove "${entry.name}": ` + e.message);
+      return;
+    }
+    renderTaxonomyList(kind);
+  }
+  document.getElementById('addCategoryBtn').addEventListener('click', () => addTaxonomyEntry('category'));
+  document.getElementById('addGenreBtn').addEventListener('click', () => addTaxonomyEntry('genre'));
+  document.getElementById('newCategoryInput').addEventListener('keydown', e => { if(e.key === 'Enter') addTaxonomyEntry('category'); });
+  document.getElementById('newGenreInput').addEventListener('keydown', e => { if(e.key === 'Enter') addTaxonomyEntry('genre'); });
 
   document.getElementById('usersBody').addEventListener('click', e => {
     const a = e.target.closest('a');
