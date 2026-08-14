@@ -127,7 +127,11 @@
   :root[data-theme="light"] .theme-toggle .icon-moon{ display:none; }
   :root[data-theme="light"] .theme-toggle .icon-sun{ display:block; }
   .avatar-wrap{ position:relative; }
-  .avatar{ width:36px; height:36px; border:1px solid var(--border-strong); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:var(--display); font-size:12px; color:var(--cool); background:var(--surface-2); transition:border-color .15s; }
+  .avatar{
+    width:36px; height:36px; border:1px solid var(--border-strong); border-radius:50%; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-family:var(--display); font-size:12px; color:var(--cool); background-color:var(--surface-2);
+    background-size:cover; background-position:center; background-repeat:no-repeat; transition:border-color .15s;
+  }
   .avatar:hover{ border-color:var(--cool); }
   .user-menu{ position:absolute; top:48px; right:0; width:210px; background:var(--surface-2); border:1px solid var(--border-strong); display:none; flex-direction:column; z-index:30; }
   .user-menu.open{ display:flex; }
@@ -299,11 +303,16 @@
   .visibility-public{ color:var(--text-faint); }
   .visibility-private{ color:var(--hot); border-color:var(--hot); }
   .locked-note{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
-  .ev-author{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:14px; }
+  .ev-author{ font-size:13px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:14px; }
+  .ev-author .author-avatar{ width:22px; height:22px; }
   .explore-card-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:4px; }
   .t-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:2px; }
-  .author-link{ color:inherit; cursor:pointer; }
+  .author-link{ color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; vertical-align:middle; }
   .author-link:hover{ color:var(--cool); text-decoration:underline; }
+  .author-avatar{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0; background-color:var(--surface-2);
+    background-size:cover; background-position:center; background-repeat:no-repeat; border:1px solid var(--border-strong);
+  }
   .batch-bar{ display:none; align-items:center; gap:12px; padding:10px 0; margin-bottom:10px; border-bottom:1px solid var(--border); font-size:11px; color:var(--text-dim); }
   .batch-bar.show{ display:flex; }
   .batch-bar a{ letter-spacing:0.06em; text-transform:uppercase; color:var(--cool); cursor:pointer; text-decoration:none; font-size:10px; }
@@ -896,6 +905,10 @@
       </div>
       <div class="settings-page">
         <div class="field">
+          <label>Profile name *</label>
+          <input type="text" id="setProfileName" maxlength="60" placeholder="Your display name">
+        </div>
+        <div class="field">
           <label>Header banner</label>
           <div class="settings-banner-preview" id="setBannerPreview">
             <span class="settings-upload-empty" id="setBannerEmpty">No header image yet</span>
@@ -1296,9 +1309,15 @@
   function authorLineHtml(r){
     if(!r.created_by_name) return '';
     const name = escapeHtml(r.created_by_name);
+    // Base64 data URIs (the only src format avatar_image is ever validated/stored as)
+    // contain none of &<>"' — safe to interpolate directly into this HTML string.
+    const avatarHtml = r.created_by_avatar
+      ? `<span class="author-avatar" style="background-image:url('${r.created_by_avatar}')"></span>`
+      : '';
+    const inner = avatarHtml + name;
     return r.created_by_public_id
-      ? `Submitted by <span class="author-link" data-public-id="${escapeHtml(r.created_by_public_id)}">${name}</span>`
-      : `Submitted by ${name}`;
+      ? `Submitted by <span class="author-link" data-public-id="${escapeHtml(r.created_by_public_id)}">${inner}</span>`
+      : `Submitted by ${inner}`;
   }
   function wireAuthorLink(container){
     const link = container.querySelector('.author-link');
@@ -1467,9 +1486,16 @@
   function refreshCurrentUserUI(){
     const loggedIn = !!currentUser;
     const isSuperAdmin = loggedIn && currentUser.role === 'superAdmin';
-    document.getElementById('avatarBtn').textContent = loggedIn
-      ? currentUser.profile_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
-      : '—';
+    const avatarBtn = document.getElementById('avatarBtn');
+    if(loggedIn && currentUser.avatar_image){
+      avatarBtn.textContent = '';
+      avatarBtn.style.backgroundImage = `url("${currentUser.avatar_image}")`;
+    } else {
+      avatarBtn.style.backgroundImage = '';
+      avatarBtn.textContent = loggedIn
+        ? currentUser.profile_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
+        : '—';
+    }
     document.querySelector('.user-menu .who').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="profile"]').style.display = loggedIn ? '' : 'none';
     document.querySelector('.user-menu a[data-action="settings"]').style.display = loggedIn ? '' : 'none';
@@ -3698,6 +3724,7 @@
     pendingAvatarImage = null;
     pendingPreferredGenres = Array.isArray(currentUser.preferred_genres) ? currentUser.preferred_genres.slice() : [];
 
+    document.getElementById('setProfileName').value = currentUser.profile_name || '';
     renderSettingsBanner(currentUser.header_image);
     renderSettingsAvatar(currentUser.avatar_image);
     document.getElementById('setJoined').textContent = formatFullDate(currentUser.created_at);
@@ -3763,12 +3790,15 @@
 
   document.getElementById('setSaveBtn').addEventListener('click', async () => {
     if(!currentUser) return;
+    const profileName = document.getElementById('setProfileName').value.trim();
+    if(!profileName){ alert('Profile name is required.'); return; }
     if(pAboutRTE.quill.getLength() - 1 > pAboutRTE.maxChars){
       alert(`About me must be ${pAboutRTE.maxChars.toLocaleString()} characters or fewer.`);
       return;
     }
     const aboutText = pAboutRTE.quill.getText().trim();
     const payload = {
+      profile_name: profileName,
       preferred_genres: pendingPreferredGenres,
       about_me: aboutText ? pAboutRTE.quill.root.innerHTML : null,
     };
@@ -3780,6 +3810,7 @@
     try{
       const data = await apiFetch('/api/profile/me', { method: 'PUT', body: payload });
       saveSession(authToken, { ...currentUser, ...data.profile });
+      refreshCurrentUserUI();
       pendingHeaderImage = null;
       pendingAvatarImage = null;
       statusEl.textContent = 'Saved';
