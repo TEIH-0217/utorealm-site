@@ -19,6 +19,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
 <style>
   :root{
     --bg:#0A0A0F; --surface:#121218; --surface-2:#181822;
@@ -181,7 +182,7 @@
 
   .event-panel{ overflow:hidden; min-width:0; }
   .event-scroll{ flex:1; overflow-y:auto; overflow-x:hidden; min-height:0; }
-  .event-hero{ height:280px; flex-shrink:0; border-bottom:1px solid var(--border); position:relative; overflow:hidden;
+  .event-hero{ height:450px; flex-shrink:0; border-bottom:1px solid var(--border); position:relative; overflow:hidden;
     background: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px),
       radial-gradient(circle at 25% 30%, rgba(255,46,110,0.22), transparent 55%),
       radial-gradient(circle at 78% 72%, rgba(43,255,198,0.18), transparent 55%), var(--surface);
@@ -219,10 +220,7 @@
   }
 
   .event-desc-wrap{ padding:22px 24px; border-bottom:1px solid var(--border); }
-  .event-desc{ font-size:12px; color:var(--text-dim); line-height:1.7; white-space:pre-wrap;
-    display:-webkit-box; -webkit-line-clamp:9; -webkit-box-orient:vertical; overflow:hidden; }
-  .event-desc.expanded{ -webkit-line-clamp:unset; overflow:visible; }
-  .see-more-btn{ margin-top:12px; }
+  .event-desc{ font-size:12px; color:var(--text-dim); line-height:1.7; }
 
   .event-meta-row{ display:grid; grid-template-columns:repeat(3,1fr); flex:none; border-top:1px solid var(--border); background:var(--surface); }
   .meta-cell{ padding:14px 24px; border-right:1px solid var(--border); min-width:0; }
@@ -398,7 +396,7 @@
   .cover-hint{ font-size:10px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
   .cover-gallery-edit{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
   .cover-gallery-edit-empty{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; }
-  .cover-gallery-edit-tile{ width:64px; height:64px; border:1px solid var(--border-strong); position:relative; background-color:var(--surface-2); background-repeat:no-repeat; cursor:pointer; }
+  .cover-gallery-edit-tile{ border:1px solid var(--border-strong); position:relative; background-color:var(--surface-2); }
   .cover-gallery-edit-tile .remove-x{ position:absolute; top:-7px; right:-7px; width:18px; height:18px; background:var(--hot); color:#0A0A0F; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; cursor:pointer; line-height:1; }
   .modal-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:100; padding:24px; }
   .modal-backdrop.open{ display:flex; }
@@ -415,6 +413,116 @@
   .meta-readout{ font-size:10px; color:var(--text-faint); margin-top:14px; line-height:1.7; border-top:1px solid var(--border); padding-top:12px; }
   .import-drop{ border:1px dashed var(--border-strong); padding:24px; text-align:center; font-size:11px; color:var(--text-faint); margin-bottom:14px; }
   .import-result{ font-size:11px; color:var(--text-dim); margin-top:12px; line-height:1.6; white-space:pre-wrap; }
+
+  /* ---------- FULL-SCREEN EVENT FORM ---------- */
+  .modal-backdrop.fullscreen-backdrop{ padding:0; }
+  .modal.modal--fullscreen{
+    width:100%; height:100vh; max-width:100%; max-height:100vh;
+    display:flex; flex-direction:column; padding:0; border:none; overflow:hidden;
+  }
+  .modal--fullscreen .modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .modal--fullscreen .modal-header h2{ margin:0; }
+  .modal--fullscreen .modal-close{
+    width:32px; height:32px; border:1px solid var(--border-strong); background:transparent;
+    color:var(--text-dim); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .modal--fullscreen .modal-close:hover{ color:var(--text); border-color:var(--cool); }
+  .modal--fullscreen .modal-body{ flex:1; overflow-y:auto; padding:32px; }
+  .modal--fullscreen .modal-body-inner{ max-width:820px; margin:0 auto; }
+  .modal--fullscreen .modal-actions{
+    flex-shrink:0; margin:0; padding:16px 32px; border-top:1px solid var(--border); background:var(--surface);
+  }
+
+  /* ---------- RICH TEXT DESCRIPTION EDITOR (Quill) ---------- */
+  .editor-char-count{ font-size:10px; color:var(--text-faint); text-align:right; margin-top:6px; letter-spacing:0.04em; }
+  .editor-char-count.over-limit{ color:var(--hot); }
+  #fDescriptionEditor.ql-container.ql-snow{
+    background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--mono); font-size:13px; min-height:220px;
+  }
+  #fDescriptionToolbar.ql-toolbar.ql-snow{
+    background:var(--surface-2); border:1px solid var(--border-strong); border-bottom:none;
+  }
+  #fDescriptionToolbar.ql-snow .ql-stroke{ stroke:var(--text-dim); }
+  #fDescriptionToolbar.ql-snow .ql-fill{ fill:var(--text-dim); }
+  #fDescriptionToolbar.ql-snow .ql-picker{ color:var(--text-dim); }
+  #fDescriptionToolbar.ql-snow button:hover .ql-stroke, #fDescriptionToolbar.ql-snow button.ql-active .ql-stroke{ stroke:var(--cool); }
+  #fDescriptionToolbar.ql-snow button:hover .ql-fill, #fDescriptionToolbar.ql-snow button.ql-active .ql-fill{ fill:var(--cool); }
+  #fDescriptionToolbar.ql-snow button:hover, #fDescriptionToolbar.ql-snow button.ql-active{ color:var(--cool); }
+  .ql-snow .ql-picker-options{ background:var(--surface); border:1px solid var(--border-strong) !important; }
+  .ql-snow .ql-tooltip{ background:var(--surface); border:1px solid var(--border-strong); color:var(--text); box-shadow:none; }
+  .ql-snow .ql-tooltip input[type=text]{ background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text); }
+  #fDescriptionEditor .ql-editor.ql-blank::before{ color:var(--text-faint); font-style:normal; }
+
+  /* Inline images inside the description editor — resize handle + caption box */
+  .desc-editor-wrap{ position:relative; }
+  #fDescriptionEditor .ql-editor img{ max-width:100%; height:auto; cursor:pointer; }
+  #fDescriptionEditor .ql-editor img.img-selected{ outline:2px solid var(--cool); outline-offset:2px; }
+  .img-resize-handle{
+    position:absolute; width:12px; height:12px; background:var(--cool); border:1px solid var(--surface);
+    cursor:nwse-resize; z-index:20; display:none; transform:translate(-50%,-50%);
+  }
+  .img-resize-handle.active{ display:block; }
+  .img-caption-box{
+    position:absolute; z-index:20; display:none; background:var(--surface); border:1px solid var(--border-strong);
+    padding:6px; box-shadow:0 4px 16px rgba(0,0,0,.35);
+  }
+  .img-caption-box.active{ display:block; }
+  .img-caption-box input{
+    width:220px; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+    font-size:11px; padding:6px 8px; outline:none;
+  }
+  .img-caption-box input:focus{ border-color:var(--cool); }
+
+  /* Rendering of stored rich-text HTML wherever a description is shown publicly */
+  .rich-content p{ margin:0 0 12px; }
+  .rich-content p:last-child{ margin-bottom:0; }
+  .rich-content h1, .rich-content h2, .rich-content h3{ color:var(--text); margin:18px 0 10px; line-height:1.3; }
+  .rich-content h1:first-child, .rich-content h2:first-child, .rich-content h3:first-child{ margin-top:0; }
+  .rich-content ul, .rich-content ol{ margin:0 0 12px; padding-left:22px; }
+  .rich-content li{ margin-bottom:4px; }
+  .rich-content blockquote{ margin:0 0 12px; padding-left:14px; border-left:2px solid var(--border-strong); color:var(--text-faint); }
+  .rich-content img{ max-width:100%; height:auto; display:block; margin:4px 0; }
+  .rich-content .inline-img-caption{ font-size:10px; color:var(--text-faint); font-style:italic; margin:0 0 14px; }
+  .rich-content a{ color:var(--cool); text-decoration:underline; }
+
+  /* ---------- TAGS ---------- */
+  .tag-input-wrap{ position:relative; }
+  .tag-chip-list{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .tag-chip-list:empty{ display:none; }
+  .tag-chip{
+    display:inline-flex; align-items:center; gap:7px; font-size:11px; letter-spacing:0.04em;
+    padding:5px 10px; border:1px solid var(--border-strong); color:var(--cool); background:var(--surface-2);
+  }
+  .tag-chip .remove-x{ cursor:pointer; font-weight:700; line-height:1; color:var(--text-faint); }
+  .tag-chip .remove-x:hover{ color:var(--hot); }
+  .tag-suggestions{
+    position:absolute; top:calc(100% + 2px); left:0; right:0; background:var(--surface);
+    border:1px solid var(--border-strong); max-height:220px; overflow-y:auto; z-index:10; display:none;
+  }
+  .tag-suggestions.open{ display:block; }
+  .tag-suggestion{ padding:9px 12px; font-size:12px; cursor:pointer; color:var(--text-dim); }
+  .tag-suggestion:hover, .tag-suggestion.active{ background:var(--surface-2); color:var(--cool); }
+  .tag-suggestion-create{ color:var(--hot); }
+  .tag-hint{ font-size:10px; color:var(--text-faint); margin-top:6px; line-height:1.5; }
+
+  /* ---------- COVER IMAGE CAPTIONS ---------- */
+  .cover-gallery-edit-tile{ width:160px; }
+  .cover-gallery-edit-thumb{
+    width:100%; height:90px; background-color:var(--surface-2); background-repeat:no-repeat;
+    background-size:contain; background-position:center; cursor:pointer;
+  }
+  .cover-gallery-edit-caption{
+    width:100%; background:var(--surface); border:none; border-top:1px solid var(--border-strong);
+    color:var(--text); font-size:10px; padding:7px 8px; outline:none;
+  }
+  .cover-gallery-edit-caption::placeholder{ color:var(--text-faint); }
+  .cover-gallery-edit-caption:focus{ border-top-color:var(--cool); }
+  .gallery-caption{ padding:8px 24px 0; font-size:10px; color:var(--text-faint); font-style:italic; }
+  .gallery-caption:empty{ display:none; }
 
   ::-webkit-scrollbar{ width:6px; } ::-webkit-scrollbar-thumb{ background:var(--border-strong); } ::-webkit-scrollbar-track{ background:transparent; }
 </style>
@@ -481,9 +589,10 @@
             <button type="button" class="gallery-nav next" id="galleryNext" aria-label="Scroll thumbnails right">›</button>
             <div class="gallery-count" id="galleryCount"></div>
           </div>
+          <div class="gallery-caption" id="evImageCaption"></div>
           <div class="event-desc-wrap">
-            <div class="event-desc" id="evBody">Choose an item on the timeline to preview its details here.</div>
-            <button type="button" class="btn btn-ghost btn-sm see-more-btn" id="evSeeMoreBtn" style="display:none;">See more</button>
+            <div class="event-desc rich-content" id="evBody">Choose an item on the timeline to preview its details here.</div>
+            <div class="tag-chip-list" id="evTags" style="margin-top:12px; display:none;"></div>
             <div class="ev-author" id="evAuthor" style="display:none;"></div>
           </div>
         </div>
@@ -723,45 +832,77 @@
     </div>
   </div>
 
-  <!-- ================= DESCRIPTION MODAL (public "See more") ================= -->
-  <div class="modal-backdrop" id="descModalBackdrop">
-    <div class="modal bracket">
-      <h2 id="descModalTitle">Title</h2>
-      <div style="white-space:pre-wrap; font-size:12px; color:var(--text-dim); line-height:1.8;" id="descModalBody"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" id="descModalClose">Close</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ================= EVENT FORM MODAL ================= -->
-  <div class="modal-backdrop" id="formBackdrop">
-    <div class="modal bracket">
-      <h2 id="formTitle">New event</h2>
-      <input type="hidden" id="fId">
-      <div class="field"><label>Title *</label><input type="text" id="fTitle"></div>
-      <div class="field"><label>Subtitle</label><input type="text" id="fSubtitle"></div>
-      <div class="field"><label>Description *</label><textarea id="fDescription" rows="3"></textarea></div>
-      <div class="field-row">
-        <div class="field"><label>Category *</label>
-          <select id="fCategory"><option>General</option><option>Art</option><option>Movies</option><option>Music</option><option>Video Games</option><option>Literature</option><option>Events</option></select>
+  <div class="modal-backdrop fullscreen-backdrop" id="formBackdrop">
+    <div class="modal modal--fullscreen">
+      <div class="modal-header">
+        <h2 id="formTitle">New event</h2>
+        <button type="button" class="modal-close" id="formClose" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-body-inner">
+          <input type="hidden" id="fId">
+          <div class="field"><label>Title *</label><input type="text" id="fTitle"></div>
+          <div class="field"><label>Subtitle</label><input type="text" id="fSubtitle"></div>
+          <div class="field">
+            <label>Description *</label>
+            <div id="fDescriptionToolbar">
+              <span class="ql-formats">
+                <button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button>
+              </span>
+              <span class="ql-formats">
+                <select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-blockquote"></button><button class="ql-link"></button><button class="ql-image"></button>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-clean"></button>
+              </span>
+            </div>
+            <div class="desc-editor-wrap">
+              <div id="fDescriptionEditor"></div>
+              <div class="img-resize-handle" id="imgResizeHandle" title="Drag to resize"></div>
+              <div class="img-caption-box" id="imgCaptionBox">
+                <input type="text" id="imgCaptionInput" placeholder="Caption / credit (optional)" maxlength="500">
+              </div>
+            </div>
+            <div class="editor-char-count" id="fDescriptionCount">0 / 100,000</div>
+          </div>
+          <div class="field">
+            <label>Tags</label>
+            <div class="tag-chip-list" id="tagChipList"></div>
+            <div class="tag-input-wrap">
+              <input type="text" id="fTagInput" placeholder="Type to search or create a tag, press Enter to add">
+              <div class="tag-suggestions" id="tagSuggestions"></div>
+            </div>
+            <div class="tag-hint">Tags are shared globally — anyone can apply a tag someone else already created.</div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Category *</label>
+              <select id="fCategory"><option>General</option><option>Art</option><option>Movies</option><option>Music</option><option>Video Games</option><option>Literature</option><option>Events</option></select>
+            </div>
+            <div class="field"><label>Published at</label><input type="datetime-local" id="fPublished"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
+            <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
+          </div>
+          <div class="field"><label>Learn more link (CTA)</label><input type="url" id="fCtaUrl" placeholder="https://example.com/event"></div>
+          <div class="field"><label>Cover images</label>
+            <div class="cover-gallery-edit" id="coverGalleryEdit"><span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span></div>
+            <div class="cover-field-actions">
+              <input type="file" id="fCoverFile" accept="image/*" multiple>
+            </div>
+            <div class="cover-hint">Each image is cropped to 16:9 on upload — drag to reposition, use the slider to zoom. Click a thumbnail to re-edit it. Add a caption on each image to credit its source. First image is used as the hero/thumbnail; add 2+ to enable the gallery carousel.</div>
+          </div>
+          <div class="meta-readout" id="metaReadout"></div>
+          <div id="formNote" style="display:none; color:var(--cool); font-size:11px; line-height:1.6; margin-top:10px;"></div>
         </div>
-        <div class="field"><label>Published at</label><input type="datetime-local" id="fPublished"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
-        <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
-      </div>
-      <div class="field"><label>Learn more link (CTA)</label><input type="url" id="fCtaUrl" placeholder="https://example.com/event"></div>
-      <div class="field"><label>Cover images</label>
-        <div class="cover-gallery-edit" id="coverGalleryEdit"><span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span></div>
-        <div class="cover-field-actions">
-          <input type="file" id="fCoverFile" accept="image/*" multiple>
-        </div>
-        <div class="cover-hint">Each image is cropped to 16:9 on upload — drag to reposition, use the slider to zoom. Click an added image to re-edit it. First image is used as the hero/thumbnail; add 2+ to enable the gallery carousel.</div>
-      </div>
-      <div class="meta-readout" id="metaReadout"></div>
-      <div id="formNote" style="display:none; color:var(--cool); font-size:11px; line-height:1.6; margin-top:10px;"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="formCancel">Cancel</button>
         <button class="btn btn-ghost" id="formSaveDraft" style="display:none;">Save as draft</button>
@@ -857,6 +998,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <script>
   const SESSION_KEY = "afterlife_session";
   // localhost during dev; the Render-hosted API's custom subdomain everywhere else.
@@ -888,6 +1030,13 @@
   function nowIso(){ return new Date().toISOString(); }
   function escapeHtml(s){
     return (s ?? '').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  // Strips rich-text markup down to plain text for excerpts (timeline row preview) — never
+  // inserted as HTML itself, always passed through escapeHtml at the call site.
+  function htmlToPlainText(html){
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    return div.textContent || '';
   }
   function flashSync(msg){
     const el = document.getElementById('syncStatus');
@@ -1545,7 +1694,8 @@
       const item = document.createElement('div');
       item.className = 't-item';
       const dateLabel = formatDate(r.published_at);
-      const desc = r.subtitle || (r.description || '').slice(0,80) + ((r.description||'').length>80 ? '…' : '');
+      const plainDesc = htmlToPlainText(r.description);
+      const desc = r.subtitle || plainDesc.slice(0,80) + (plainDesc.length>80 ? '…' : '');
       item.innerHTML = `
         <div class="t-dot"></div>
         <div class="t-time">${dateLabel}</div>
@@ -1565,17 +1715,24 @@
   function highlightSelected(){
     document.querySelectorAll('.t-item').forEach((el,i)=> el.classList.toggle('active', i===selectedIdx));
   }
+  // Normalizes every cover image to {url, caption} — accepts legacy rows where
+  // cover_images was a plain array of data-URI strings (no captions yet).
+  function normalizeImageEntry(img){
+    if(typeof img === 'string') return { url: img, caption: '' };
+    if(img && typeof img === 'object' && img.url) return { url: img.url, caption: img.caption || '' };
+    return null;
+  }
   function getEventImages(row){
     if(row && row.cover_images){
       try{
         const arr = JSON.parse(row.cover_images);
         if(Array.isArray(arr)){
-          const filtered = arr.filter(Boolean);
+          const filtered = arr.map(normalizeImageEntry).filter(Boolean);
           if(filtered.length) return filtered;
         }
       } catch(e){ /* fall through to legacy field */ }
     }
-    if(row && row.cover_image) return [row.cover_image];
+    if(row && row.cover_image) return [{ url: row.cover_image, caption: '' }];
     return [];
   }
 
@@ -1595,7 +1752,7 @@
       const cover = document.createElement('div');
       cover.className = 'explore-card-cover';
       const img = getEventImages(r)[0];
-      if(img && img.startsWith('data:')) cover.style.backgroundImage = `url("${img}")`;
+      if(img && img.url && img.url.startsWith('data:')) cover.style.backgroundImage = `url("${img.url}")`;
       const body = document.createElement('div');
       body.className = 'explore-card-body';
       body.innerHTML = `
@@ -1611,8 +1768,9 @@
 
   function setBackgroundFit(el, image, mode){
     mode = mode || 'cover';
-    if(image && image.startsWith('data:')){
-      el.style.backgroundImage = `url("${image}")`;
+    const url = image && image.url;
+    if(url && url.startsWith('data:')){
+      el.style.backgroundImage = `url("${url}")`;
       el.style.backgroundSize = mode;
       el.style.backgroundPosition = 'center';
       el.style.backgroundRepeat = 'no-repeat';
@@ -1627,6 +1785,7 @@
     const wrap = document.getElementById('galleryWrap');
     const el = document.getElementById('eventGallery');
     const countEl = document.getElementById('galleryCount');
+    const captionEl = document.getElementById('evImageCaption');
     el.innerHTML = '';
     if(images.length > 1){
       wrap.style.display = '';
@@ -1638,6 +1797,7 @@
           document.querySelectorAll('.gallery-tile').forEach((t, idx) => t.classList.toggle('active', idx === i));
           setBackgroundFit(document.getElementById('eventHero'), img, 'cover');
           countEl.textContent = `${i + 1} / ${images.length}`;
+          captionEl.textContent = img.caption || '';
         });
         el.appendChild(tile);
       });
@@ -1646,6 +1806,7 @@
       wrap.style.display = 'none';
     }
     setBackgroundFit(document.getElementById('eventHero'), images[0] || null, 'cover');
+    captionEl.textContent = (images[0] && images[0].caption) || '';
   }
   document.getElementById('galleryPrev').addEventListener('click', () => {
     document.getElementById('eventGallery').scrollBy({ left: -160, behavior: 'smooth' });
@@ -1659,13 +1820,16 @@
     document.getElementById('evTime').textContent = formatFullDate(r.published_at);
 
     const descEl = document.getElementById('evBody');
-    descEl.textContent = r.description;
-    descEl.classList.remove('expanded');
-    const seeMoreBtn = document.getElementById('evSeeMoreBtn');
-    seeMoreBtn.onclick = () => openDescriptionModal(r);
-    requestAnimationFrame(() => {
-      seeMoreBtn.style.display = descEl.scrollHeight > descEl.clientHeight + 2 ? 'inline-block' : 'none';
-    });
+    // r.description is sanitized HTML from the server (allowlisted tags only) — safe to
+    // render directly, same trust boundary as everything else this API returns. Shown in
+    // full — the panel scrolls (.event-scroll) rather than clamping with a "see more".
+    descEl.innerHTML = r.description;
+    renderInlineImageCaptions(descEl);
+
+    const tagsEl = document.getElementById('evTags');
+    const tags = Array.isArray(r.tags) ? r.tags : [];
+    tagsEl.innerHTML = tags.map(t => `<span class="tag-pill">${escapeHtml(t.name)}</span>`).join('');
+    tagsEl.style.display = tags.length ? '' : 'none';
 
     renderGallery(getEventImages(r));
 
@@ -1688,7 +1852,7 @@
     document.getElementById('evTitle').textContent = 'No events yet';
     document.getElementById('evTag').textContent = '—';
     document.getElementById('evBody').textContent = 'Add events from the Admin view to populate the chronicle.';
-    document.getElementById('evSeeMoreBtn').style.display = 'none';
+    document.getElementById('evTags').style.display = 'none';
     document.getElementById('evAuthor').style.display = 'none';
     document.getElementById('evTime').textContent = '—';
     document.getElementById('evDateMeta').textContent = '—';
@@ -1697,12 +1861,6 @@
     document.getElementById('evCtaEmpty').style.display = 'inline-block';
     renderGallery([]);
   }
-  function openDescriptionModal(r){
-    document.getElementById('descModalTitle').textContent = r.title;
-    document.getElementById('descModalBody').textContent = r.description;
-    document.getElementById('descModalBackdrop').classList.add('open');
-  }
-  document.getElementById('descModalClose').addEventListener('click', () => document.getElementById('descModalBackdrop').classList.remove('open'));
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function formatDate(iso){
     const d = new Date(iso);
@@ -1802,8 +1960,8 @@
       const thumb = document.createElement('div');
       thumb.className = 'cover-thumb';
       const thumbImg = getEventImages(r)[0];
-      if(thumbImg && thumbImg.startsWith('data:')){
-        thumb.style.backgroundImage = `url("${thumbImg}")`;
+      if(thumbImg && thumbImg.url && thumbImg.url.startsWith('data:')){
+        thumb.style.backgroundImage = `url("${thumbImg.url}")`;
         thumb.style.backgroundSize = 'cover';
         thumb.style.backgroundPosition = 'center';
       }
@@ -2010,11 +2168,14 @@
       navigate(loginUrlWithNext('/home')); // handleLogin() picks this flag back up on success
     }
   });
-  document.getElementById('formCancel').addEventListener('click', () => formBackdrop.classList.remove('open'));
+  function closeForm(){ formBackdrop.classList.remove('open'); deselectDescriptionImage(); }
+  document.getElementById('formCancel').addEventListener('click', closeForm);
+  document.getElementById('formClose').addEventListener('click', closeForm);
 
   const MAX_COVER_BYTES = 1.5 * 1024 * 1024; // 1.5MB — images are stored inline in the db/localStorage
   const MAX_COVER_SOURCE_BYTES = 8 * 1024 * 1024; // generous pre-filter; the cropped OUTPUT is what must fit MAX_COVER_BYTES
-  let pendingCoverImages = []; // array of data URIs (or legacy path strings when editing old rows untouched)
+  const MAX_CAPTION_LENGTH = 500;
+  let pendingCoverImages = []; // array of {url, caption} (url may be a legacy path string when editing old rows untouched)
 
   function renderCoverGalleryEdit(){
     const el = document.getElementById('coverGalleryEdit');
@@ -2026,26 +2187,34 @@
     pendingCoverImages.forEach((img, i) => {
       const tile = document.createElement('div');
       tile.className = 'cover-gallery-edit-tile';
-      if(img && img.startsWith('data:')){
-        tile.style.backgroundImage = `url("${img}")`;
-        tile.style.backgroundSize = 'contain';
-        tile.style.backgroundPosition = 'center';
-        tile.style.backgroundRepeat = 'no-repeat';
-        tile.title = 'Click to reposition/zoom';
-        tile.addEventListener('click', () => {
-          openCropper(img, croppedUrl => {
-            pendingCoverImages[i] = croppedUrl;
+      const thumb = document.createElement('div');
+      thumb.className = 'cover-gallery-edit-thumb';
+      if(img.url && img.url.startsWith('data:')){
+        thumb.style.backgroundImage = `url("${img.url}")`;
+        thumb.title = 'Click to reposition/zoom';
+        thumb.addEventListener('click', () => {
+          openCropper(img.url, croppedUrl => {
+            pendingCoverImages[i] = { ...pendingCoverImages[i], url: croppedUrl };
             renderCoverGalleryEdit();
           });
         });
       } else {
-        tile.title = 'Referenced path (no preview): ' + img;
+        thumb.title = 'Referenced path (no preview): ' + img.url;
       }
       const x = document.createElement('div');
       x.className = 'remove-x';
       x.textContent = '×';
       x.addEventListener('click', e => { e.stopPropagation(); pendingCoverImages.splice(i, 1); renderCoverGalleryEdit(); });
-      tile.appendChild(x);
+      thumb.appendChild(x);
+      const caption = document.createElement('input');
+      caption.type = 'text';
+      caption.className = 'cover-gallery-edit-caption';
+      caption.placeholder = 'Caption / credit (optional)';
+      caption.maxLength = MAX_CAPTION_LENGTH;
+      caption.value = img.caption || '';
+      caption.addEventListener('input', () => { pendingCoverImages[i].caption = caption.value; });
+      tile.appendChild(thumb);
+      tile.appendChild(caption);
       el.appendChild(tile);
     });
   }
@@ -2123,7 +2292,7 @@
     const reader = new FileReader();
     reader.onload = () => {
       openCropper(reader.result, croppedUrl => {
-        pendingCoverImages.push(croppedUrl);
+        pendingCoverImages.push({ url: croppedUrl, caption: '' });
         renderCoverGalleryEdit();
       });
     };
@@ -2142,6 +2311,288 @@
     if(!cropperInstance) processNextCropQueueItem();
   });
 
+  // ---------------- RICH-TEXT DESCRIPTION (Quill) ----------------
+  const MAX_DESCRIPTION_CHARS = 100000;
+  const MAX_INLINE_IMAGE_BYTES = 1.5 * 1024 * 1024;
+  const MAX_INLINE_IMAGE_SOURCE_BYTES = 8 * 1024 * 1024;
+  const MAX_INLINE_IMAGE_DISPLAY_WIDTH = 900; // px — initial insert size, before any manual resize
+
+  // `width` and `data-caption` aren't in Quill's default image attribute allowlist — extending
+  // it here (once, before any instance is created) makes format()/paste-conversion/clipboard
+  // matching all treat them the same as the built-in alt/height/width, so a caption or resize
+  // survives re-opening a saved entry for edit (dangerouslyPasteHTML round-trips through this).
+  const ImageFormat = Quill.import('formats/image');
+  ImageFormat.ATTRIBUTES = [...new Set([...(ImageFormat.ATTRIBUTES || []), 'width', 'data-caption'])];
+
+  const descQuill = new Quill('#fDescriptionEditor', {
+    theme: 'snow',
+    modules: { toolbar: { container: '#fDescriptionToolbar', handlers: { image: insertDescriptionImage } } },
+    placeholder: 'Tell the story…',
+  });
+  function updateDescriptionCount(){
+    const len = Math.max(0, descQuill.getLength() - 1); // getLength() includes the trailing newline
+    const el = document.getElementById('fDescriptionCount');
+    el.textContent = `${len.toLocaleString()} / ${MAX_DESCRIPTION_CHARS.toLocaleString()}`;
+    el.classList.toggle('over-limit', len >= MAX_DESCRIPTION_CHARS);
+  }
+  descQuill.on('text-change', () => {
+    const len = descQuill.getLength() - 1;
+    if(len > MAX_DESCRIPTION_CHARS){
+      descQuill.deleteText(MAX_DESCRIPTION_CHARS, len - MAX_DESCRIPTION_CHARS);
+    }
+    updateDescriptionCount();
+    deselectDescriptionImage();
+  });
+
+  // Renders to JPEG, stepping quality down until it fits the byte cap — same approach as the
+  // cover-image cropper's exportCroppedCanvas, just without the fixed 16:9 crop.
+  function compressImageToDataUrl(canvas, maxBytes){
+    const qualities = [0.85, 0.7, 0.55, 0.4];
+    let dataUrl = canvas.toDataURL('image/jpeg', qualities[0]);
+    for(let i = 1; i < qualities.length && dataUrl.length > maxBytes; i++){
+      dataUrl = canvas.toDataURL('image/jpeg', qualities[i]);
+    }
+    return dataUrl.length > maxBytes ? null : dataUrl;
+  }
+
+  function insertDescriptionImage(){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('image/')){ alert(`"${file.name}" is not an image.`); return; }
+      if(file.size > MAX_INLINE_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, MAX_INLINE_IMAGE_DISPLAY_WIDTH / img.naturalWidth);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.naturalWidth * scale);
+          canvas.height = Math.round(img.naturalHeight * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = compressImageToDataUrl(canvas, MAX_INLINE_IMAGE_BYTES);
+          if(!dataUrl){ alert('This image is still too large after compression — try a smaller/simpler source image.'); return; }
+          const range = descQuill.getSelection(true);
+          descQuill.insertEmbed(range.index, 'image', dataUrl, 'user');
+          descQuill.setSelection(range.index + 1, 0, 'user');
+          descQuill.formatText(range.index, 1, 'width', String(canvas.width), 'user');
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    input.click();
+  }
+
+  // ---------------- DESCRIPTION IMAGE: SELECT / RESIZE / CAPTION ----------------
+  let selectedImageEl = null;
+  const imgResizeHandle = document.getElementById('imgResizeHandle');
+  const imgCaptionBox = document.getElementById('imgCaptionBox');
+  const imgCaptionInput = document.getElementById('imgCaptionInput');
+
+  function positionImageOverlay(){
+    if(!selectedImageEl) return;
+    const wrap = document.querySelector('.desc-editor-wrap');
+    const wrapRect = wrap.getBoundingClientRect();
+    const imgRect = selectedImageEl.getBoundingClientRect();
+    imgResizeHandle.style.left = (imgRect.right - wrapRect.left) + 'px';
+    imgResizeHandle.style.top = (imgRect.bottom - wrapRect.top) + 'px';
+    imgCaptionBox.style.left = (imgRect.left - wrapRect.left) + 'px';
+    imgCaptionBox.style.top = (imgRect.bottom - wrapRect.top + 8) + 'px';
+  }
+  function selectDescriptionImage(img){
+    if(selectedImageEl) selectedImageEl.classList.remove('img-selected');
+    selectedImageEl = img;
+    img.classList.add('img-selected');
+    imgCaptionInput.value = img.getAttribute('data-caption') || '';
+    imgResizeHandle.classList.add('active');
+    imgCaptionBox.classList.add('active');
+    positionImageOverlay();
+  }
+  function deselectDescriptionImage(){
+    if(selectedImageEl) selectedImageEl.classList.remove('img-selected');
+    selectedImageEl = null;
+    imgResizeHandle.classList.remove('active');
+    imgCaptionBox.classList.remove('active');
+  }
+  descQuill.root.addEventListener('click', e => {
+    if(e.target.tagName === 'IMG') selectDescriptionImage(e.target);
+    else deselectDescriptionImage();
+  });
+  document.querySelector('.modal-body').addEventListener('scroll', () => { if(selectedImageEl) positionImageOverlay(); });
+  window.addEventListener('resize', () => { if(selectedImageEl) positionImageOverlay(); });
+
+  imgCaptionInput.addEventListener('input', () => {
+    if(!selectedImageEl) return;
+    if(imgCaptionInput.value) selectedImageEl.setAttribute('data-caption', imgCaptionInput.value);
+    else selectedImageEl.removeAttribute('data-caption');
+  });
+
+  let imgResizeStartX = 0;
+  let imgResizeStartWidth = 0;
+  function onImgResizeMove(e){
+    if(!selectedImageEl) return;
+    const delta = e.clientX - imgResizeStartX;
+    const newWidth = Math.max(40, Math.min(1600, Math.round(imgResizeStartWidth + delta)));
+    selectedImageEl.style.width = newWidth + 'px';
+    positionImageOverlay();
+  }
+  function onImgResizeUp(){
+    document.removeEventListener('mousemove', onImgResizeMove);
+    document.removeEventListener('mouseup', onImgResizeUp);
+    if(selectedImageEl){
+      const finalWidth = Math.round(selectedImageEl.getBoundingClientRect().width);
+      selectedImageEl.style.width = '';
+      // Plain DOM mutation rather than the blot's format() API — Quill's Image blot rebuilds
+      // its DOM node on format(), which orphans our selectedImageEl reference mid-drag. Since
+      // saving reads quill.root.innerHTML directly (not via Quill's Delta), a live attribute
+      // set here is captured correctly regardless of which path set it.
+      selectedImageEl.setAttribute('width', String(finalWidth));
+      positionImageOverlay();
+    }
+  }
+  imgResizeHandle.addEventListener('mousedown', e => {
+    if(!selectedImageEl) return;
+    e.preventDefault();
+    imgResizeStartX = e.clientX;
+    imgResizeStartWidth = selectedImageEl.getBoundingClientRect().width;
+    document.addEventListener('mousemove', onImgResizeMove);
+    document.addEventListener('mouseup', onImgResizeUp);
+  });
+
+  // Quill's clipboard matcher only carries the built-in alt/height/width attributes across a
+  // dangerouslyPasteHTML() conversion — a custom attribute like data-caption is silently
+  // dropped even though it's in Image.ATTRIBUTES (that list gates format()/create(), not the
+  // paste matcher). Patches captions back onto the freshly-pasted <img> elements directly,
+  // matched by position against the original HTML — the same order/count is expected since
+  // the images themselves do survive the paste, just missing this one attribute.
+  function restoreImageCaptions(originalHtml){
+    if(!originalHtml || !originalHtml.includes('data-caption')) return;
+    const scratch = document.createElement('div');
+    scratch.innerHTML = originalHtml;
+    const sourceImgs = scratch.querySelectorAll('img[data-caption]');
+    if(!sourceImgs.length) return;
+    const liveImgs = descQuill.root.querySelectorAll('img');
+    sourceImgs.forEach(src => {
+      const idx = Array.prototype.indexOf.call(scratch.querySelectorAll('img'), src);
+      const target = liveImgs[idx];
+      if(target) target.setAttribute('data-caption', src.getAttribute('data-caption'));
+    });
+  }
+
+  // Converts stored <img data-caption="..."> markers into a visible caption line wherever
+  // sanitized description HTML is rendered publicly (data-caption alone renders as nothing).
+  function renderInlineImageCaptions(container){
+    container.querySelectorAll('img[data-caption]').forEach(img => {
+      const caption = img.getAttribute('data-caption');
+      if(!caption) return;
+      const el = document.createElement('div');
+      el.className = 'inline-img-caption';
+      el.textContent = caption;
+      img.insertAdjacentElement('afterend', el);
+    });
+  }
+
+  // ---------------- TAGS ----------------
+  let pendingTags = []; // array of tag name strings
+  let tagSuggestionItems = [];
+  let tagSuggestionActiveIdx = -1;
+  let tagSearchDebounce = null;
+
+  function renderTagChips(){
+    const el = document.getElementById('tagChipList');
+    el.innerHTML = '';
+    pendingTags.forEach((name, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      const label = document.createElement('span');
+      label.textContent = name;
+      const x = document.createElement('span');
+      x.className = 'remove-x';
+      x.textContent = '×';
+      x.addEventListener('click', () => { pendingTags.splice(i, 1); renderTagChips(); });
+      chip.appendChild(label);
+      chip.appendChild(x);
+      el.appendChild(chip);
+    });
+  }
+  function addPendingTag(name){
+    const trimmed = (name || '').trim().replace(/\s+/g, ' ');
+    if(!trimmed) return;
+    if(trimmed.length > 40){ alert('Tags must be 40 characters or fewer.'); return; }
+    if(pendingTags.length >= 15){ alert('No more than 15 tags allowed.'); return; }
+    if(pendingTags.some(t => t.toLowerCase() === trimmed.toLowerCase())) return;
+    pendingTags.push(trimmed);
+    renderTagChips();
+  }
+  function closeTagSuggestions(){
+    const box = document.getElementById('tagSuggestions');
+    box.classList.remove('open');
+    box.innerHTML = '';
+    tagSuggestionItems = [];
+    tagSuggestionActiveIdx = -1;
+  }
+  function renderTagSuggestions(names, query){
+    const box = document.getElementById('tagSuggestions');
+    const alreadyApplied = new Set(pendingTags.map(t => t.toLowerCase()));
+    const filtered = names.filter(n => !alreadyApplied.has(n.toLowerCase()));
+    tagSuggestionItems = filtered.slice();
+    const exactMatch = filtered.some(n => n.toLowerCase() === query.toLowerCase());
+    if(query && !exactMatch) tagSuggestionItems.push(query);
+    tagSuggestionActiveIdx = -1;
+    if(!tagSuggestionItems.length){ closeTagSuggestions(); return; }
+    box.innerHTML = tagSuggestionItems.map((name, i) => {
+      const isCreate = query && name === query && !filtered.includes(name);
+      return `<div class="tag-suggestion${isCreate ? ' tag-suggestion-create' : ''}" data-idx="${i}">${isCreate ? `Create tag "${escapeHtml(name)}"` : escapeHtml(name)}</div>`;
+    }).join('');
+    box.classList.add('open');
+  }
+  const tagInputEl = document.getElementById('fTagInput');
+  tagInputEl.addEventListener('input', () => {
+    const q = tagInputEl.value.trim();
+    clearTimeout(tagSearchDebounce);
+    if(!q){ closeTagSuggestions(); return; }
+    tagSearchDebounce = setTimeout(async () => {
+      try{
+        const data = await apiFetch(`/api/tags?q=${encodeURIComponent(q)}`, { auth: false });
+        renderTagSuggestions((data.tags || []).map(t => t.name), q);
+      } catch(e){ /* autocomplete is best-effort — a failed lookup just means no suggestions */ }
+    }, 200);
+  });
+  tagInputEl.addEventListener('keydown', e => {
+    if(e.key === 'ArrowDown' && tagSuggestionItems.length){
+      e.preventDefault();
+      tagSuggestionActiveIdx = (tagSuggestionActiveIdx + 1) % tagSuggestionItems.length;
+      document.querySelectorAll('.tag-suggestion').forEach((el, i) => el.classList.toggle('active', i === tagSuggestionActiveIdx));
+    } else if(e.key === 'ArrowUp' && tagSuggestionItems.length){
+      e.preventDefault();
+      tagSuggestionActiveIdx = (tagSuggestionActiveIdx - 1 + tagSuggestionItems.length) % tagSuggestionItems.length;
+      document.querySelectorAll('.tag-suggestion').forEach((el, i) => el.classList.toggle('active', i === tagSuggestionActiveIdx));
+    } else if(e.key === 'Enter' || e.key === ','){
+      e.preventDefault();
+      const chosen = tagSuggestionActiveIdx >= 0 ? tagSuggestionItems[tagSuggestionActiveIdx] : tagInputEl.value;
+      addPendingTag(chosen);
+      tagInputEl.value = '';
+      closeTagSuggestions();
+    } else if(e.key === 'Escape'){
+      closeTagSuggestions();
+    }
+  });
+  document.getElementById('tagSuggestions').addEventListener('click', e => {
+    const item = e.target.closest('.tag-suggestion');
+    if(!item) return;
+    addPendingTag(tagSuggestionItems[Number(item.dataset.idx)]);
+    tagInputEl.value = '';
+    closeTagSuggestions();
+    tagInputEl.focus();
+  });
+  document.addEventListener('click', e => {
+    if(!e.target.closest('.tag-input-wrap')) closeTagSuggestions();
+  });
+
   // `rows` lets callers outside the admin table (the "My entries" dashboard) supply their
   // own row cache to look the entry up in — defaults to the admin table's cache.
   // Tracks the status of whatever entry is currently loaded in the form — null when
@@ -2154,6 +2605,8 @@
     document.getElementById('fId').value = id || '';
     document.getElementById('metaReadout').textContent = '';
     document.getElementById('fCoverFile').value = '';
+    document.getElementById('fTagInput').value = '';
+    closeTagSuggestions();
     const draftBtn = document.getElementById('formSaveDraft');
     const saveBtn = document.getElementById('formSave');
     const note = document.getElementById('formNote');
@@ -2166,14 +2619,19 @@
       document.getElementById('formTitle').textContent = 'Edit event';
       document.getElementById('fTitle').value = row.title || '';
       document.getElementById('fSubtitle').value = row.subtitle || '';
-      document.getElementById('fDescription').value = row.description || '';
+      descQuill.setContents([]);
+      descQuill.clipboard.dangerouslyPasteHTML(row.description || '');
+      restoreImageCaptions(row.description || '');
+      updateDescriptionCount();
       document.getElementById('fCategory').value = row.category || 'General';
       document.getElementById('fCountry').value = row.country || '';
       document.getElementById('fLocation').value = row.location || '';
       document.getElementById('fCtaUrl').value = row.cta_url || '';
       document.getElementById('fPublished').value = (row.published_at || '').slice(0,16);
-      pendingCoverImages = getEventImages(row).slice();
+      pendingCoverImages = getEventImages(row).map(img => ({ ...img }));
       renderCoverGalleryEdit();
+      pendingTags = Array.isArray(row.tags) ? row.tags.map(t => t.name) : [];
+      renderTagChips();
       document.getElementById('metaReadout').textContent = `id: ${row.id}\ncreated: ${row.created_at}\nupdated: ${row.updated_at}\nversion: ${row.version}`;
       if(row.status === 'draft'){
         // A draft hasn't been submitted yet — same two-button choice as creating new.
@@ -2192,11 +2650,15 @@
     } else {
       editingEntryStatus = null;
       document.getElementById('formTitle').textContent = 'New event';
-      ['fTitle','fSubtitle','fDescription','fCountry','fLocation','fCtaUrl'].forEach(fid => document.getElementById(fid).value = '');
+      ['fTitle','fSubtitle','fCountry','fLocation','fCtaUrl'].forEach(fid => document.getElementById(fid).value = '');
+      descQuill.setContents([]);
+      updateDescriptionCount();
       document.getElementById('fCategory').value = 'General';
       document.getElementById('fPublished').value = new Date().toISOString().slice(0,16);
       pendingCoverImages = [];
       renderCoverGalleryEdit();
+      pendingTags = [];
+      renderTagChips();
       if(isSuperAdmin){
         draftBtn.style.display = 'none';
         saveBtn.textContent = 'Save event';
@@ -2216,8 +2678,13 @@
   async function saveEventForm(explicitStatus){
     const id = document.getElementById('fId').value;
     const title = document.getElementById('fTitle').value.trim();
-    const description = document.getElementById('fDescription').value.trim();
-    if(!title || !description){ alert('Title and description are required.'); return; }
+    const descriptionText = descQuill.getText().trim();
+    if(!title || !descriptionText){ alert('Title and description are required.'); return; }
+    if(descQuill.getLength() - 1 > MAX_DESCRIPTION_CHARS){
+      alert(`Description must be ${MAX_DESCRIPTION_CHARS.toLocaleString()} characters or fewer.`);
+      return;
+    }
+    const description = descQuill.root.innerHTML;
     const subtitle = document.getElementById('fSubtitle').value.trim() || null;
     const category = document.getElementById('fCategory').value;
     const country = document.getElementById('fCountry').value.trim().toUpperCase() || null;
@@ -2227,7 +2694,7 @@
     const published_at = publishedRaw ? new Date(publishedRaw).toISOString() : nowIso();
     const payload = {
       title, subtitle, description, category, country, location,
-      cta_url: ctaUrl, cover_images: pendingCoverImages, published_at,
+      cta_url: ctaUrl, cover_images: pendingCoverImages, published_at, tags: pendingTags,
     };
     if(explicitStatus) payload.status = explicitStatus;
     const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
