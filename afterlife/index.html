@@ -183,14 +183,35 @@
   .event-panel{ overflow:hidden; min-width:0; }
   .event-scroll{ flex:1; overflow-y:auto; overflow-x:hidden; min-height:0; }
   .event-hero{ height:450px; flex-shrink:0; border-bottom:1px solid var(--border); position:relative; overflow:hidden;
+    /* Fixed dark backdrop rather than var(--surface) — this area doubles as a photo
+       backdrop, so it stays a consistent moody dark base in both themes rather than
+       flipping to a near-white fallback in light mode that would swallow light text. */
     background: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px),
       radial-gradient(circle at 25% 30%, rgba(255,46,110,0.22), transparent 55%),
-      radial-gradient(circle at 78% 72%, rgba(43,255,198,0.18), transparent 55%), var(--surface);
+      radial-gradient(circle at 78% 72%, rgba(43,255,198,0.18), transparent 55%), #0A0A0F;
     background-repeat:no-repeat;
     display:flex; align-items:flex-end; padding:20px; }
+  /* Blurred duplicate of the same cover image, always sized to fill the whole hero —
+     shows through wherever the sharp foreground layer (fit to contain, so it never crops
+     the actual photo) leaves a gap: side margins for a narrower/taller image, top/bottom
+     for a wider/shorter one. Scaled up slightly so the blur's own soft edge never peeks in. */
+  .event-hero-blur{
+    position:absolute; inset:0; background-size:cover; background-position:center; background-repeat:no-repeat;
+    filter:blur(28px) brightness(0.55) saturate(1.1); transform:scale(1.15);
+  }
+  .event-hero-img{
+    position:absolute; inset:0; background-size:contain; background-position:center; background-repeat:no-repeat;
+  }
+  /* Scrim behind the title/badges — first child in the DOM so later siblings (tag,
+     hero-coord, h3) paint on top of it without needing z-index. Guarantees contrast
+     against an arbitrary uploaded cover photo, independent of the site's own theme. */
+  .event-hero-scrim{
+    position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0) 75%);
+  }
   .event-hero .tag{ font-size:10px; letter-spacing:0.12em; color:var(--hot); text-transform:uppercase; position:absolute; top:16px; left:16px; }
   .event-hero .hero-coord{ position:absolute; top:16px; right:16px; font-size:9px; color:#fff; letter-spacing:0.04em; text-align:right; line-height:1.6; text-shadow:0 1px 4px rgba(0,0,0,.7); }
-  .event-hero h3{ font-size:26px; color:var(--text); text-shadow:0 2px 12px rgba(0,0,0,0.6); }
+  .event-hero h3{ font-size:26px; color:#F5F5FA; text-shadow:0 2px 12px rgba(0,0,0,0.6); position:relative; }
 
   .gallery-wrap{ position:relative; background:var(--border); flex-shrink:0; }
   .gallery-strip{
@@ -252,6 +273,10 @@
   #exploreView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
   #dashboardView{ display:none; flex:1; flex-direction:column; min-height:0; }
   #dashboardView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
+  #profileView{ display:none; flex:1; flex-direction:column; min-height:0; }
+  #profileView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
+  #settingsView{ display:none; flex:1; flex-direction:column; min-height:0; }
+  #settingsView.active{ display:flex; overflow-y:auto; overflow-x:hidden; }
 
   /* status / review-status badges — same visual language as .tag-pill/.role-pill */
   .status-pill, .review-pill{ font-size:9px; padding:3px 7px; border:1px solid var(--border-strong); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; white-space:nowrap; }
@@ -266,9 +291,11 @@
   .visibility-public{ color:var(--text-faint); }
   .visibility-private{ color:var(--hot); border-color:var(--hot); }
   .locked-note{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
-  .ev-author{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; margin-top:10px; }
+  .ev-author{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:14px; }
   .explore-card-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:4px; }
   .t-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:2px; }
+  .author-link{ color:inherit; cursor:pointer; }
+  .author-link:hover{ color:var(--cool); text-decoration:underline; }
   .batch-bar{ display:none; align-items:center; gap:12px; padding:10px 0; margin-bottom:10px; border-bottom:1px solid var(--border); font-size:11px; color:var(--text-dim); }
   .batch-bar.show{ display:flex; }
   .batch-bar a{ letter-spacing:0.06em; text-transform:uppercase; color:var(--cool); cursor:pointer; text-decoration:none; font-size:10px; }
@@ -293,10 +320,10 @@
   .toolbar-right{ display:flex; gap:10px; }
   .count-badge{ font-size:11px; color:var(--text-faint); }
 
-  .admin-tabs{ display:flex; gap:28px; border-bottom:1px solid var(--border); margin-bottom:24px; }
-  .admin-tabs a{ padding-bottom:12px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; cursor:pointer; position:relative; }
-  .admin-tabs a.active{ color:var(--cool); }
-  .admin-tabs a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--cool); }
+  .admin-tabs, .settings-tabs{ display:flex; gap:28px; border-bottom:1px solid var(--border); margin-bottom:24px; }
+  .admin-tabs a, .settings-tabs a{ padding-bottom:12px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; cursor:pointer; position:relative; }
+  .admin-tabs a.active, .settings-tabs a.active{ color:var(--cool); }
+  .admin-tabs a.active::after, .settings-tabs a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--cool); }
   .admin-page{ display:none; }
   .admin-page.active{ display:block; }
 
@@ -504,6 +531,7 @@
   .img-caption-box input:focus{ border-color:var(--cool); }
 
   /* Rendering of stored rich-text HTML wherever a description is shown publicly */
+  .rich-content{ overflow-wrap:break-word; word-break:break-word; }
   .rich-content p{ margin:0 0 12px; }
   .rich-content p:last-child{ margin-bottom:0; }
   .rich-content h1, .rich-content h2, .rich-content h3{ color:var(--text); margin:18px 0 10px; line-height:1.3; }
@@ -549,6 +577,60 @@
   .cover-gallery-edit-caption:focus{ border-top-color:var(--cool); }
   .gallery-caption{ padding:8px 24px 0; font-size:10px; color:var(--text-faint); font-style:italic; }
   .gallery-caption:empty{ display:none; }
+
+  /* ---------- PUBLIC PROFILE ---------- */
+  .profile-banner{
+    height:200px; background:repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px), var(--surface);
+    background-repeat:no-repeat; background-size:cover; background-position:center;
+    border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+  }
+  .profile-banner-empty{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); }
+  .profile-columns{ display:grid; grid-template-columns:160px minmax(0,1fr) 260px; gap:32px; padding:28px 0; align-items:start; }
+  @media (max-width:820px){ .profile-columns{ grid-template-columns:1fr; } }
+  .profile-avatar{
+    width:100%; aspect-ratio:1/1; background-color:var(--surface-2); background-repeat:no-repeat;
+    background-size:cover; background-position:center; border:1px solid var(--border-strong);
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:8px;
+    font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-faint);
+  }
+  .profile-name{ font-family:var(--display); font-size:16px; font-weight:700; color:var(--text); margin-top:14px; }
+  .profile-meta-label{ font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); margin-top:14px; }
+  .profile-meta-value{ font-size:12px; color:var(--text-dim); margin-top:3px; }
+  .profile-section{ margin-bottom:26px; }
+  .profile-section-head{ font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:10px; }
+  .profile-empty-line{ font-size:11px; color:var(--text-faint); font-style:italic; }
+  .profile-about{ font-size:12px; color:var(--text-dim); line-height:1.7; }
+  .profile-entries-panel{ border:1px solid var(--border-strong); background:var(--surface); padding:6px 14px; }
+  .profile-entry-row{ padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+  .profile-entry-row:last-child{ border-bottom:none; }
+  .profile-entry-title{ font-size:12px; color:var(--text); margin-bottom:3px; }
+  .profile-entry-title:hover{ color:var(--cool); }
+  .profile-entry-meta{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; text-transform:uppercase; }
+
+  /* ---------- SETTINGS ---------- */
+  .settings-page{ max-width:640px; }
+  .settings-banner-preview{
+    height:120px; background-color:var(--surface-2); background-repeat:no-repeat; background-size:cover;
+    background-position:center; border:1px dashed var(--border-strong); display:flex; align-items:center;
+    justify-content:center; margin-bottom:10px; cursor:pointer;
+  }
+  .settings-avatar-preview{
+    width:110px; aspect-ratio:1/1; background-color:var(--surface-2); background-repeat:no-repeat;
+    background-size:cover; background-position:center; border:1px dashed var(--border-strong);
+    display:flex; align-items:center; justify-content:center; margin-bottom:10px; cursor:pointer;
+  }
+  .settings-upload-empty{ font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-faint); text-align:center; padding:0 10px; }
+  .genre-picker{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
+  .genre-opt{
+    font-size:11px; padding:6px 12px; border:1px solid var(--border-strong); color:var(--text-dim);
+    letter-spacing:0.04em; cursor:pointer; background:transparent;
+  }
+  .genre-opt.selected{ border-color:var(--cool); color:var(--cool); }
+  .settings-readonly{ font-size:12px; color:var(--text-dim); }
+  .settings-url-row{ display:flex; align-items:center; gap:10px; }
+  .settings-url-row a{ font-size:12px; color:var(--cool); text-decoration:none; word-break:break-all; }
+  .settings-url-row a:hover{ text-decoration:underline; }
+  .settings-save-status{ font-size:11px; color:var(--cool); margin-left:14px; }
 
   ::-webkit-scrollbar{ width:6px; } ::-webkit-scrollbar-thumb{ background:var(--border-strong); } ::-webkit-scrollbar-track{ background:transparent; }
 </style>
@@ -604,6 +686,9 @@
         <div class="rt-mark rt-tr"></div><div class="rt-mark rt-br"></div>
         <div class="event-scroll" id="eventScroll">
           <div class="event-hero bracket" id="eventHero">
+            <div class="event-hero-blur" id="eventHeroBlur"></div>
+            <div class="event-hero-img" id="eventHeroImg"></div>
+            <div class="event-hero-scrim"></div>
             <div class="tag" id="evTag">Tag</div>
             <div class="hero-coord" id="evTime">—</div>
             <h3 id="evTitle">Select an entry</h3>
@@ -616,9 +701,9 @@
           </div>
           <div class="gallery-caption" id="evImageCaption"></div>
           <div class="event-desc-wrap">
+            <div class="ev-author" id="evAuthor" style="display:none;"></div>
             <div class="event-desc rich-content" id="evBody">Choose an item on the timeline to preview its details here.</div>
             <div class="tag-chip-list" id="evTags" style="margin-top:12px; display:none;"></div>
-            <div class="ev-author" id="evAuthor" style="display:none;"></div>
           </div>
         </div>
         <div class="event-meta-row">
@@ -756,6 +841,115 @@
         <thead><tr><th>Title</th><th>Status</th><th>Review</th><th>Visibility</th><th>Published</th><th></th></tr></thead>
         <tbody id="myEntriesBody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ================= PUBLIC PROFILE ================= -->
+  <div id="profileView">
+    <div class="profile-banner" id="pfBanner">
+      <span class="profile-banner-empty" id="pfBannerEmpty">No header image yet</span>
+    </div>
+    <div class="wrap">
+      <div class="profile-columns">
+        <div class="profile-col-left">
+          <div class="profile-avatar" id="pfAvatar"><span id="pfAvatarEmpty">No image</span></div>
+          <div class="profile-name" id="pfName">—</div>
+          <div class="profile-meta-label">Joined since</div>
+          <div class="profile-meta-value" id="pfJoined">—</div>
+        </div>
+        <div class="profile-col-main">
+          <div class="profile-section">
+            <div class="profile-section-head">Preferred genres</div>
+            <div class="tag-chip-list" id="pfGenres"></div>
+            <div class="profile-empty-line" id="pfGenresEmpty" style="display:none;">No preferred genres yet.</div>
+          </div>
+          <div class="profile-section">
+            <div class="profile-section-head">About me</div>
+            <div class="rich-content profile-about" id="pfAbout"></div>
+            <div class="profile-empty-line" id="pfAboutEmpty" style="display:none;">This user hasn't written an about section yet.</div>
+          </div>
+        </div>
+        <div class="profile-col-right">
+          <div class="profile-section-head">Public entries</div>
+          <div class="profile-entries-panel">
+            <div id="pfEntries"></div>
+            <div class="profile-empty-line" id="pfEntriesEmpty" style="display:none;">No public entries yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SETTINGS ================= -->
+  <div id="settingsView">
+    <div class="wrap">
+      <div class="settings-tabs">
+        <a data-settings-page="profile" class="active">Profile settings</a>
+      </div>
+      <div class="settings-page">
+        <div class="field">
+          <label>Header banner</label>
+          <div class="settings-banner-preview" id="setBannerPreview">
+            <span class="settings-upload-empty" id="setBannerEmpty">No header image yet</span>
+          </div>
+          <div class="cover-field-actions"><input type="file" id="setBannerFile" accept="image/*"></div>
+        </div>
+        <div class="field">
+          <label>Profile image (square)</label>
+          <div class="settings-avatar-preview" id="setAvatarPreview">
+            <span class="settings-upload-empty" id="setAvatarEmpty">No image</span>
+          </div>
+          <div class="cover-field-actions"><input type="file" id="setAvatarFile" accept="image/*"></div>
+        </div>
+        <div class="field">
+          <label>Preferred genres</label>
+          <div class="genre-picker" id="setGenrePicker"></div>
+          <div class="tag-hint">Click a genre to add or remove it — pulled from the site's managed genre list.</div>
+        </div>
+        <div class="field">
+          <label>About me</label>
+          <div id="pAboutToolbar">
+            <span class="ql-formats">
+              <button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button>
+            </span>
+            <span class="ql-formats">
+              <select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-blockquote"></button><button class="ql-link"></button><button class="ql-image"></button>
+            </span>
+            <span class="ql-formats">
+              <button class="ql-clean"></button>
+            </span>
+          </div>
+          <div class="about-editor-wrap desc-editor-wrap">
+            <div id="pAboutEditor"></div>
+            <div class="img-resize-handle" id="pImgResizeHandle" title="Drag to resize"></div>
+            <div class="img-caption-box" id="pImgCaptionBox">
+              <input type="text" id="pImgCaptionInput" placeholder="Caption / credit (optional)" maxlength="500">
+            </div>
+          </div>
+          <div class="editor-char-count" id="pAboutCount">0 / 10,000</div>
+        </div>
+        <div class="field">
+          <label>Joined since</label>
+          <div class="settings-readonly" id="setJoined">—</div>
+        </div>
+        <div class="field">
+          <label>Public profile URL</label>
+          <div class="settings-url-row">
+            <a id="setProfileUrl" target="_blank" rel="noopener"></a>
+            <button type="button" class="btn btn-ghost btn-sm" id="setCopyUrlBtn">Copy</button>
+          </div>
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button class="btn btn-primary" id="setSaveBtn">Save changes</button>
+          <span class="settings-save-status" id="setSaveStatus"></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1088,6 +1282,24 @@
     div.innerHTML = html || '';
     return div.textContent || '';
   }
+  // "Submitted by {name}" markup shared by the timeline, explore cards, and the event
+  // detail panel — the name is a clickable link to that author's public profile when we
+  // know their public_id (older/legacy rows without an author fall back to plain text).
+  function authorLineHtml(r){
+    if(!r.created_by_name) return '';
+    const name = escapeHtml(r.created_by_name);
+    return r.created_by_public_id
+      ? `Submitted by <span class="author-link" data-public-id="${escapeHtml(r.created_by_public_id)}">${name}</span>`
+      : `Submitted by ${name}`;
+  }
+  function wireAuthorLink(container){
+    const link = container.querySelector('.author-link');
+    if(!link) return;
+    link.addEventListener('click', e => {
+      e.stopPropagation();
+      navigate('/u/' + link.dataset.publicId);
+    });
+  }
   function flashSync(msg){
     const el = document.getElementById('syncStatus');
     el.textContent = msg;
@@ -1198,6 +1410,13 @@
     } else if(section === 'my-entries'){
       if(!currentUser){ navigate(loginUrlWithNext('/my-entries'), { replace: true }); return; }
       switchView('dashboard');
+    } else if(section === 'settings'){
+      if(!currentUser){ navigate(loginUrlWithNext('/settings'), { replace: true }); return; }
+      switchView('settings');
+    } else if(section === 'u'){
+      if(!sub){ navigate('/home', { replace: true }); return; }
+      switchView('profile');
+      loadPublicProfile(sub);
     } else if(section === 'log-in'){
       switchView('login');
     } else if(section === 'register'){
@@ -1289,6 +1508,8 @@
     document.getElementById('verifyEmailView').classList.toggle('active', view === 'verify-email');
     document.getElementById('forgotPasswordView').classList.toggle('active', view === 'forgot-password');
     document.getElementById('resetPasswordView').classList.toggle('active', view === 'reset-password');
+    document.getElementById('profileView').classList.toggle('active', view === 'profile');
+    document.getElementById('settingsView').classList.toggle('active', view === 'settings');
     // Re-fetch on every arrival at Home/Explore (not just at initial page load) so status/
     // review/visibility changes made elsewhere — the admin table, My entries, another tab —
     // are reflected as soon as you navigate back, instead of showing whatever was cached
@@ -1302,6 +1523,7 @@
     if(view === 'verify-email') runEmailVerification();
     if(view === 'forgot-password') resetForgotPasswordView();
     if(view === 'reset-password') resetResetPasswordView();
+    if(view === 'settings') renderSettingsView();
   }
   document.querySelectorAll('a[data-path]').forEach(a => {
     a.addEventListener('click', () => navigate(a.dataset.path));
@@ -1318,6 +1540,21 @@
     document.querySelector('.admin-tabs').style.display = '';
     switchAdminTab(location.hash === '#users' ? 'users' : location.hash === '#taxonomy' ? 'taxonomy' : 'events');
   }
+
+  // Only one tab exists today, but this follows the same hash-routed-tab pattern as
+  // /admin (#events/#users/#taxonomy) so /settings#profile is a real, bookmarkable,
+  // shareable URL from the start rather than something bolted on when a second
+  // settings section shows up.
+  function renderSettingsView(){
+    switchSettingsTab('profile');
+  }
+  function switchSettingsTab(page){
+    document.querySelectorAll('.settings-tabs a').forEach(x => x.classList.toggle('active', x.dataset.settingsPage === page));
+    if(page === 'profile') loadSettingsProfile();
+  }
+  document.querySelectorAll('.settings-tabs a').forEach(a => {
+    a.addEventListener('click', () => navigate('/settings#' + a.dataset.settingsPage));
+  });
 
   // ================= AUTH: LOG IN =================
   function resetLoginView(){
@@ -1642,9 +1879,10 @@
       if(!currentUser) return;
       navigate('/my-entries');
     } else if(action === 'profile'){
-      alert(`Signed in as ${currentUser.profile_name} (@${currentUser.username})\nRole: ${currentUser.role}`);
+      if(!currentUser) return;
+      navigate('/u/' + currentUser.public_id);
     } else if(action === 'settings'){
-      alert('Settings panel is a placeholder for now — tell me what should live here.');
+      navigate('/settings');
     } else if(action === 'signout'){
       clearSession();
     } else if(action === 'signin'){
@@ -1690,7 +1928,26 @@
     selectedIdx = idx;
     hasSetDefaultSelection = true;
     highlightSelected();
+    scrollSelectedToSecondSlot();
     showEventPreview(timelineRows[idx]);
+  }
+  // Scrolls the timeline list so the just-selected item sits in the second visible slot
+  // (one entry — or a year header — showing above it), the way a "now playing" list keeps
+  // context on what came just before. Clamped to the container's real max scroll, so an
+  // item near the bottom just settles as far down as there's content for, rather than
+  // leaving empty space below it.
+  function scrollSelectedToSecondSlot(){
+    const container = document.getElementById('timeline');
+    const items = document.querySelectorAll('#timeline .t-item');
+    const selectedEl = items[selectedIdx];
+    if(!container || !selectedEl) return;
+    const anchorEl = selectedEl.previousElementSibling; // prior t-item, or a t-year header
+    const containerRect = container.getBoundingClientRect();
+    const targetTop = anchorEl
+      ? anchorEl.getBoundingClientRect().top - containerRect.top + container.scrollTop
+      : 0;
+    const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
+    container.scrollTop = Math.max(0, Math.min(targetTop, maxScroll));
   }
 
   async function renderTimeline(){
@@ -1751,8 +2008,9 @@
           <span class="t-tag">${escapeHtml(r.category)}</span>
         </div>
         <div class="t-desc">${escapeHtml(desc)}</div>
-        ${r.created_by_name ? `<div class="t-author">Submitted by ${escapeHtml(r.created_by_name)}</div>` : ''}`;
+        ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}`;
       item.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+      wireAuthorLink(item);
       el.appendChild(item);
     });
 
@@ -1805,10 +2063,11 @@
       body.innerHTML = `
         <div class="explore-card-title">${escapeHtml(r.title)}</div>
         <div class="explore-card-meta"><span>${formatDate(r.published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
-        ${r.created_by_name ? `<div class="explore-card-author">Submitted by ${escapeHtml(r.created_by_name)}</div>` : ''}`;
+        ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}`;
       card.appendChild(cover);
       card.appendChild(body);
       card.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+      wireAuthorLink(card);
       el.appendChild(card);
     });
   }
@@ -1828,6 +2087,17 @@
       el.style.backgroundRepeat = '';
     }
   }
+  // The main hero display, unlike gallery thumbnails, gets the blurred-letterbox
+  // treatment: a sharp contain-fit copy of the image (never crops the photo) layered over
+  // a blurred cover-fit duplicate that fills whatever gap the sharp layer leaves.
+  function setHeroImage(image){
+    const blurEl = document.getElementById('eventHeroBlur');
+    const imgEl = document.getElementById('eventHeroImg');
+    const url = image && image.url;
+    const css = url && url.startsWith('data:') ? `url("${url}")` : '';
+    blurEl.style.backgroundImage = css;
+    imgEl.style.backgroundImage = css;
+  }
   function renderGallery(images){
     const wrap = document.getElementById('galleryWrap');
     const el = document.getElementById('eventGallery');
@@ -1842,7 +2112,7 @@
         setBackgroundFit(tile, img, 'cover');
         tile.addEventListener('click', () => {
           document.querySelectorAll('.gallery-tile').forEach((t, idx) => t.classList.toggle('active', idx === i));
-          setBackgroundFit(document.getElementById('eventHero'), img, 'cover');
+          setHeroImage(img);
           countEl.textContent = `${i + 1} / ${images.length}`;
           captionEl.textContent = img.caption || '';
         });
@@ -1852,7 +2122,7 @@
     } else {
       wrap.style.display = 'none';
     }
-    setBackgroundFit(document.getElementById('eventHero'), images[0] || null, 'cover');
+    setHeroImage(images[0] || null);
     captionEl.textContent = (images[0] && images[0].caption) || '';
   }
   document.getElementById('galleryPrev').addEventListener('click', () => {
@@ -1889,7 +2159,8 @@
     document.getElementById('evLocationMeta').textContent = r.location || r.country || '—';
     const authorEl = document.getElementById('evAuthor');
     if(r.created_by_name){
-      authorEl.textContent = `Submitted by ${r.created_by_name}`;
+      authorEl.innerHTML = authorLineHtml(r);
+      wireAuthorLink(authorEl);
       authorEl.style.display = '';
     } else {
       authorEl.style.display = 'none';
@@ -2276,13 +2547,15 @@
   let cropOnApply = null;
   let cropQueue = []; // Files still waiting for their turn in the cropper
 
-  function openCropper(srcDataUrl, onApply){
+  let cropOutputWidth = 1280;
+  function openCropper(srcDataUrl, onApply, { aspectRatio = 16 / 9, outputWidth = 1280 } = {}){
     cropOnApply = onApply;
+    cropOutputWidth = outputWidth;
     cropImageEl.src = srcDataUrl;
     cropBackdrop.classList.add('open');
     if(cropperInstance) cropperInstance.destroy();
     cropperInstance = new Cropper(cropImageEl, {
-      aspectRatio: 16 / 9,
+      aspectRatio,
       viewMode: 1,
       dragMode: 'move',
       autoCropArea: 1,
@@ -2312,7 +2585,7 @@
   });
   document.getElementById('cropApply').addEventListener('click', () => {
     if(!cropperInstance) return;
-    const canvas = cropperInstance.getCroppedCanvas({ width: 1280, height: 720 });
+    const canvas = cropperInstance.getCroppedCanvas({ width: cropOutputWidth });
     const finalUrl = exportCroppedCanvas(canvas);
     const onApply = cropOnApply;
     closeCropper();
@@ -2359,8 +2632,10 @@
     if(!cropperInstance) processNextCropQueueItem();
   });
 
-  // ---------------- RICH-TEXT DESCRIPTION (Quill) ----------------
-  const MAX_DESCRIPTION_CHARS = 100000;
+  // ---------------- RICH-TEXT FIELD FACTORY (Quill + inline image select/resize/caption) ----------------
+  // Shared by the event description editor and the profile "about me" editor — same toolbar
+  // capabilities, same inline-image upload/resize/caption overlay, different DOM ids and
+  // character caps. Instantiated once per field; nothing here is a page-wide singleton.
   const MAX_INLINE_IMAGE_BYTES = 1.5 * 1024 * 1024;
   const MAX_INLINE_IMAGE_SOURCE_BYTES = 8 * 1024 * 1024;
   const MAX_INLINE_IMAGE_DISPLAY_WIDTH = 900; // px — initial insert size, before any manual resize
@@ -2371,26 +2646,6 @@
   // survives re-opening a saved entry for edit (dangerouslyPasteHTML round-trips through this).
   const ImageFormat = Quill.import('formats/image');
   ImageFormat.ATTRIBUTES = [...new Set([...(ImageFormat.ATTRIBUTES || []), 'width', 'data-caption'])];
-
-  const descQuill = new Quill('#fDescriptionEditor', {
-    theme: 'snow',
-    modules: { toolbar: { container: '#fDescriptionToolbar', handlers: { image: insertDescriptionImage } } },
-    placeholder: 'Tell the story…',
-  });
-  function updateDescriptionCount(){
-    const len = Math.max(0, descQuill.getLength() - 1); // getLength() includes the trailing newline
-    const el = document.getElementById('fDescriptionCount');
-    el.textContent = `${len.toLocaleString()} / ${MAX_DESCRIPTION_CHARS.toLocaleString()}`;
-    el.classList.toggle('over-limit', len >= MAX_DESCRIPTION_CHARS);
-  }
-  descQuill.on('text-change', () => {
-    const len = descQuill.getLength() - 1;
-    if(len > MAX_DESCRIPTION_CHARS){
-      descQuill.deleteText(MAX_DESCRIPTION_CHARS, len - MAX_DESCRIPTION_CHARS);
-    }
-    updateDescriptionCount();
-    deselectDescriptionImage();
-  });
 
   // Renders to JPEG, stepping quality down until it fits the byte cap — same approach as the
   // cover-image cropper's exportCroppedCanvas, just without the fixed 16:9 crop.
@@ -2403,133 +2658,167 @@
     return dataUrl.length > maxBytes ? null : dataUrl;
   }
 
-  function insertDescriptionImage(){
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.addEventListener('change', () => {
-      const file = input.files[0];
-      if(!file) return;
-      if(!file.type.startsWith('image/')){ alert(`"${file.name}" is not an image.`); return; }
-      if(file.size > MAX_INLINE_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const scale = Math.min(1, MAX_INLINE_IMAGE_DISPLAY_WIDTH / img.naturalWidth);
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.round(img.naturalWidth * scale);
-          canvas.height = Math.round(img.naturalHeight * scale);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = compressImageToDataUrl(canvas, MAX_INLINE_IMAGE_BYTES);
-          if(!dataUrl){ alert('This image is still too large after compression — try a smaller/simpler source image.'); return; }
-          const range = descQuill.getSelection(true);
-          descQuill.insertEmbed(range.index, 'image', dataUrl, 'user');
-          descQuill.setSelection(range.index + 1, 0, 'user');
-          descQuill.formatText(range.index, 1, 'width', String(canvas.width), 'user');
-        };
-        img.src = reader.result;
-      };
-      reader.readAsDataURL(file);
+  function createRichTextField({ editorSel, toolbarSel, countId, resizeHandleId, captionBoxId, captionInputId, wrapSel, maxChars, placeholder }){
+    const quill = new Quill(editorSel, {
+      theme: 'snow',
+      modules: { toolbar: { container: toolbarSel, handlers: { image: insertImage } } },
+      placeholder,
     });
-    input.click();
-  }
-
-  // ---------------- DESCRIPTION IMAGE: SELECT / RESIZE / CAPTION ----------------
-  let selectedImageEl = null;
-  const imgResizeHandle = document.getElementById('imgResizeHandle');
-  const imgCaptionBox = document.getElementById('imgCaptionBox');
-  const imgCaptionInput = document.getElementById('imgCaptionInput');
-
-  function positionImageOverlay(){
-    if(!selectedImageEl) return;
-    const wrap = document.querySelector('.desc-editor-wrap');
-    const wrapRect = wrap.getBoundingClientRect();
-    const imgRect = selectedImageEl.getBoundingClientRect();
-    imgResizeHandle.style.left = (imgRect.right - wrapRect.left) + 'px';
-    imgResizeHandle.style.top = (imgRect.bottom - wrapRect.top) + 'px';
-    imgCaptionBox.style.left = (imgRect.left - wrapRect.left) + 'px';
-    imgCaptionBox.style.top = (imgRect.bottom - wrapRect.top + 8) + 'px';
-  }
-  function selectDescriptionImage(img){
-    if(selectedImageEl) selectedImageEl.classList.remove('img-selected');
-    selectedImageEl = img;
-    img.classList.add('img-selected');
-    imgCaptionInput.value = img.getAttribute('data-caption') || '';
-    imgResizeHandle.classList.add('active');
-    imgCaptionBox.classList.add('active');
-    positionImageOverlay();
-  }
-  function deselectDescriptionImage(){
-    if(selectedImageEl) selectedImageEl.classList.remove('img-selected');
-    selectedImageEl = null;
-    imgResizeHandle.classList.remove('active');
-    imgCaptionBox.classList.remove('active');
-  }
-  descQuill.root.addEventListener('click', e => {
-    if(e.target.tagName === 'IMG') selectDescriptionImage(e.target);
-    else deselectDescriptionImage();
-  });
-  document.querySelector('.modal-body').addEventListener('scroll', () => { if(selectedImageEl) positionImageOverlay(); });
-  window.addEventListener('resize', () => { if(selectedImageEl) positionImageOverlay(); });
-
-  imgCaptionInput.addEventListener('input', () => {
-    if(!selectedImageEl) return;
-    if(imgCaptionInput.value) selectedImageEl.setAttribute('data-caption', imgCaptionInput.value);
-    else selectedImageEl.removeAttribute('data-caption');
-  });
-
-  let imgResizeStartX = 0;
-  let imgResizeStartWidth = 0;
-  function onImgResizeMove(e){
-    if(!selectedImageEl) return;
-    const delta = e.clientX - imgResizeStartX;
-    const newWidth = Math.max(40, Math.min(1600, Math.round(imgResizeStartWidth + delta)));
-    selectedImageEl.style.width = newWidth + 'px';
-    positionImageOverlay();
-  }
-  function onImgResizeUp(){
-    document.removeEventListener('mousemove', onImgResizeMove);
-    document.removeEventListener('mouseup', onImgResizeUp);
-    if(selectedImageEl){
-      const finalWidth = Math.round(selectedImageEl.getBoundingClientRect().width);
-      selectedImageEl.style.width = '';
-      // Plain DOM mutation rather than the blot's format() API — Quill's Image blot rebuilds
-      // its DOM node on format(), which orphans our selectedImageEl reference mid-drag. Since
-      // saving reads quill.root.innerHTML directly (not via Quill's Delta), a live attribute
-      // set here is captured correctly regardless of which path set it.
-      selectedImageEl.setAttribute('width', String(finalWidth));
-      positionImageOverlay();
+    function updateCount(){
+      const len = Math.max(0, quill.getLength() - 1); // getLength() includes the trailing newline
+      const el = document.getElementById(countId);
+      el.textContent = `${len.toLocaleString()} / ${maxChars.toLocaleString()}`;
+      el.classList.toggle('over-limit', len >= maxChars);
     }
-  }
-  imgResizeHandle.addEventListener('mousedown', e => {
-    if(!selectedImageEl) return;
-    e.preventDefault();
-    imgResizeStartX = e.clientX;
-    imgResizeStartWidth = selectedImageEl.getBoundingClientRect().width;
-    document.addEventListener('mousemove', onImgResizeMove);
-    document.addEventListener('mouseup', onImgResizeUp);
-  });
 
-  // Quill's clipboard matcher only carries the built-in alt/height/width attributes across a
-  // dangerouslyPasteHTML() conversion — a custom attribute like data-caption is silently
-  // dropped even though it's in Image.ATTRIBUTES (that list gates format()/create(), not the
-  // paste matcher). Patches captions back onto the freshly-pasted <img> elements directly,
-  // matched by position against the original HTML — the same order/count is expected since
-  // the images themselves do survive the paste, just missing this one attribute.
-  function restoreImageCaptions(originalHtml){
-    if(!originalHtml || !originalHtml.includes('data-caption')) return;
-    const scratch = document.createElement('div');
-    scratch.innerHTML = originalHtml;
-    const sourceImgs = scratch.querySelectorAll('img[data-caption]');
-    if(!sourceImgs.length) return;
-    const liveImgs = descQuill.root.querySelectorAll('img');
-    sourceImgs.forEach(src => {
-      const idx = Array.prototype.indexOf.call(scratch.querySelectorAll('img'), src);
-      const target = liveImgs[idx];
-      if(target) target.setAttribute('data-caption', src.getAttribute('data-caption'));
+    let selectedImageEl = null;
+    const resizeHandle = document.getElementById(resizeHandleId);
+    const captionBox = document.getElementById(captionBoxId);
+    const captionInput = document.getElementById(captionInputId);
+
+    function positionOverlay(){
+      if(!selectedImageEl) return;
+      const wrap = document.querySelector(wrapSel);
+      const wrapRect = wrap.getBoundingClientRect();
+      const imgRect = selectedImageEl.getBoundingClientRect();
+      resizeHandle.style.left = (imgRect.right - wrapRect.left) + 'px';
+      resizeHandle.style.top = (imgRect.bottom - wrapRect.top) + 'px';
+      captionBox.style.left = (imgRect.left - wrapRect.left) + 'px';
+      captionBox.style.top = (imgRect.bottom - wrapRect.top + 8) + 'px';
+    }
+    function selectImage(img){
+      if(selectedImageEl) selectedImageEl.classList.remove('img-selected');
+      selectedImageEl = img;
+      img.classList.add('img-selected');
+      captionInput.value = img.getAttribute('data-caption') || '';
+      resizeHandle.classList.add('active');
+      captionBox.classList.add('active');
+      positionOverlay();
+    }
+    function deselectImage(){
+      if(selectedImageEl) selectedImageEl.classList.remove('img-selected');
+      selectedImageEl = null;
+      resizeHandle.classList.remove('active');
+      captionBox.classList.remove('active');
+    }
+    quill.on('text-change', () => {
+      const len = quill.getLength() - 1;
+      if(len > maxChars) quill.deleteText(maxChars, len - maxChars);
+      updateCount();
+      deselectImage();
     });
+    quill.root.addEventListener('click', e => {
+      if(e.target.tagName === 'IMG') selectImage(e.target);
+      else deselectImage();
+    });
+    // Capture-phase + generic scroll target (rather than one hardcoded ancestor) so this
+    // works regardless of which scroll container a given instance lives inside.
+    document.addEventListener('scroll', () => { if(selectedImageEl) positionOverlay(); }, true);
+    window.addEventListener('resize', () => { if(selectedImageEl) positionOverlay(); });
+
+    captionInput.addEventListener('input', () => {
+      if(!selectedImageEl) return;
+      if(captionInput.value) selectedImageEl.setAttribute('data-caption', captionInput.value);
+      else selectedImageEl.removeAttribute('data-caption');
+    });
+
+    let resizeStartX = 0;
+    let resizeStartWidth = 0;
+    function onResizeMove(e){
+      if(!selectedImageEl) return;
+      const delta = e.clientX - resizeStartX;
+      const newWidth = Math.max(40, Math.min(1600, Math.round(resizeStartWidth + delta)));
+      selectedImageEl.style.width = newWidth + 'px';
+      positionOverlay();
+    }
+    function onResizeUp(){
+      document.removeEventListener('mousemove', onResizeMove);
+      document.removeEventListener('mouseup', onResizeUp);
+      if(selectedImageEl){
+        const finalWidth = Math.round(selectedImageEl.getBoundingClientRect().width);
+        selectedImageEl.style.width = '';
+        // Plain DOM mutation rather than the blot's format() API — Quill's Image blot rebuilds
+        // its DOM node on format(), which orphans selectedImageEl mid-drag. Since saving reads
+        // quill.root.innerHTML directly (not via Quill's Delta), a live attribute set here is
+        // captured correctly regardless of which path set it.
+        selectedImageEl.setAttribute('width', String(finalWidth));
+        positionOverlay();
+      }
+    }
+    resizeHandle.addEventListener('mousedown', e => {
+      if(!selectedImageEl) return;
+      e.preventDefault();
+      resizeStartX = e.clientX;
+      resizeStartWidth = selectedImageEl.getBoundingClientRect().width;
+      document.addEventListener('mousemove', onResizeMove);
+      document.addEventListener('mouseup', onResizeUp);
+    });
+
+    function insertImage(){
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        if(!file) return;
+        if(!file.type.startsWith('image/')){ alert(`"${file.name}" is not an image.`); return; }
+        if(file.size > MAX_INLINE_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, MAX_INLINE_IMAGE_DISPLAY_WIDTH / img.naturalWidth);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.naturalWidth * scale);
+            canvas.height = Math.round(img.naturalHeight * scale);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = compressImageToDataUrl(canvas, MAX_INLINE_IMAGE_BYTES);
+            if(!dataUrl){ alert('This image is still too large after compression — try a smaller/simpler source image.'); return; }
+            const range = quill.getSelection(true);
+            quill.insertEmbed(range.index, 'image', dataUrl, 'user');
+            quill.setSelection(range.index + 1, 0, 'user');
+            quill.formatText(range.index, 1, 'width', String(canvas.width), 'user');
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      input.click();
+    }
+
+    // Quill's clipboard matcher only carries the built-in alt/height/width attributes across a
+    // dangerouslyPasteHTML() conversion — a custom attribute like data-caption is silently
+    // dropped even though it's in Image.ATTRIBUTES (that list gates format()/create(), not the
+    // paste matcher). Patches captions back onto the freshly-pasted <img> elements directly,
+    // matched by position against the original HTML — the same order/count is expected since
+    // the images themselves do survive the paste, just missing this one attribute.
+    function restoreImageCaptions(originalHtml){
+      if(!originalHtml || !originalHtml.includes('data-caption')) return;
+      const scratch = document.createElement('div');
+      scratch.innerHTML = originalHtml;
+      const sourceImgs = scratch.querySelectorAll('img[data-caption]');
+      if(!sourceImgs.length) return;
+      const liveImgs = quill.root.querySelectorAll('img');
+      sourceImgs.forEach(src => {
+        const idx = Array.prototype.indexOf.call(scratch.querySelectorAll('img'), src);
+        const target = liveImgs[idx];
+        if(target) target.setAttribute('data-caption', src.getAttribute('data-caption'));
+      });
+    }
+
+    return { quill, maxChars, updateCount, deselect: deselectImage, restoreImageCaptions };
   }
+
+  const descRTE = createRichTextField({
+    editorSel: '#fDescriptionEditor', toolbarSel: '#fDescriptionToolbar', countId: 'fDescriptionCount',
+    resizeHandleId: 'imgResizeHandle', captionBoxId: 'imgCaptionBox', captionInputId: 'imgCaptionInput',
+    wrapSel: '.desc-editor-wrap', maxChars: 100000, placeholder: 'Tell the story…',
+  });
+  const descQuill = descRTE.quill;
+  const MAX_DESCRIPTION_CHARS = descRTE.maxChars;
+  function updateDescriptionCount(){ descRTE.updateCount(); }
+  function deselectDescriptionImage(){ descRTE.deselect(); }
+  function restoreImageCaptions(html){ descRTE.restoreImageCaptions(html); }
 
   // Converts stored <img data-caption="..."> markers into a visible caption line wherever
   // sanitized description HTML is rendered publicly (data-caption alone renders as nothing).
@@ -3276,6 +3565,222 @@
       bc.appendChild(bar);
     }
   })();
+
+  // ================= PUBLIC PROFILE =================
+  async function loadPublicProfile(publicId){
+    const bannerEl = document.getElementById('pfBanner');
+    const bannerEmptyEl = document.getElementById('pfBannerEmpty');
+    const avatarEl = document.getElementById('pfAvatar');
+    const avatarEmptyEl = document.getElementById('pfAvatarEmpty');
+    const genresEl = document.getElementById('pfGenres');
+    const genresEmptyEl = document.getElementById('pfGenresEmpty');
+    const aboutEl = document.getElementById('pfAbout');
+    const aboutEmptyEl = document.getElementById('pfAboutEmpty');
+    const entriesEl = document.getElementById('pfEntries');
+    const entriesEmptyEl = document.getElementById('pfEntriesEmpty');
+
+    let profile;
+    try{
+      const data = await apiFetch(`/api/profile/${encodeURIComponent(publicId)}`, { auth: false });
+      profile = data.profile;
+    } catch(e){
+      document.getElementById('pfName').textContent = 'Profile not found';
+      document.getElementById('pfJoined').textContent = '—';
+      bannerEl.style.backgroundImage = ''; bannerEmptyEl.style.display = '';
+      avatarEl.style.backgroundImage = ''; avatarEmptyEl.style.display = '';
+      genresEl.innerHTML = ''; genresEmptyEl.style.display = 'block';
+      aboutEl.innerHTML = ''; aboutEmptyEl.style.display = 'block';
+      entriesEl.innerHTML = ''; entriesEmptyEl.style.display = 'block';
+      return;
+    }
+
+    document.getElementById('pfName').textContent = profile.profile_name;
+    document.getElementById('pfJoined').textContent = formatFullDate(profile.created_at);
+
+    if(profile.header_image){ bannerEl.style.backgroundImage = `url("${profile.header_image}")`; bannerEmptyEl.style.display = 'none'; }
+    else { bannerEl.style.backgroundImage = ''; bannerEmptyEl.style.display = ''; }
+
+    if(profile.avatar_image){ avatarEl.style.backgroundImage = `url("${profile.avatar_image}")`; avatarEmptyEl.style.display = 'none'; }
+    else { avatarEl.style.backgroundImage = ''; avatarEmptyEl.style.display = ''; }
+
+    if(profile.preferred_genres.length){
+      genresEl.innerHTML = profile.preferred_genres.map(g => `<span class="tag-pill">${escapeHtml(g)}</span>`).join('');
+      genresEmptyEl.style.display = 'none';
+    } else {
+      genresEl.innerHTML = '';
+      genresEmptyEl.style.display = 'block';
+    }
+
+    if(profile.about_me){
+      aboutEl.innerHTML = profile.about_me;
+      renderInlineImageCaptions(aboutEl);
+      aboutEmptyEl.style.display = 'none';
+    } else {
+      aboutEl.innerHTML = '';
+      aboutEmptyEl.style.display = 'block';
+    }
+
+    try{
+      const { events } = await apiFetch(`/api/profile/${encodeURIComponent(publicId)}/events`, { auth: false });
+      if(events.length){
+        entriesEl.innerHTML = '';
+        events.forEach(r => {
+          const row = document.createElement('div');
+          row.className = 'profile-entry-row';
+          row.innerHTML = `<div class="profile-entry-title">${escapeHtml(r.title)}</div><div class="profile-entry-meta">${formatDate(r.published_at)} · ${escapeHtml(r.category)}</div>`;
+          row.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+          entriesEl.appendChild(row);
+        });
+        entriesEmptyEl.style.display = 'none';
+      } else {
+        entriesEl.innerHTML = '';
+        entriesEmptyEl.style.display = 'block';
+      }
+    } catch(e){
+      entriesEl.innerHTML = '';
+      entriesEmptyEl.style.display = 'block';
+    }
+  }
+
+  // ================= SETTINGS: PROFILE =================
+  const pAboutRTE = createRichTextField({
+    editorSel: '#pAboutEditor', toolbarSel: '#pAboutToolbar', countId: 'pAboutCount',
+    resizeHandleId: 'pImgResizeHandle', captionBoxId: 'pImgCaptionBox', captionInputId: 'pImgCaptionInput',
+    wrapSel: '.about-editor-wrap', maxChars: 10000, placeholder: 'Tell people about yourself…',
+  });
+
+  let pendingHeaderImage = null; // null = unchanged, data URI = newly cropped/staged
+  let pendingAvatarImage = null;
+  let pendingPreferredGenres = [];
+  let availableGenres = [];
+
+  function renderSettingsBanner(url){
+    const el = document.getElementById('setBannerPreview');
+    const emptyEl = document.getElementById('setBannerEmpty');
+    if(url){ el.style.backgroundImage = `url("${url}")`; emptyEl.style.display = 'none'; }
+    else { el.style.backgroundImage = ''; emptyEl.style.display = ''; }
+  }
+  function renderSettingsAvatar(url){
+    const el = document.getElementById('setAvatarPreview');
+    const emptyEl = document.getElementById('setAvatarEmpty');
+    if(url){ el.style.backgroundImage = `url("${url}")`; emptyEl.style.display = 'none'; }
+    else { el.style.backgroundImage = ''; emptyEl.style.display = ''; }
+  }
+  function renderGenrePicker(){
+    const el = document.getElementById('setGenrePicker');
+    el.innerHTML = '';
+    availableGenres.forEach(g => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'genre-opt' + (pendingPreferredGenres.includes(g.name) ? ' selected' : '');
+      btn.textContent = g.name;
+      btn.addEventListener('click', () => {
+        const idx = pendingPreferredGenres.indexOf(g.name);
+        if(idx >= 0) pendingPreferredGenres.splice(idx, 1);
+        else pendingPreferredGenres.push(g.name);
+        renderGenrePicker();
+      });
+      el.appendChild(btn);
+    });
+  }
+
+  async function loadSettingsProfile(){
+    if(!currentUser) return;
+    pendingHeaderImage = null;
+    pendingAvatarImage = null;
+    pendingPreferredGenres = Array.isArray(currentUser.preferred_genres) ? currentUser.preferred_genres.slice() : [];
+
+    renderSettingsBanner(currentUser.header_image);
+    renderSettingsAvatar(currentUser.avatar_image);
+    document.getElementById('setJoined').textContent = formatFullDate(currentUser.created_at);
+    const profileUrl = location.origin + BASE_PATH + '/u/' + currentUser.public_id;
+    const urlEl = document.getElementById('setProfileUrl');
+    urlEl.textContent = profileUrl;
+    urlEl.href = profileUrl;
+    document.getElementById('setSaveStatus').textContent = '';
+
+    pAboutRTE.quill.setContents([]);
+    pAboutRTE.quill.clipboard.dangerouslyPasteHTML(currentUser.about_me || '');
+    pAboutRTE.restoreImageCaptions(currentUser.about_me || '');
+    pAboutRTE.updateCount();
+
+    if(!availableGenres.length){
+      try{
+        const data = await apiFetch('/api/genres', { auth: false });
+        availableGenres = data.genres;
+      } catch(e){ availableGenres = []; }
+    }
+    renderGenrePicker();
+  }
+
+  document.getElementById('setBannerPreview').addEventListener('click', () => document.getElementById('setBannerFile').click());
+  document.getElementById('setAvatarPreview').addEventListener('click', () => document.getElementById('setAvatarFile').click());
+
+  document.getElementById('setBannerFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ alert(`"${file.name}" is not an image.`); return; }
+    if(file.size > MAX_INLINE_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      openCropper(reader.result, croppedUrl => {
+        pendingHeaderImage = croppedUrl;
+        renderSettingsBanner(croppedUrl);
+      }, { aspectRatio: 3, outputWidth: 1500 });
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('setAvatarFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ alert(`"${file.name}" is not an image.`); return; }
+    if(file.size > MAX_INLINE_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      openCropper(reader.result, croppedUrl => {
+        pendingAvatarImage = croppedUrl;
+        renderSettingsAvatar(croppedUrl);
+      }, { aspectRatio: 1, outputWidth: 640 });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('setCopyUrlBtn').addEventListener('click', async () => {
+    const url = document.getElementById('setProfileUrl').textContent;
+    try{ await navigator.clipboard.writeText(url); showToast('Profile link copied.'); }
+    catch(e){ /* clipboard permission denied — link is still visible/selectable */ }
+  });
+
+  document.getElementById('setSaveBtn').addEventListener('click', async () => {
+    if(!currentUser) return;
+    if(pAboutRTE.quill.getLength() - 1 > pAboutRTE.maxChars){
+      alert(`About me must be ${pAboutRTE.maxChars.toLocaleString()} characters or fewer.`);
+      return;
+    }
+    const aboutText = pAboutRTE.quill.getText().trim();
+    const payload = {
+      preferred_genres: pendingPreferredGenres,
+      about_me: aboutText ? pAboutRTE.quill.root.innerHTML : null,
+    };
+    if(pendingHeaderImage !== null) payload.header_image = pendingHeaderImage;
+    if(pendingAvatarImage !== null) payload.avatar_image = pendingAvatarImage;
+
+    const statusEl = document.getElementById('setSaveStatus');
+    statusEl.textContent = 'Saving…';
+    try{
+      const data = await apiFetch('/api/profile/me', { method: 'PUT', body: payload });
+      saveSession(authToken, { ...currentUser, ...data.profile });
+      pendingHeaderImage = null;
+      pendingAvatarImage = null;
+      statusEl.textContent = 'Saved';
+      setTimeout(() => { statusEl.textContent = ''; }, 2500);
+    } catch(e){
+      statusEl.textContent = '';
+      alert('Could not save profile: ' + e.message);
+    }
+  });
 
   initApp();
 </script>
