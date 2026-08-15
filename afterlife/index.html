@@ -1114,6 +1114,7 @@
         <div class="form-error" id="loginError"></div>
         <div class="field"><label>Username or email</label><input type="text" id="loginUsername" autocomplete="username"></div>
         <div class="field"><label>Password</label><div class="pw-field"><input type="password" id="loginPassword" autocomplete="current-password"><button type="button" class="pw-toggle" data-toggle-for="loginPassword" aria-label="Show password"></button></div></div>
+        <div class="cf-turnstile" id="loginTurnstile" data-callback="onLoginTurnstileToken" data-expired-callback="onLoginTurnstileExpired" data-error-callback="onLoginTurnstileExpired" style="margin-bottom:14px;"></div>
         <button class="btn btn-primary btn-sm" id="loginSubmit" style="width:100%;">Sign in</button>
         <div class="auth-links">
           <a data-auth-link="register">Register</a>
@@ -1145,6 +1146,7 @@
           </ul>
         </div>
         <div class="field"><label>Confirm password</label><div class="pw-field"><input type="password" id="regPasswordConfirm" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="regPasswordConfirm" aria-label="Show password"></button></div></div>
+        <div class="cf-turnstile" id="registerTurnstile" data-callback="onRegisterTurnstileToken" data-expired-callback="onRegisterTurnstileExpired" data-error-callback="onRegisterTurnstileExpired" style="margin-bottom:14px;"></div>
         <button class="btn btn-primary btn-sm" id="registerSubmit" style="width:100%;">Create account</button>
         <div class="auth-links"><span></span><a data-auth-link="log-in">Already have an account? Sign in</a></div>
       </div>
@@ -1450,11 +1452,50 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<!-- `defer` (not async) guarantees this runs only after the whole document — including the
+     inline script below, which sets data-sitekey on the two .cf-turnstile divs — has been
+     parsed, so Turnstile's own DOM auto-render always finds the sitekey already in place. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
 <script>
   const SESSION_KEY = "afterlife_session";
   // localhost during dev; the Render-hosted API's custom subdomain everywhere else.
   // Update the production branch once the backend is actually deployed (see DEPLOYMENT.md).
   const API_BASE = location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://api.utorealm.com';
+
+  // Cloudflare Turnstile site key (public, safe to embed) — get one at
+  // https://dash.cloudflare.com/?to=/:account/turnstile and paste it here. Left blank, both
+  // widgets stay hidden and login/register just work without a CAPTCHA step (matches the
+  // backend's TURNSTILE_SECRET_KEY, which skips verification the same way when unset).
+  const TURNSTILE_SITE_KEY = '0x4AAAAAAEQ06ay8dyiAgLVY';
+  if(TURNSTILE_SITE_KEY){
+    document.getElementById('loginTurnstile').dataset.sitekey = TURNSTILE_SITE_KEY;
+    document.getElementById('registerTurnstile').dataset.sitekey = TURNSTILE_SITE_KEY;
+  } else {
+    // Turnstile's auto-render scans for *any* .cf-turnstile element, sitekey or not, and
+    // throws if it finds one with no sitekey — dropping the class (not just hiding via
+    // style) keeps it from ever noticing these two exist.
+    document.getElementById('loginTurnstile').classList.remove('cf-turnstile');
+    document.getElementById('loginTurnstile').style.display = 'none';
+    document.getElementById('registerTurnstile').classList.remove('cf-turnstile');
+    document.getElementById('registerTurnstile').style.display = 'none';
+  }
+  // Captured via data-callback rather than turnstile.getResponse(container) — the latter
+  // needs the exact internal widget id Turnstile assigns at auto-render time, and passing
+  // the container's own DOM id doesn't reliably resolve to it in practice (silently came
+  // back empty here even with a fully solved "Success!" widget). The callback gets handed
+  // the token directly, so there's nothing to look up.
+  let loginTurnstileToken = '';
+  let registerTurnstileToken = '';
+  window.onLoginTurnstileToken = function(token){ loginTurnstileToken = token; };
+  window.onLoginTurnstileExpired = function(){ loginTurnstileToken = ''; };
+  window.onRegisterTurnstileToken = function(token){ registerTurnstileToken = token; };
+  window.onRegisterTurnstileExpired = function(){ registerTurnstileToken = ''; };
+  function resetTurnstile(container, which){
+    if(which === 'login') loginTurnstileToken = '';
+    else registerTurnstileToken = '';
+    if(!TURNSTILE_SITE_KEY || typeof turnstile === 'undefined') return;
+    try{ turnstile.reset(document.getElementById(container)); } catch(e){}
+  }
 
   let currentUser = null;
   let authToken = null;
@@ -1824,7 +1865,8 @@
       return;
     }
     try{
-      const { token, user } = await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password }, auth: false });
+      const { token, user } = await apiFetch('/api/auth/login', { method: 'POST', body: { identifier, password, turnstile_token: loginTurnstileToken }, auth: false });
+      resetTurnstile('loginTurnstile', 'login'); // token is single-use — clear it so a later login in this session gets a fresh one
       saveSession(token, user);
       refreshCurrentUserUI();
       const next = currentNextParam();
@@ -1836,6 +1878,7 @@
         navigate(next);
       }
     } catch(e){
+      resetTurnstile('loginTurnstile', 'login'); // tokens are single-use — a fresh one is needed to retry
       errEl.textContent = e.message;
       errEl.classList.add('show');
     }
@@ -1985,13 +2028,15 @@
     try{
       await apiFetch('/api/auth/register', {
         method: 'POST', auth: false,
-        body: { email, username, profile_name: profileName, password },
+        body: { email, username, profile_name: profileName, password, turnstile_token: registerTurnstileToken },
       });
+      resetTurnstile('registerTurnstile', 'register'); // token is single-use — clear it so a later registration in this session gets a fresh one
       lastRegisteredEmail = email;
       document.getElementById('registerSuccessMsg').textContent = `We sent a verification link to ${email}. Click it to finish setting up your account.`;
       document.getElementById('verifyResendEmail') && (document.getElementById('verifyResendEmail').value = email);
       showAuthState('registerView', 'registerSuccessState');
     } catch(e){
+      resetTurnstile('registerTurnstile', 'register'); // tokens are single-use — a fresh one is needed to retry
       errEl.textContent = e.message; errEl.classList.add('show');
     }
   }
