@@ -1152,10 +1152,21 @@
             </div>
           </div>
           <div class="field-row">
-            <div class="field"><label>Published at</label><input type="datetime-local" id="fPublished"></div>
-            <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
+            <div class="field">
+              <label>Event date *</label>
+              <input type="datetime-local" id="fEventPublished">
+              <div class="tag-hint">When this actually happened — drives the Timeline's order and dates.</div>
+            </div>
+            <div class="field">
+              <label>Published at</label>
+              <input type="datetime-local" id="fPublished">
+              <div class="tag-hint">When this entry itself was published to the site.</div>
+            </div>
           </div>
-          <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
+          <div class="field-row">
+            <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
+            <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
+          </div>
           <div class="field"><label>Learn more link (CTA)</label><input type="url" id="fCtaUrl" placeholder="https://example.com/event"></div>
           <div class="field"><label>Cover images</label>
             <div class="cover-gallery-edit" id="coverGalleryEdit"><span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span></div>
@@ -1243,7 +1254,7 @@
   <div class="modal-backdrop" id="importBackdrop">
     <div class="modal bracket">
       <h2>Batch import</h2>
-      <div class="import-drop">Upload a .csv, .xlsx, .xls, or .json file — or paste a JSON array below.<br>Columns/keys: title*, subtitle, description*, category, genre, country, location, cta_url, cover_image, published_at.<br>Not sure of the format? Use "Download CSV template" or "Download Excel template" first.</div>
+      <div class="import-drop">Upload a .csv, .xlsx, .xls, or .json file — or paste a JSON array below.<br>Columns/keys: title*, subtitle, description*, category, genre, country, location, cta_url, cover_image, event_published_at, published_at.<br>Not sure of the format? Use "Download CSV template" or "Download Excel template" first.</div>
       <input type="file" id="importFile" accept=".csv,.xlsx,.xls,.json,application/json,text/csv">
       <div class="field" style="margin-top:14px;">
         <label>Or paste JSON</label>
@@ -1938,7 +1949,7 @@
     const now = Date.now();
     let idx = 0, smallestDiff = Infinity;
     rows.forEach((r, i) => {
-      const diff = Math.abs(new Date(r.published_at).getTime() - now);
+      const diff = Math.abs(new Date(r.event_published_at).getTime() - now);
       if(diff < smallestDiff){ smallestDiff = diff; idx = i; }
     });
     return idx;
@@ -1952,7 +1963,7 @@
       .replace(/^-+|-+$/g, '');
   }
   function slugFor(row){
-    const year = new Date(row.published_at).getFullYear();
+    const year = new Date(row.event_published_at).getFullYear();
     const base = slugify(row.title) || 'event';
     return isNaN(year) ? base : `${base}-${year}`;
   }
@@ -2020,7 +2031,7 @@
 
     let currentYear = null;
     timelineRows.forEach((r, i) => {
-      const year = new Date(r.published_at).getFullYear();
+      const year = new Date(r.event_published_at).getFullYear();
       const yearLabel = isNaN(year) ? 'Undated' : String(year);
       if(yearLabel !== currentYear){
         currentYear = yearLabel;
@@ -2031,7 +2042,7 @@
       }
       const item = document.createElement('div');
       item.className = 't-item';
-      const dateLabel = formatDate(r.published_at);
+      const dateLabel = formatDate(r.event_published_at);
       const plainDesc = htmlToPlainText(r.description);
       const desc = r.subtitle || plainDesc.slice(0,80) + (plainDesc.length>80 ? '…' : '');
       item.innerHTML = `
@@ -2096,7 +2107,7 @@
       body.className = 'explore-card-body';
       body.innerHTML = `
         <div class="explore-card-title">${escapeHtml(r.title)}</div>
-        <div class="explore-card-meta"><span>${formatDate(r.published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
+        <div class="explore-card-meta"><span>${formatDate(r.event_published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
         ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}`;
       card.appendChild(cover);
       card.appendChild(body);
@@ -2168,7 +2179,7 @@
   function showEventPreview(r){
     document.getElementById('evTitle').textContent = r.title;
     document.getElementById('evTag').textContent = (r.genre && r.genre !== 'General') ? `${r.category} · ${r.genre}` : r.category;
-    document.getElementById('evTime').textContent = formatFullDate(r.published_at);
+    document.getElementById('evTime').textContent = formatFullDate(r.event_published_at);
 
     const descEl = document.getElementById('evBody');
     // r.description is sanitized HTML from the server (allowlisted tags only) — safe to
@@ -3018,6 +3029,7 @@
       document.getElementById('fLocation').value = row.location || '';
       document.getElementById('fCtaUrl').value = row.cta_url || '';
       document.getElementById('fPublished').value = (row.published_at || '').slice(0,16);
+      document.getElementById('fEventPublished').value = (row.event_published_at || row.published_at || '').slice(0,16);
       pendingCoverImages = getEventImages(row).map(img => ({ ...img }));
       renderCoverGalleryEdit();
       pendingTags = Array.isArray(row.tags) ? row.tags.map(t => t.name) : [];
@@ -3046,6 +3058,7 @@
       document.getElementById('fCategory').value = 'General';
       document.getElementById('fGenre').value = 'General';
       document.getElementById('fPublished').value = new Date().toISOString().slice(0,16);
+      document.getElementById('fEventPublished').value = new Date().toISOString().slice(0,16);
       pendingCoverImages = [];
       renderCoverGalleryEdit();
       pendingTags = [];
@@ -3084,9 +3097,11 @@
     const ctaUrl = document.getElementById('fCtaUrl').value.trim() || null;
     const publishedRaw = document.getElementById('fPublished').value;
     const published_at = publishedRaw ? new Date(publishedRaw).toISOString() : nowIso();
+    const eventPublishedRaw = document.getElementById('fEventPublished').value;
+    const event_published_at = eventPublishedRaw ? new Date(eventPublishedRaw).toISOString() : published_at;
     const payload = {
       title, subtitle, description, category, genre, country, location,
-      cta_url: ctaUrl, cover_images: pendingCoverImages, published_at, tags: pendingTags,
+      cta_url: ctaUrl, cover_images: pendingCoverImages, published_at, event_published_at, tags: pendingTags,
     };
     if(explicitStatus) payload.status = explicitStatus;
     const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
@@ -3202,7 +3217,7 @@
   }
 
   // ================= ADMIN: TEMPLATE DOWNLOADS =================
-  const TEMPLATE_HEADERS = ['title','subtitle','description','category','genre','country','location','cta_url','cover_image','published_at'];
+  const TEMPLATE_HEADERS = ['title','subtitle','description','category','genre','country','location','cta_url','cover_image','event_published_at','published_at'];
   const TEMPLATE_EXAMPLE = {
     title: 'Gallery opening: Neon Static',
     subtitle: 'Downtown exhibit hall',
@@ -3213,6 +3228,7 @@
     location: 'The Vault Gallery, 88 Lexington Ave, New York',
     cta_url: 'https://example.com/events/neon-static',
     cover_image: '/assets/covers/neon-static.jpg',
+    event_published_at: '2026-08-10T18:00:00+00:00',
     published_at: '2026-08-10T18:00:00+00:00'
   };
   function downloadBlob(blob, filename){
@@ -3320,9 +3336,16 @@
     try { items = JSON.parse(raw); } catch(e){ resultEl.textContent = 'Invalid JSON: ' + e.message; return; }
     if(!Array.isArray(items)){ resultEl.textContent = 'Data must be an array of event objects/rows.'; return; }
 
-    // Normalize published_at client-side (handles Excel serial dates etc. from parseImportFile);
-    // the server handles the rest of the field validation/defaulting.
-    const normalized = items.map(item => ({ ...item, published_at: normalizePublishedAt(item.published_at) }));
+    // Normalize published_at/event_published_at client-side (handles Excel serial dates etc.
+    // from parseImportFile); the server handles the rest of the field validation/defaulting.
+    // event_published_at is left untouched when the column is absent — normalizePublishedAt()
+    // always returns a value (defaulting to "now"), which would wrongly override the server's
+    // own fallback to published_at for rows that never specified it.
+    const normalized = items.map(item => ({
+      ...item,
+      published_at: normalizePublishedAt(item.published_at),
+      ...(item.event_published_at !== undefined ? { event_published_at: normalizePublishedAt(item.event_published_at) } : {}),
+    }));
 
     resultEl.textContent = 'Importing…';
     try{
@@ -3661,7 +3684,7 @@
         events.forEach(r => {
           const row = document.createElement('div');
           row.className = 'profile-entry-row';
-          row.innerHTML = `<div class="profile-entry-title">${escapeHtml(r.title)}</div><div class="profile-entry-meta">${formatDate(r.published_at)} · ${escapeHtml(r.category)}</div>`;
+          row.innerHTML = `<div class="profile-entry-title">${escapeHtml(r.title)}</div><div class="profile-entry-meta">${formatDate(r.event_published_at)} · ${escapeHtml(r.category)}</div>`;
           row.addEventListener('click', () => navigate('/home/' + slugFor(r)));
           entriesEl.appendChild(row);
         });
