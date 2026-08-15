@@ -640,6 +640,9 @@
   .comment-replies:empty{ display:none; }
   .comment-reply-composer{ margin-top:8px; padding-left:30px; }
   .comment-deleted-msg{ font-style:italic; color:var(--text-faint); opacity:0.7; cursor:default; }
+  .comment-closed-note{ font-size:10px; font-style:italic; color:var(--text-faint); margin-top:2px; }
+  .comment-highlight{ outline:2px solid var(--cool); outline-offset:4px; transition:outline-color 1.8s ease; }
+  .comment-highlight.comment-highlight-fade{ outline-color:transparent; }
   .comment-load-more{ align-self:flex-start; }
 
   /* Image viewer lightbox — click any posted comment image to enlarge, click the ×
@@ -876,6 +879,7 @@
         <a data-admin-page="events" class="active">Events</a>
         <a data-admin-page="users" id="usersTabLink">Users</a>
         <a data-admin-page="taxonomy" id="taxonomyTabLink">Categories &amp; Genres</a>
+        <a data-admin-page="comments" id="commentsTabLink">Comments</a>
       </div>
 
       <div class="admin-page active" id="adminEventsPage">
@@ -949,6 +953,22 @@
               <button class="btn btn-primary btn-sm" id="addCategoryBtn">Add</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="admin-page" id="adminCommentsPage">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h2 style="font-size:16px;">Comments</h2>
+            <span class="count-badge" id="adminCommentsCountBadge">0 entries</span>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Type</th><th>Poster</th><th>Posted</th><th>Event</th><th>Text</th><th>Reports</th><th>Status</th><th></th></tr></thead>
+          <tbody id="adminCommentsBody"></tbody>
+        </table>
+        <div class="row-actions" id="adminCommentsLoadMoreRow" style="display:none; margin-top:14px;">
+          <a data-action="load-more-admin-comments">Load more</a>
         </div>
       </div>
     </div>
@@ -1316,6 +1336,48 @@
     </div>
   </div>
 
+  <!-- ================= REPORT A COMMENT (user-facing) ================= -->
+  <div class="modal-backdrop" id="reportBackdrop">
+    <div class="modal bracket" id="reportModalForm">
+      <h2 style="font-size:16px; margin-bottom:14px;">Report this comment</h2>
+      <div class="field">
+        <label>Reason</label>
+        <textarea id="reportReasonInput" maxlength="300" placeholder="Why are you reporting this?" style="width:100%; min-height:90px; resize:vertical;"></textarea>
+        <div class="tag-hint" id="reportReasonCount">0 / 300</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="reportCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="reportSubmitBtn">Submit report</button>
+      </div>
+    </div>
+    <div class="modal bracket" id="reportModalSuccess" style="display:none;">
+      <h2 style="font-size:16px; margin-bottom:14px;">Report submitted</h2>
+      <p style="font-size:12px; color:var(--text-dim); line-height:1.7; margin:0 0 22px;">Thanks — our team will review this comment.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="reportSuccessCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN: COMMENT THREAD / REPORTS POPUPS ================= -->
+  <div class="modal-backdrop" id="adminThreadBackdrop">
+    <div class="modal bracket" style="width:640px; max-height:80vh; overflow-y:auto;">
+      <h2 style="font-size:16px; margin-bottom:14px;">Comment thread</h2>
+      <div id="adminThreadContent"></div>
+      <div class="modal-actions">
+        <button class="btn btn-cool btn-sm" id="adminThreadGoToBtn">Go to thread</button>
+        <button class="btn btn-ghost" id="adminThreadCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="adminReportsBackdrop">
+    <div class="modal bracket" style="width:520px; max-height:80vh; overflow-y:auto;">
+      <h2 style="font-size:16px; margin-bottom:14px;">Reports</h2>
+      <div id="adminReportsContent"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" id="adminReportsCloseBtn">Close</button></div>
+    </div>
+  </div>
+
   <!-- ================= IMAGE VIEWER (comment images) ================= -->
   <div class="modal-backdrop image-viewer-backdrop" id="imageViewerBackdrop">
     <div class="image-viewer-inner">
@@ -1669,8 +1731,10 @@
         document.getElementById('menuRole').appendChild(pill);
       }
       document.getElementById('usersTabLink').style.display = isSuperAdmin ? '' : 'none';
+      document.getElementById('commentsTabLink').style.display = isSuperAdmin ? '' : 'none';
     } else {
       document.getElementById('usersTabLink').style.display = 'none';
+      document.getElementById('commentsTabLink').style.display = 'none';
     }
   }
 
@@ -1719,7 +1783,11 @@
   // is signed in (it redirects to /log-in otherwise) — no signed-out branch needed here.
   function renderAdminView(){
     document.querySelector('.admin-tabs').style.display = '';
-    switchAdminTab(location.hash === '#users' ? 'users' : location.hash === '#taxonomy' ? 'taxonomy' : 'events');
+    const page = location.hash === '#users' ? 'users'
+      : location.hash === '#taxonomy' ? 'taxonomy'
+      : location.hash === '#comments' ? 'comments'
+      : 'events';
+    switchAdminTab(page);
   }
 
   // Only one tab exists today, but this follows the same hash-routed-tab pattern as
@@ -2033,9 +2101,11 @@
     document.getElementById('adminEventsPage').classList.toggle('active', page === 'events');
     document.getElementById('adminUsersPage').classList.toggle('active', page === 'users');
     document.getElementById('adminTaxonomyPage').classList.toggle('active', page === 'taxonomy');
+    document.getElementById('adminCommentsPage').classList.toggle('active', page === 'comments');
     if(page === 'events') renderTable();
     if(page === 'users') renderUsers();
     if(page === 'taxonomy') renderTaxonomyPage();
+    if(page === 'comments') renderAdminComments(true);
   }
   document.querySelectorAll('.admin-tabs a').forEach(a => {
     a.addEventListener('click', () => navigate('/admin#' + a.dataset.adminPage));
@@ -2538,7 +2608,7 @@
     const canDelete = currentUser && (currentUser.id === c.created_by || currentUser.role === 'superAdmin');
     const images = Array.isArray(c.images) ? c.images : [];
     return `
-      <div class="comment-item" data-id="${c.id}" data-top-id="${c.id}" data-author-id="${c.created_by}" data-author-name="${escapeHtml(c.created_by_name || '')}" data-reply-count="${replyCount}">
+      <div class="comment-item" data-id="${c.id}" data-top-id="${c.id}" data-author-id="${c.created_by}" data-author-name="${escapeHtml(c.created_by_name || '')}" data-reply-count="${replyCount}" data-closed="${c.closed_at ? '1' : ''}">
         <div class="comment-item-head">
           ${commentAvatarHtml(c, 'comment-avatar')}
           ${commentAuthorNameHtml(c)}
@@ -2547,8 +2617,10 @@
         <div class="comment-body rich-content clamped" data-comment-body>${c.body || ''}</div>
         <button type="button" class="comment-readmore" data-action="read-more" style="display:none;">Read more</button>
         ${viewGalleryHtml(images)}
+        ${c.closed_at ? `<div class="comment-closed-note">This thread is closed to new replies.</div>` : ''}
         <div class="row-actions comment-item-actions">
-          <a data-action="reply">Reply</a>
+          ${c.closed_at ? '' : `<a data-action="reply">Reply</a>`}
+          ${(!currentUser || currentUser.id !== c.created_by) ? `<a data-action="report">Report</a>` : ''}
           ${canDelete ? `<a class="danger" data-action="delete">Delete</a>` : ''}
         </div>
         <div class="comment-reply-composer" data-reply-composer style="display:none;"></div>
@@ -2558,7 +2630,7 @@
         </div>
       </div>`;
   }
-  function renderReplyHtml(r, topId){
+  function renderReplyHtml(r, topId, threadClosed){
     if(r.deleted_at){
       return `
         <div class="comment-item comment-deleted" data-id="${r.id}" data-top-id="${topId}">
@@ -2578,7 +2650,8 @@
         <button type="button" class="comment-readmore" data-action="read-more" style="display:none;">Read more</button>
         ${viewGalleryHtml(images)}
         <div class="row-actions comment-item-actions">
-          <a data-action="reply">Reply</a>
+          ${threadClosed ? '' : `<a data-action="reply">Reply</a>`}
+          ${(!currentUser || currentUser.id !== r.created_by) ? `<a data-action="report">Report</a>` : ''}
           ${canDelete ? `<a class="danger" data-action="delete">Delete</a>` : ''}
         </div>
         <div class="comment-reply-composer" data-reply-composer style="display:none;"></div>
@@ -2650,7 +2723,8 @@
     const listEl = itemEl.querySelector(':scope > [data-replies-list]');
     const seen = existingCommentIds(listEl);
     const fresh = data.replies.filter(r => !seen.has(r.id));
-    listEl.insertAdjacentHTML('beforeend', fresh.map(r => renderReplyHtml(r, topId)).join(''));
+    const threadClosed = itemEl.dataset.closed === '1';
+    listEl.insertAdjacentHTML('beforeend', fresh.map(r => renderReplyHtml(r, topId, threadClosed)).join(''));
     wireCommentAuthorLinks(listEl);
     measureClamps(listEl);
     updateRepliesToggle(itemEl, state);
@@ -2752,12 +2826,16 @@
       const { comment } = await apiFetch(`/api/events/${commentsState.eventId}/comments`, { method: 'POST', body: payload });
       const topItemEl = document.querySelector(`#commentList > .comment-item[data-id="${topId}"]`);
       const listEl = topItemEl.querySelector(':scope > [data-replies-list]');
-      listEl.insertAdjacentHTML('beforeend', renderReplyHtml(comment, topId));
+      listEl.insertAdjacentHTML('beforeend', renderReplyHtml(comment, topId, topItemEl.dataset.closed === '1'));
       wireCommentAuthorLinks(listEl);
       measureClamps(listEl);
       const state = replyState[topId] || (replyState[topId] = { offset: 0, total: parseInt(topItemEl.dataset.replyCount, 10) || 0 });
       state.offset += 1;
       state.total += 1;
+      // data-reply-count is the source of truth deleteComment() reads to decide whether a
+      // top-level comment still has any live replies left once it's deleted — keep it in
+      // sync with the running total, not just the replyState object.
+      topItemEl.dataset.replyCount = String(state.total);
       updateRepliesToggle(topItemEl, state);
       closeReplyComposer(composerEl);
     } catch(e){
@@ -2766,11 +2844,14 @@
     }
   }
 
-  // Strips a comment/reply down to a plain "This [comment/reply] has been deleted" notice
-  // in place, rather than removing the element — for a top-level comment this deliberately
-  // leaves [data-replies-list]/[data-replies-toggle] untouched, so any replies already
-  // loaded underneath it (and their pagination state in replyState) survive intact.
-  function markCommentDeleted(itemEl, isTop){
+  // Strips a top-level comment down to a plain "This comment has been deleted" notice in
+  // place, rather than removing the element — deliberately leaves [data-replies-list]/
+  // [data-replies-toggle] untouched, so any live replies already loaded underneath it (and
+  // their pagination state in replyState) survive intact. Only ever called for top-level
+  // comments that still have at least one live reply — deleteComment() below removes
+  // everything else (replies, and top-level comments with none) outright, matching what
+  // the server no longer shows publicly once nothing real is left in a thread.
+  function markCommentDeleted(itemEl){
     itemEl.classList.add('comment-deleted');
     itemEl.removeAttribute('data-author-id');
     itemEl.removeAttribute('data-author-name');
@@ -2778,19 +2859,59 @@
     itemEl.querySelector(':scope > .comment-readmore')?.remove();
     itemEl.querySelector(':scope > .comment-image-view-gallery')?.remove();
     itemEl.querySelector(':scope > .comment-item-actions')?.remove();
+    itemEl.querySelector(':scope > .comment-closed-note')?.remove();
     const composer = itemEl.querySelector(':scope > [data-reply-composer]');
     if(composer){ closeReplyComposer(composer); composer.remove(); }
     const body = itemEl.querySelector(':scope > [data-comment-body]');
     if(body){
       body.className = 'comment-body comment-deleted-msg';
       body.removeAttribute('data-comment-body');
-      body.textContent = isTop ? 'This comment has been deleted' : 'This reply has been deleted';
+      body.textContent = 'This comment has been deleted';
     }
+  }
+  function decrementTopLevelCount(){
+    commentsState.total = Math.max(0, commentsState.total - 1);
+    commentsState.offset = Math.max(0, commentsState.offset - 1);
+    document.getElementById('commentsCount').textContent = commentsState.total ? `(${commentsState.total})` : '';
   }
   async function deleteComment(commentId, itemEl){
     try{
       await apiFetch(`/api/comments/${commentId}`, { method: 'DELETE' });
-      markCommentDeleted(itemEl, itemEl.dataset.id === itemEl.dataset.topId);
+      const topId = itemEl.dataset.topId;
+      const isTop = itemEl.dataset.id === topId;
+      if(!isTop){
+        // Deleted replies are never shown publicly at all now — remove outright rather
+        // than leaving a placeholder.
+        itemEl.remove();
+        const topItemEl = document.querySelector(`#commentList > .comment-item[data-id="${topId}"]`);
+        if(topItemEl){
+          const newReplyCount = Math.max(0, (parseInt(topItemEl.dataset.replyCount, 10) || 0) - 1);
+          topItemEl.dataset.replyCount = String(newReplyCount);
+          const state = replyState[topId];
+          if(state){ state.total = Math.max(0, state.total - 1); state.offset = Math.max(0, state.offset - 1); }
+          if(state) updateRepliesToggle(topItemEl, state);
+          else topItemEl.querySelector(':scope > [data-replies-toggle]').style.display = newReplyCount ? '' : 'none';
+          // If the top-level comment is already a deleted placeholder and that was its
+          // last live reply, the whole thread is now fully gone — matches what a fresh
+          // fetch from the server would show, so it disappears from view entirely instead
+          // of leaving a lone "This comment has been deleted" line with nothing under it.
+          if(topItemEl.classList.contains('comment-deleted') && newReplyCount === 0){
+            topItemEl.remove();
+            decrementTopLevelCount();
+          }
+        }
+        return;
+      }
+      // Deleting a top-level comment: keep it as a placeholder if it still has live
+      // replies (so they keep their context) — otherwise the now-empty thread disappears
+      // from view entirely, same rule the server applies to a fresh fetch.
+      const replyCount = parseInt(itemEl.dataset.replyCount, 10) || 0;
+      if(replyCount > 0){
+        markCommentDeleted(itemEl);
+      } else {
+        itemEl.remove();
+        decrementTopLevelCount();
+      }
     } catch(e){
       alert(e.message || 'Could not delete comment.');
     }
@@ -2810,6 +2931,41 @@
     // Only the backdrop itself (the margin outside the image/close button) closes on click —
     // e.currentTarget is always the backdrop; e.target is whatever was actually clicked.
     if(e.target === e.currentTarget) closeImageViewer();
+  });
+
+  // ---- report a comment/reply (user-facing) ----
+  let reportTargetId = null;
+  function openReportModal(commentId){
+    reportTargetId = commentId;
+    document.getElementById('reportReasonInput').value = '';
+    document.getElementById('reportReasonCount').textContent = '0 / 300';
+    document.getElementById('reportModalForm').style.display = '';
+    document.getElementById('reportModalSuccess').style.display = 'none';
+    document.getElementById('reportBackdrop').classList.add('open');
+  }
+  function closeReportModal(){
+    document.getElementById('reportBackdrop').classList.remove('open');
+    reportTargetId = null;
+  }
+  document.getElementById('reportCancelBtn').addEventListener('click', closeReportModal);
+  document.getElementById('reportSuccessCloseBtn').addEventListener('click', closeReportModal);
+  document.getElementById('reportReasonInput').addEventListener('input', e => {
+    document.getElementById('reportReasonCount').textContent = `${e.target.value.length} / 300`;
+  });
+  document.getElementById('reportSubmitBtn').addEventListener('click', async () => {
+    const reason = document.getElementById('reportReasonInput').value.trim();
+    if(!reason){ alert('Please provide a reason.'); return; }
+    const btn = document.getElementById('reportSubmitBtn');
+    btn.disabled = true;
+    try{
+      await apiFetch(`/api/comments/${reportTargetId}/reports`, { method: 'POST', body: { reason } });
+      document.getElementById('reportModalForm').style.display = 'none';
+      document.getElementById('reportModalSuccess').style.display = '';
+    } catch(e){
+      alert(e.message || 'Could not submit report.');
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   document.getElementById('commentPostBtnTop').addEventListener('click', async () => {
@@ -2867,6 +3023,9 @@
     } else if(action === 'reply'){
       if(!currentUser){ promptCommentSignIn(); return; }
       toggleReplyComposer(itemEl);
+    } else if(action === 'report'){
+      if(!currentUser){ promptCommentSignIn(); return; }
+      openReportModal(itemEl.dataset.id);
     } else if(action === 'cancel-reply'){
       closeReplyComposer(itemEl.querySelector(':scope > [data-reply-composer]'));
     } else if(action === 'post-reply'){
@@ -2883,10 +3042,11 @@
     }
   });
   document.getElementById('commentList').addEventListener('change', e => {
-    if(!e.target.matches('[data-reply-image-file]')) return;
-    const composerEl = e.target.closest('[data-reply-composer]');
-    attachCommentImages(e.target.files, pendingReplyImages, () => renderReplyGallery(composerEl));
-    e.target.value = '';
+    if(e.target.matches('[data-reply-image-file]')){
+      const composerEl = e.target.closest('[data-reply-composer]');
+      attachCommentImages(e.target.files, pendingReplyImages, () => renderReplyGallery(composerEl));
+      e.target.value = '';
+    }
   });
 
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -4059,6 +4219,202 @@
       tbody.appendChild(tr);
     });
   }
+
+  // ================= ADMIN: COMMENTS DASHBOARD =================
+  const ADMIN_COMMENTS_PAGE_SIZE = 50;
+  let adminCommentsState = { offset: 0, total: 0 };
+
+  function adminCommentRowHtml(c){
+    // The admin API (adminCommentRow() server-side) deliberately never strips a deleted
+    // row's content — moderators need the original text/images to review a report or
+    // settle a dispute, "deleted" only means it's hidden from the public site. The
+    // Status column's "Deleted" pill is the only visual cue for that, the preview text
+    // itself is always the real content.
+    const isReply = !!c.parent_comment_id;
+    const plainText = htmlToPlainText(c.body || '');
+    const hasImages = Array.isArray(c.images) && c.images.length;
+    const preview = plainText.trim() ? (plainText.length > 80 ? escapeHtml(plainText.slice(0, 80)) + '…' : escapeHtml(plainText)) : (hasImages ? '[image only]' : '—');
+    const posted = (c.created_at || '').replace('T', ' ').slice(0, 16);
+    const statusParts = [];
+    if(c.closed_at) statusParts.push('<span class="role-pill">Closed</span>');
+    if(c.deleted_at) statusParts.push('<span class="role-pill" style="color:var(--hot);border-color:var(--hot);">Deleted</span>');
+    const status = statusParts.join(' ') || '—';
+    const actions = [];
+    if(!c.deleted_at){
+      if(!isReply){
+        actions.push(`<a data-admin-comment-action="${c.closed_at ? 'reopen' : 'close'}" data-id="${c.id}">${c.closed_at ? 'Reopen' : 'Close'}</a>`);
+      }
+      actions.push(`<a class="danger" data-admin-comment-action="delete" data-id="${c.id}">Delete</a>`);
+    }
+    return `
+      <tr data-id="${c.id}">
+        <td>${isReply ? 'Reply' : 'Comment'}</td>
+        <td>${escapeHtml(c.created_by_name || '—')}</td>
+        <td>${posted}</td>
+        <td>${escapeHtml(c.event_title || '—')}</td>
+        <td class="title-cell" data-admin-comment-action="view-thread" data-id="${c.id}" style="cursor:pointer;">${preview}</td>
+        <td>${c.report_count ? `<a data-admin-comment-action="view-reports" data-id="${c.id}">${c.report_count}</a>` : '0'}</td>
+        <td>${status}</td>
+        <td><div class="row-actions">${actions.join('')}</div></td>
+      </tr>`;
+  }
+
+  async function renderAdminComments(reset){
+    if(reset) adminCommentsState = { offset: 0, total: 0 };
+    let data;
+    try{
+      data = await apiFetch(`/api/admin/comments?limit=${ADMIN_COMMENTS_PAGE_SIZE}&offset=${adminCommentsState.offset}`);
+    } catch(e){
+      alert('Could not load comments: ' + e.message);
+      return;
+    }
+    adminCommentsState.total = data.total;
+    adminCommentsState.offset += data.comments.length;
+    const tbody = document.getElementById('adminCommentsBody');
+    if(reset) tbody.innerHTML = '';
+    tbody.insertAdjacentHTML('beforeend', data.comments.map(adminCommentRowHtml).join(''));
+    document.getElementById('adminCommentsCountBadge').textContent = adminCommentsState.total + ' entries';
+    document.getElementById('adminCommentsLoadMoreRow').style.display =
+      adminCommentsState.offset < adminCommentsState.total ? '' : 'none';
+  }
+
+  // ---- thread popup ----
+  // Same as adminCommentRowHtml — a deleted comment/reply still shows its real content
+  // here (the admin API never strips it), just with a "Deleted" badge alongside the
+  // author/time so it's clearly marked as removed from the public site, not lost.
+  function adminThreadItemHtml(c, isTop){
+    const images = Array.isArray(c.images) ? c.images : [];
+    return `
+      <div class="comment-item">
+        <div class="comment-item-head">
+          ${commentAvatarHtml(c, isTop ? 'comment-avatar' : 'comment-avatar-sm')}
+          ${commentAuthorNameHtml(c)}
+          <span class="comment-time">${formatDate(c.created_at)}</span>
+          ${c.deleted_at ? '<span class="role-pill" style="color:var(--hot);border-color:var(--hot);">Deleted</span>' : ''}
+        </div>
+        <div class="comment-body rich-content">${c.reply_to_user_name ? `<span class="comment-reply-to">@${escapeHtml(c.reply_to_user_name)}</span> ` : ''}${c.body || ''}</div>
+        ${viewGalleryHtml(images)}
+      </div>`;
+  }
+  let adminThreadEventId = null;
+  let adminThreadTopId = null;
+  async function openAdminThread(id){
+    let data;
+    try{
+      data = await apiFetch(`/api/comments/${id}/thread`);
+    } catch(e){
+      alert('Could not load thread: ' + e.message);
+      return;
+    }
+    adminThreadEventId = data.comment.event_id;
+    adminThreadTopId = data.comment.id;
+    const el = document.getElementById('adminThreadContent');
+    el.innerHTML = adminThreadItemHtml(data.comment, true) +
+      (data.replies.length
+        ? `<div class="comment-replies" style="margin-top:14px;">${data.replies.map(r => adminThreadItemHtml(r, false)).join('')}</div>`
+        : '');
+    wireCommentAuthorLinks(el);
+    document.getElementById('adminThreadBackdrop').classList.add('open');
+  }
+  document.getElementById('adminThreadCloseBtn').addEventListener('click', () => {
+    document.getElementById('adminThreadBackdrop').classList.remove('open');
+  });
+  // Repeatedly clicks "Show more comments" (bounded) until the target top-level comment
+  // shows up in the DOM, or gives up — the public feed only loads 5 then 10 at a time, so
+  // an older thread being reported on may not be on the very first page.
+  async function scrollToCommentInPage(commentId, maxAttempts){
+    for(let i = 0; i < maxAttempts; i++){
+      const el = document.querySelector(`#commentList > .comment-item[data-id="${commentId}"]`);
+      if(el){
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('comment-highlight');
+        setTimeout(() => el.classList.add('comment-highlight-fade'), 50);
+        setTimeout(() => el.classList.remove('comment-highlight', 'comment-highlight-fade'), 2000);
+        return true;
+      }
+      const moreRow = document.getElementById('commentLoadMoreRow');
+      if(!moreRow || moreRow.style.display === 'none') break;
+      await loadMoreComments();
+    }
+    return false;
+  }
+  document.getElementById('adminThreadGoToBtn').addEventListener('click', async () => {
+    const event = timelineRows.find(r => r.id === adminThreadEventId);
+    if(!event){
+      alert("Could not find this event on the public site — it may not currently be published, approved, or visible.");
+      return;
+    }
+    const topId = adminThreadTopId;
+    document.getElementById('adminThreadBackdrop').classList.remove('open');
+    await navigate('/home/' + slugFor(event));
+    // resetComments()'s initial loadMoreComments() call is fire-and-forget, not awaited by
+    // navigate() itself — wait for it to actually land (offset advances past 0) before
+    // starting the "Show more" search loop below, so the two never race over the same page.
+    for(let i = 0; i < 15 && (commentsState.eventId !== event.id || commentsState.offset === 0); i++){
+      await new Promise(r => setTimeout(r, 200));
+    }
+    const found = await scrollToCommentInPage(topId, 10);
+    if(!found) alert('Found the event, but could not locate this specific comment in the list (it may be far down the page).');
+  });
+
+  // ---- reports popup ----
+  async function openAdminReports(id){
+    let data;
+    try{
+      data = await apiFetch(`/api/comments/${id}/reports`);
+    } catch(e){
+      alert('Could not load reports: ' + e.message);
+      return;
+    }
+    const el = document.getElementById('adminReportsContent');
+    el.innerHTML = data.reports.length
+      ? data.reports.map(r => `
+          <div style="padding:10px 0; border-bottom:1px solid var(--border);">
+            <div style="font-size:11px; color:var(--text-dim); margin-bottom:4px;">
+              ${escapeHtml(r.reported_by_name || 'Unknown')} · ${(r.created_at || '').replace('T', ' ').slice(0, 16)}
+            </div>
+            <div style="font-size:12px; color:var(--text);">${escapeHtml(r.reason)}</div>
+          </div>`).join('')
+      : '<p style="font-size:12px; color:var(--text-faint);">No reports.</p>';
+    document.getElementById('adminReportsBackdrop').classList.add('open');
+  }
+  document.getElementById('adminReportsCloseBtn').addEventListener('click', () => {
+    document.getElementById('adminReportsBackdrop').classList.remove('open');
+  });
+
+  document.getElementById('adminCommentsBody').addEventListener('click', async e => {
+    const el = e.target.closest('[data-admin-comment-action]');
+    if(!el) return;
+    const action = el.dataset.adminCommentAction;
+    const id = el.dataset.id;
+    if(action === 'view-thread'){
+      openAdminThread(id);
+    } else if(action === 'view-reports'){
+      openAdminReports(id);
+    } else if(action === 'close' || action === 'reopen'){
+      try{
+        await apiFetch(`/api/comments/${id}/close`, { method: 'PUT', body: { closed: action === 'close' } });
+        renderAdminComments(true);
+      } catch(e){
+        alert(e.message || 'Could not update comment.');
+      }
+    } else if(action === 'delete'){
+      const ok = await confirmDialog(
+        'Delete this comment thread and all its replies? It stays recoverable in the database but disappears from the site.',
+        { title: 'Delete thread', okLabel: 'Delete' }
+      );
+      if(!ok) return;
+      try{
+        await apiFetch(`/api/comments/${id}/thread`, { method: 'DELETE' });
+        renderAdminComments(true);
+      } catch(e){
+        alert(e.message || 'Could not delete thread.');
+      }
+    }
+  });
+  document.getElementById('adminCommentsLoadMoreRow').addEventListener('click', e => {
+    if(e.target.closest('[data-action="load-more-admin-comments"]')) renderAdminComments(false);
+  });
 
   // ================= ADMIN: TAXONOMY (categories/genres) =================
   const TAXONOMY_KINDS = {
