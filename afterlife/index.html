@@ -215,14 +215,13 @@
     position:absolute; inset:0; background-size:contain; background-position:center; background-repeat:no-repeat;
   }
   /* Scrim behind the title/badges — first child in the DOM so later siblings (tag,
-     hero-coord, h3) paint on top of it without needing z-index. Guarantees contrast
-     against an arbitrary uploaded cover photo, independent of the site's own theme. */
+     h3) paint on top of it without needing z-index. Guarantees contrast against an
+     arbitrary uploaded cover photo, independent of the site's own theme. */
   .event-hero-scrim{
     position:absolute; inset:0; pointer-events:none;
     background:linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0) 75%);
   }
   .event-hero .tag{ font-size:10px; letter-spacing:0.12em; color:var(--hot); text-transform:uppercase; position:absolute; top:16px; left:16px; }
-  .event-hero .hero-coord{ position:absolute; top:16px; right:16px; font-size:9px; color:#fff; letter-spacing:0.04em; text-align:right; line-height:1.6; text-shadow:0 1px 4px rgba(0,0,0,.7); }
   .event-hero h3{ font-size:26px; color:#F5F5FA; text-shadow:0 2px 12px rgba(0,0,0,0.6); position:relative; }
 
   .gallery-wrap{ position:relative; background:var(--border); flex-shrink:0; }
@@ -303,8 +302,9 @@
   .visibility-public{ color:var(--text-faint); }
   .visibility-private{ color:var(--hot); border-color:var(--hot); }
   .locked-note{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
-  .ev-author{ font-size:13px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:14px; }
+  .ev-author{ font-size:13px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:4px; }
   .ev-author .author-avatar{ width:22px; height:22px; }
+  .ev-event-date{ font-size:11px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:14px; }
   .explore-card-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:4px; }
   .t-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:2px; }
   .author-link{ color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; vertical-align:middle; }
@@ -707,7 +707,6 @@
             <div class="event-hero-img" id="eventHeroImg"></div>
             <div class="event-hero-scrim"></div>
             <div class="tag" id="evTag">Tag</div>
-            <div class="hero-coord" id="evTime">—</div>
             <h3 id="evTitle">Select an entry</h3>
           </div>
           <div class="gallery-wrap" id="galleryWrap" style="display:none;">
@@ -719,12 +718,13 @@
           <div class="gallery-caption" id="evImageCaption"></div>
           <div class="event-desc-wrap">
             <div class="ev-author" id="evAuthor" style="display:none;"></div>
+            <div class="ev-event-date" id="evEventDate">—</div>
             <div class="event-desc rich-content" id="evBody">Choose an item on the timeline to preview its details here.</div>
             <div class="tag-chip-list" id="evTags" style="margin-top:12px; display:none;"></div>
           </div>
         </div>
         <div class="event-meta-row">
-          <div class="meta-cell"><div class="ml">Published</div><div class="mv" id="evDateMeta">—</div></div>
+          <div class="meta-cell"><div class="ml">Event date</div><div class="mv" id="evDateMeta">—</div></div>
           <div class="meta-cell"><div class="ml">Location</div><div class="mv" id="evLocationMeta">—</div></div>
           <div class="meta-cell">
             <div class="ml">Link</div>
@@ -1157,16 +1157,9 @@
               <input type="datetime-local" id="fEventPublished">
               <div class="tag-hint">When this actually happened — drives the Timeline's order and dates.</div>
             </div>
-            <div class="field">
-              <label>Published at</label>
-              <input type="datetime-local" id="fPublished">
-              <div class="tag-hint">When this entry itself was published to the site.</div>
-            </div>
-          </div>
-          <div class="field-row">
             <div class="field"><label>Country (ISO alpha-2)</label><input type="text" id="fCountry" maxlength="2" placeholder="e.g. US"></div>
-            <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
           </div>
+          <div class="field"><label>Location</label><input type="text" id="fLocation" placeholder="Venue, city"></div>
           <div class="field"><label>Learn more link (CTA)</label><input type="url" id="fCtaUrl" placeholder="https://example.com/event"></div>
           <div class="field"><label>Cover images</label>
             <div class="cover-gallery-edit" id="coverGalleryEdit"><span class="cover-gallery-edit-empty">No images — gradient fallback will be used</span></div>
@@ -2179,7 +2172,6 @@
   function showEventPreview(r){
     document.getElementById('evTitle').textContent = r.title;
     document.getElementById('evTag').textContent = (r.genre && r.genre !== 'General') ? `${r.category} · ${r.genre}` : r.category;
-    document.getElementById('evTime').textContent = formatFullDate(r.event_published_at);
 
     const descEl = document.getElementById('evBody');
     // r.description is sanitized HTML from the server (allowlisted tags only) — safe to
@@ -2200,7 +2192,8 @@
     if(r.cta_url){ ctaBtn.style.display = 'inline-block'; ctaBtn.href = r.cta_url; ctaEmpty.style.display = 'none'; }
     else { ctaBtn.style.display = 'none'; ctaBtn.removeAttribute('href'); ctaEmpty.style.display = 'inline-block'; }
 
-    document.getElementById('evDateMeta').textContent = formatFullDate(r.published_at);
+    document.getElementById('evDateMeta').textContent = formatFullDate(r.event_published_at);
+    document.getElementById('evEventDate').textContent = formatFullDate(r.published_at);
     document.getElementById('evLocationMeta').textContent = r.location || r.country || '—';
     const authorEl = document.getElementById('evAuthor');
     if(r.created_by_name){
@@ -2217,7 +2210,7 @@
     document.getElementById('evBody').textContent = 'Add events from the Admin view to populate the chronicle.';
     document.getElementById('evTags').style.display = 'none';
     document.getElementById('evAuthor').style.display = 'none';
-    document.getElementById('evTime').textContent = '—';
+    document.getElementById('evEventDate').textContent = '—';
     document.getElementById('evDateMeta').textContent = '—';
     document.getElementById('evLocationMeta').textContent = '—';
     document.getElementById('evCtaBtn').style.display = 'none';
@@ -3028,7 +3021,6 @@
       document.getElementById('fCountry').value = row.country || '';
       document.getElementById('fLocation').value = row.location || '';
       document.getElementById('fCtaUrl').value = row.cta_url || '';
-      document.getElementById('fPublished').value = (row.published_at || '').slice(0,16);
       document.getElementById('fEventPublished').value = (row.event_published_at || row.published_at || '').slice(0,16);
       pendingCoverImages = getEventImages(row).map(img => ({ ...img }));
       renderCoverGalleryEdit();
@@ -3057,7 +3049,6 @@
       updateDescriptionCount();
       document.getElementById('fCategory').value = 'General';
       document.getElementById('fGenre').value = 'General';
-      document.getElementById('fPublished').value = new Date().toISOString().slice(0,16);
       document.getElementById('fEventPublished').value = new Date().toISOString().slice(0,16);
       pendingCoverImages = [];
       renderCoverGalleryEdit();
@@ -3095,13 +3086,13 @@
     const country = document.getElementById('fCountry').value.trim().toUpperCase() || null;
     const location = document.getElementById('fLocation').value.trim() || null;
     const ctaUrl = document.getElementById('fCtaUrl').value.trim() || null;
-    const publishedRaw = document.getElementById('fPublished').value;
-    const published_at = publishedRaw ? new Date(publishedRaw).toISOString() : nowIso();
     const eventPublishedRaw = document.getElementById('fEventPublished').value;
-    const event_published_at = eventPublishedRaw ? new Date(eventPublishedRaw).toISOString() : published_at;
+    const event_published_at = eventPublishedRaw ? new Date(eventPublishedRaw).toISOString() : nowIso();
+    // published_at is never sent from this form — the server records it itself (at
+    // creation time) and it can't be changed afterwards, see events.js PUT handler.
     const payload = {
       title, subtitle, description, category, genre, country, location,
-      cta_url: ctaUrl, cover_images: pendingCoverImages, published_at, event_published_at, tags: pendingTags,
+      cta_url: ctaUrl, cover_images: pendingCoverImages, event_published_at, tags: pendingTags,
     };
     if(explicitStatus) payload.status = explicitStatus;
     const isSuperAdmin = currentUser && currentUser.role === 'superAdmin';
