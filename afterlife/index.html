@@ -251,6 +251,19 @@
     padding:2px 6px; pointer-events:none;
   }
 
+  /* Comment/reply engagement summary for the event detail hero — deliberately bold/bordered
+     (not just a small caption line) since this is meant to be scannable at a glance, same
+     goal as the Timeline/Explore engagement lines but with more visual weight since it has
+     the whole width of the panel to itself here. */
+  .ev-engagement-bar{
+    display:flex; align-items:center; gap:8px; padding:9px 24px; margin-top:10px;
+    border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+    background:var(--surface-2); font-size:12px; color:var(--text-dim); letter-spacing:0.02em;
+    cursor:pointer;
+  }
+  .ev-engagement-bar:hover{ color:var(--cool); }
+  .ev-engagement-bar:hover .engagement-latest{ color:var(--text-dim); }
+  .ev-engagement-bar .engagement-latest{ color:var(--text-faint); }
   .event-desc-wrap{ padding:22px 24px; border-bottom:1px solid var(--border); }
   .event-desc{ font-size:12px; color:var(--text-dim); line-height:1.7; }
 
@@ -307,6 +320,14 @@
   .ev-event-date{ font-size:11px; color:var(--text-faint); letter-spacing:0.04em; margin-bottom:14px; }
   .explore-card-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:4px; }
   .t-author{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; margin-top:2px; }
+  /* Engagement summary (comment/reply counts + latest activity) on Timeline rows and Explore
+     cards — muted like the surrounding metadata (author, date) rather than accented, so it
+     reads as part of the scan without competing with the title/tag for attention. */
+  .t-engagement, .explore-card-engagement{
+    font-size:9px; color:var(--text-dim); letter-spacing:0.04em; margin-top:4px;
+    display:flex; align-items:center; gap:4px;
+  }
+  .t-engagement .engagement-latest, .explore-card-engagement .engagement-latest{ color:var(--text-faint); }
   .author-link{ color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; vertical-align:middle; }
   .author-link:hover{ color:var(--cool); text-decoration:underline; }
   .author-avatar{
@@ -560,6 +581,79 @@
   .rich-content .inline-img-caption{ font-size:10px; color:var(--text-faint); font-style:italic; margin:0 0 14px; }
   .rich-content a{ color:var(--cool); text-decoration:underline; }
 
+  /* ---------- COMMENTS ---------- */
+  .comments-section{ margin-top:22px; padding-top:18px; border-top:1px solid var(--border); }
+  .comments-head h4{ font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); margin:0 0 14px; font-weight:normal; }
+  .comments-head .comments-count{ color:var(--text-faint); }
+  .comment-composer{ margin-bottom:20px; }
+  /* Rich-text (Quill) editor for comment/reply bodies — same dark theming as the event
+     description editor (#fDescriptionEditor/#fDescriptionToolbar) but class-scoped since
+     reply composers are created fresh per click, so they can't share a single fixed id. */
+  .comment-ql-editor.ql-container.ql-snow{
+    background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--mono); font-size:13px; min-height:60px;
+  }
+  .comment-ql-toolbar.ql-toolbar.ql-snow{
+    background:var(--surface-2); border:1px solid var(--border-strong); border-bottom:none; padding:6px 8px;
+  }
+  .comment-ql-toolbar.ql-snow .ql-stroke{ stroke:var(--text-dim); }
+  .comment-ql-toolbar.ql-snow .ql-fill{ fill:var(--text-dim); }
+  .comment-ql-toolbar.ql-snow button:hover .ql-stroke, .comment-ql-toolbar.ql-snow button.ql-active .ql-stroke{ stroke:var(--cool); }
+  .comment-ql-toolbar.ql-snow button:hover .ql-fill, .comment-ql-toolbar.ql-snow button.ql-active .ql-fill{ fill:var(--cool); }
+  .comment-ql-toolbar.ql-snow button:hover, .comment-ql-toolbar.ql-snow button.ql-active{ color:var(--cool); }
+  .comment-ql-editor .ql-editor{ padding:10px 12px; }
+  .comment-ql-editor .ql-editor.ql-blank::before{ color:var(--text-faint); font-style:normal; }
+  .comment-composer-actions{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
+  .comment-attach-btn{ font-size:11px; color:var(--text-dim); cursor:pointer; letter-spacing:0.04em; }
+  .comment-attach-btn:hover{ color:var(--cool); }
+  .comment-attach-btn.disabled{ color:var(--text-faint); cursor:default; pointer-events:none; }
+  .comment-replying-to{ font-size:11px; color:var(--text-faint); margin-bottom:6px; }
+  .comment-cancel-reply{ color:var(--text-dim); cursor:pointer; margin-left:6px; }
+  .comment-cancel-reply:hover{ color:var(--hot); }
+  .comment-image-gallery{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .comment-image-gallery:empty{ display:none; }
+  .comment-image-thumb{ position:relative; }
+  .comment-image-thumb img{ width:72px; height:72px; object-fit:cover; display:block; border:1px solid var(--border-strong); }
+  .comment-image-remove{
+    position:absolute; top:-8px; right:-8px; width:20px; height:20px; border-radius:50%; border:1px solid var(--border-strong);
+    background:var(--surface); color:var(--text); font-size:13px; line-height:1; cursor:pointer;
+  }
+  .comment-image-remove:hover{ color:var(--hot); border-color:var(--hot); }
+  .comment-signin-note{ font-size:12px; color:var(--text-faint); margin-bottom:20px; cursor:pointer; }
+  .comment-signin-note:hover{ color:var(--cool); text-decoration:underline; }
+  .comment-list{ display:flex; flex-direction:column; gap:18px; }
+  .comment-item{ display:flex; flex-direction:column; gap:5px; }
+  .comment-item-head{ display:flex; align-items:center; gap:8px; font-size:12px; }
+  .comment-item-head .comment-author-name{ color:var(--text); }
+  .comment-item-head .comment-time{ color:var(--text-faint); font-size:10px; }
+  .comment-avatar{ width:22px; height:22px; }
+  .comment-avatar-sm{ width:18px; height:18px; }
+  .comment-body{ font-size:13px; color:var(--text-dim); line-height:1.5; overflow-wrap:break-word; word-break:break-word; }
+  .comment-body.clamped{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .comment-reply-to{ color:var(--cool); }
+  .comment-readmore{ align-self:flex-start; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--cool); cursor:pointer; background:none; border:none; padding:0; font-family:var(--mono); }
+  .comment-readmore:hover{ text-decoration:underline; }
+  .comment-image-view-gallery{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .comment-image-view-gallery:empty{ display:none; }
+  .comment-image-view-gallery img{ width:88px; height:88px; object-fit:cover; border:1px solid var(--border-strong); cursor:pointer; }
+  .comment-replies{ display:flex; flex-direction:column; gap:14px; margin-top:4px; padding-left:30px; border-left:1px solid var(--border); }
+  .comment-replies:empty{ display:none; }
+  .comment-reply-composer{ margin-top:8px; padding-left:30px; }
+  .comment-deleted-msg{ font-style:italic; color:var(--text-faint); opacity:0.7; cursor:default; }
+  .comment-load-more{ align-self:flex-start; }
+
+  /* Image viewer lightbox — click any posted comment image to enlarge, click the ×
+     or the surrounding margin (anywhere outside the image itself) to close. */
+  .image-viewer-backdrop{ z-index:200; }
+  .image-viewer-inner{ position:relative; max-width:92vw; max-height:92vh; }
+  .image-viewer-inner img{ display:block; max-width:92vw; max-height:92vh; object-fit:contain; }
+  .image-viewer-close{
+    position:absolute; top:-16px; right:-16px; width:32px; height:32px; border-radius:50%;
+    border:1px solid var(--border-strong); background:var(--surface); color:var(--text);
+    font-size:18px; line-height:1; cursor:pointer;
+  }
+  .image-viewer-close:hover{ color:var(--hot); border-color:var(--hot); }
+
   /* ---------- TAGS ---------- */
   .tag-input-wrap{ position:relative; }
   .tag-chip-list{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
@@ -716,11 +810,29 @@
             <div class="gallery-count" id="galleryCount"></div>
           </div>
           <div class="gallery-caption" id="evImageCaption"></div>
+          <div class="ev-engagement-bar" id="evEngagementBar" style="display:none;"></div>
           <div class="event-desc-wrap">
             <div class="ev-author" id="evAuthor" style="display:none;"></div>
             <div class="ev-event-date" id="evEventDate">—</div>
             <div class="event-desc rich-content" id="evBody">Choose an item on the timeline to preview its details here.</div>
             <div class="tag-chip-list" id="evTags" style="margin-top:12px; display:none;"></div>
+            <div class="comments-section" id="commentsSection" style="display:none;">
+              <div class="comments-head"><h4>Comments <span class="comments-count" id="commentsCount"></span></h4></div>
+              <div class="comment-composer" id="commentComposerTop" style="display:none;">
+                <div id="commentEditorTop"></div>
+                <div class="comment-image-gallery" id="commentImageGalleryTop"></div>
+                <div class="comment-composer-actions">
+                  <label class="comment-attach-btn" for="commentImageFileTop" id="commentAttachLabelTop">📷 Photo (up to 5)</label>
+                  <input type="file" id="commentImageFileTop" accept="image/*" multiple style="display:none;">
+                  <button type="button" class="btn btn-cool btn-sm" id="commentPostBtnTop">Post</button>
+                </div>
+              </div>
+              <div class="comment-signin-note" id="commentSigninNote" style="display:none;">Sign in to leave a comment.</div>
+              <div class="comment-list" id="commentList"></div>
+              <div class="row-actions" id="commentLoadMoreRow" style="display:none;">
+                <a data-action="load-more-comments" id="commentLoadMoreBtn">Show more comments</a>
+              </div>
+            </div>
           </div>
         </div>
         <div class="event-meta-row">
@@ -1204,6 +1316,14 @@
     </div>
   </div>
 
+  <!-- ================= IMAGE VIEWER (comment images) ================= -->
+  <div class="modal-backdrop image-viewer-backdrop" id="imageViewerBackdrop">
+    <div class="image-viewer-inner">
+      <button type="button" class="image-viewer-close" id="imageViewerClose" aria-label="Close">×</button>
+      <img id="imageViewerImg" alt="">
+    </div>
+  </div>
+
   <!-- ================= COVER IMAGE CROP MODAL ================= -->
   <div class="modal-backdrop" id="cropBackdrop">
     <div class="modal bracket crop-modal">
@@ -1335,6 +1455,22 @@
     const el = document.getElementById('syncStatus');
     el.textContent = msg;
   }
+  // Comment/reply engagement summary shared by Timeline rows and Explore cards — empty
+  // string (renders nothing) when an entry has no comments yet, rather than a "0 comments"
+  // line cluttering every single row.
+  function engagementInnerHtml(r){
+    const c = r.comment_count || 0;
+    const rep = r.reply_count || 0;
+    if(!c && !rep) return '';
+    const parts = [`${c} comment${c === 1 ? '' : 's'}`];
+    if(rep) parts.push(`${rep} repl${rep === 1 ? 'y' : 'ies'}`);
+    const latest = r.latest_comment_at ? `<span class="engagement-latest">Latest ${formatDate(r.latest_comment_at)}</span>` : '';
+    return parts.join(' · ') + (latest ? ' · ' + latest : '');
+  }
+  function engagementHtml(r, className){
+    const inner = engagementInnerHtml(r);
+    return inner ? `<div class="${className}">${inner}</div>` : '';
+  }
 
   // ---------------- API CLIENT ----------------
   async function apiFetch(path, { method = 'GET', body, auth = true } = {}){
@@ -1403,9 +1539,15 @@
     const path = view === 'admin' ? '/admin' : view === 'explore' ? '/explore' : '/home';
     return document.querySelector(`.nav-links a[data-path="${path}"]`);
   }
-  function navigate(path, { replace = false } = {}){
+  async function navigate(path, { replace = false } = {}){
     const url = BASE_PATH + path;
     if(!replace && location.pathname + location.hash === url) return; // already there
+    if(hasUnsavedCommentDraft()){
+      const ok = await confirmDialog('You have an unsaved comment or reply. Leave without posting it?', {
+        title: 'Unsaved changes', okLabel: 'Leave', cancelLabel: 'Stay here',
+      });
+      if(!ok) return;
+    }
     if(replace) history.replaceState({}, '', url);
     else history.pushState({}, '', url);
     applyRoute();
@@ -1490,6 +1632,7 @@
   function refreshCurrentUserUI(){
     const loggedIn = !!currentUser;
     const isSuperAdmin = loggedIn && currentUser.role === 'superAdmin';
+    updateCommentComposerVisibility();
     const avatarBtn = document.getElementById('avatarBtn');
     if(loggedIn && currentUser.avatar_image){
       avatarBtn.textContent = '';
@@ -1905,6 +2048,38 @@
   });
   document.addEventListener('click', () => document.getElementById('userMenu').classList.remove('open'));
 
+  // ================= OUTBOUND LINK WARNING =================
+  // Any real <a href> pointing off-origin — the event CTA button, or a link a user typed
+  // into rich text (event description, comment/reply body, profile about-me) — gets
+  // intercepted with a "you're leaving Afterlife" confirmation before the browser follows
+  // it. This is a speed bump against casual phishing/lookalike links, not real link
+  // scanning: it just makes the actual destination visible before the click commits.
+  // In-app nav (`a[data-path]`) has no href attribute at all, so it's untouched by this.
+  document.addEventListener('click', async e => {
+    const a = e.target.closest('a[href]');
+    if(!a) return;
+    const href = a.getAttribute('href');
+    if(!href || href.startsWith('#') || /^(javascript|mailto|tel):/i.test(href)) return;
+    let url;
+    try{ url = new URL(href, location.href); } catch(_){ return; }
+    if(url.origin === location.origin) return;
+    e.preventDefault();
+    // The event's own "Learn more" CTA is curated by the event's author as part of the
+    // entry itself (same trust level as the rest of the event content), unlike an arbitrary
+    // link someone typed into free-text — a lighter heads-up fits there instead of the
+    // heavier at-your-own-risk wording used for everything else.
+    const isCta = a.id === 'evCtaBtn';
+    const ok = await confirmDialog(
+      isCta
+        ? `You're about to leave Afterlife to visit ${url.hostname}.`
+        : `This link leads to ${url.hostname}, a site outside Afterlife that we don't control and haven't verified. Afterlife is not responsible for its content or for anything that happens if you proceed — continuing is entirely at your own risk.`,
+      isCta
+        ? { title: 'Leaving Afterlife', okLabel: 'Continue', cancelLabel: 'Stay here' }
+        : { title: 'You are leaving Afterlife', okLabel: 'Continue at my own risk', cancelLabel: 'Stay here' }
+    );
+    if(ok) window.open(url.href, '_blank', 'noopener,noreferrer');
+  });
+
   document.getElementById('userMenu').addEventListener('click', e => {
     const a = e.target.closest('a');
     if(!a) return;
@@ -2046,7 +2221,8 @@
           <span class="t-tag">${escapeHtml(r.category)}</span>
         </div>
         <div class="t-desc">${escapeHtml(desc)}</div>
-        ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}`;
+        ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}
+        ${engagementHtml(r, 't-engagement')}`;
       item.addEventListener('click', () => navigate('/home/' + slugFor(r)));
       wireAuthorLink(item);
       el.appendChild(item);
@@ -2101,7 +2277,8 @@
       body.innerHTML = `
         <div class="explore-card-title">${escapeHtml(r.title)}</div>
         <div class="explore-card-meta"><span>${formatDate(r.event_published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
-        ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}`;
+        ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}
+        ${engagementHtml(r, 'explore-card-engagement')}`;
       card.appendChild(cover);
       card.appendChild(body);
       card.addEventListener('click', () => navigate('/home/' + slugFor(r)));
@@ -2187,6 +2364,13 @@
 
     renderGallery(getEventImages(r));
 
+    // Snapshot from whatever events list this row came from (Timeline/Explore fetch) — same
+    // as the engagement lines shown there, not re-fetched live as comments get posted below.
+    const engagementBar = document.getElementById('evEngagementBar');
+    const engagementInner = engagementInnerHtml(r);
+    engagementBar.innerHTML = engagementInner;
+    engagementBar.style.display = engagementInner ? '' : 'none';
+
     const ctaBtn = document.getElementById('evCtaBtn');
     const ctaEmpty = document.getElementById('evCtaEmpty');
     if(r.cta_url){ ctaBtn.style.display = 'inline-block'; ctaBtn.href = r.cta_url; ctaEmpty.style.display = 'none'; }
@@ -2203,6 +2387,7 @@
     } else {
       authorEl.style.display = 'none';
     }
+    resetComments(r.id);
   }
   function clearEventPreview(){
     document.getElementById('evTitle').textContent = 'No events yet';
@@ -2215,8 +2400,495 @@
     document.getElementById('evLocationMeta').textContent = '—';
     document.getElementById('evCtaBtn').style.display = 'none';
     document.getElementById('evCtaEmpty').style.display = 'inline-block';
+    document.getElementById('evEngagementBar').style.display = 'none';
     renderGallery([]);
+    resetComments(null);
   }
+
+  // ================= COMMENTS =================
+  // Flat 2-level threading: comments + replies only. Replying to a reply still attaches
+  // under the same top-level comment id (parent_comment_id) — reply_to_user_id just carries
+  // who the "@name" prefix refers to. `data-top-id` on every rendered .comment-item makes
+  // this cheap to work with without DOM tree-walking: a top-level item's data-top-id equals
+  // its own data-id; a reply's data-top-id points at its top-level ancestor instead.
+  const COMMENT_INITIAL_SIZE = 5;
+  const COMMENT_PAGE_SIZE = 10;
+  const REPLY_PAGE_SIZE = 10;
+  const MAX_COMMENT_BODY_CHARS = 2000;
+  const MAX_COMMENT_IMAGES = 5;
+  const MAX_COMMENT_IMAGE_BYTES = 1.5 * 1024 * 1024;
+  const MAX_COMMENT_IMAGE_SOURCE_BYTES = 8 * 1024 * 1024;
+  const MAX_COMMENT_IMAGE_WIDTH = 900;
+  const COMMENT_TOOLBAR_CONFIG = [
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote', 'link'],
+    ['clean'],
+  ];
+
+  let commentsState = { eventId: null, offset: 0, total: 0 };
+  const replyState = {}; // topCommentId -> { offset, total }
+  const pendingTopCommentImages = [];
+  // Only one reply composer can be open at a time (toggleReplyComposer closes any other),
+  // so a single "current" Quill instance + pending-images array is enough — no need to key
+  // per-comment state for something that's already mutually exclusive by construction.
+  let currentReplyQuill = null;
+  let pendingReplyImages = [];
+
+  // Minimal Quill toolbar (no image button — images are attached separately via the
+  // dedicated Photo control, same as everywhere else in this comment module) shared by the
+  // top composer and every reply composer. Array-config toolbars auto-generate their own
+  // `.ql-toolbar.ql-snow` DOM, so no hand-authored toolbar HTML is needed per instance —
+  // that's what makes this cheap to re-instantiate on every "Reply" click.
+  function createCommentQuill(containerEl){
+    containerEl.classList.add('comment-ql-editor');
+    const quill = new Quill(containerEl, {
+      theme: 'snow',
+      modules: { toolbar: COMMENT_TOOLBAR_CONFIG },
+      placeholder: 'Add a comment…',
+    });
+    quill.getModule('toolbar').container.classList.add('comment-ql-toolbar');
+    quill.on('text-change', () => {
+      const len = quill.getLength() - 1;
+      if(len > MAX_COMMENT_BODY_CHARS) quill.deleteText(MAX_COMMENT_BODY_CHARS, len - MAX_COMMENT_BODY_CHARS);
+    });
+    return quill;
+  }
+  const commentQuillTop = createCommentQuill(document.getElementById('commentEditorTop'));
+
+  function resetComments(eventId){
+    commentsState = { eventId, offset: 0, total: 0 };
+    Object.keys(replyState).forEach(k => delete replyState[k]);
+    document.getElementById('commentList').innerHTML = '';
+    document.getElementById('commentLoadMoreRow').style.display = 'none';
+    document.getElementById('commentsCount').textContent = '';
+    document.getElementById('commentsSection').style.display = eventId ? '' : 'none';
+    commentQuillTop.setContents([]);
+    pendingTopCommentImages.length = 0;
+    renderTopGallery();
+    currentReplyQuill = null;
+    pendingReplyImages = [];
+    updateCommentComposerVisibility();
+    if(eventId) loadMoreComments();
+  }
+  function updateCommentComposerVisibility(){
+    const show = !!(commentsState.eventId && currentUser);
+    document.getElementById('commentComposerTop').style.display = show ? '' : 'none';
+    document.getElementById('commentSigninNote').style.display = (commentsState.eventId && !currentUser) ? '' : 'none';
+  }
+  // Sends an anonymous visitor to sign in and back to the exact event they were reading —
+  // shared by the "Sign in to leave a comment" note and clicking Reply while signed out.
+  function promptCommentSignIn(){
+    const row = timelineRows.find(r => r.id === commentsState.eventId);
+    navigate(loginUrlWithNext(row ? '/home/' + slugFor(row) : '/home'));
+  }
+  // Guards navigate() against silently discarding an in-progress comment/reply — checks the
+  // top composer's Quill instance plus whichever reply composer is currently open (at most
+  // one, by construction) for actual content, not just whether a composer happens to be open.
+  function hasUnsavedCommentDraft(){
+    if(document.getElementById('commentComposerTop').style.display !== 'none'){
+      if(commentQuillTop.getText().trim() || pendingTopCommentImages.length) return true;
+    }
+    if(currentReplyQuill && (currentReplyQuill.getText().trim() || pendingReplyImages.length)) return true;
+    return false;
+  }
+
+  function commentAvatarHtml(c, sizeClass){
+    // Base64 data URIs (the only src format avatar_image is ever validated/stored as) —
+    // safe to interpolate directly, same reasoning as authorLineHtml() above.
+    return c.created_by_avatar
+      ? `<span class="author-avatar ${sizeClass}" style="background-image:url('${c.created_by_avatar}')"></span>`
+      : `<span class="author-avatar ${sizeClass}"></span>`;
+  }
+  function commentAuthorNameHtml(c){
+    const name = escapeHtml(c.created_by_name || 'Unknown');
+    return c.created_by_public_id
+      ? `<span class="author-link comment-author-name" data-public-id="${escapeHtml(c.created_by_public_id)}">${name}</span>`
+      : `<span class="comment-author-name">${name}</span>`;
+  }
+  function wireCommentAuthorLinks(scopeEl){
+    scopeEl.querySelectorAll('.author-link').forEach(link => {
+      link.addEventListener('click', e => { e.stopPropagation(); navigate('/u/' + link.dataset.publicId); });
+    });
+  }
+  // Read-only gallery for an already-posted comment/reply — each thumbnail opens the
+  // full-size image viewer modal on click.
+  function viewGalleryHtml(images){
+    return images.length
+      ? `<div class="comment-image-view-gallery">${images.map(src => `<img src="${src}" alt="" data-action="view-image">`).join('')}</div>`
+      : '';
+  }
+
+  function renderCommentHtml(c){
+    const replyCount = c.reply_count || 0;
+    // Deleted comments stay in place as a plain placeholder — the server already strips
+    // body/images/author off a deleted row, so there's nothing left to render but the
+    // notice. Replies-list/toggle scaffolding is kept so any existing replies underneath
+    // are still reachable; reply/delete actions are dropped since there's nothing to act on.
+    if(c.deleted_at){
+      return `
+        <div class="comment-item comment-deleted" data-id="${c.id}" data-top-id="${c.id}" data-reply-count="${replyCount}">
+          <div class="comment-body comment-deleted-msg">This comment has been deleted</div>
+          <div class="comment-replies" data-replies-list></div>
+          <div class="row-actions" data-replies-toggle style="${replyCount ? '' : 'display:none;'}">
+            <a data-action="load-replies">${replyCount ? `Show ${replyCount} repl${replyCount === 1 ? 'y' : 'ies'}` : ''}</a>
+          </div>
+        </div>`;
+    }
+    const canDelete = currentUser && (currentUser.id === c.created_by || currentUser.role === 'superAdmin');
+    const images = Array.isArray(c.images) ? c.images : [];
+    return `
+      <div class="comment-item" data-id="${c.id}" data-top-id="${c.id}" data-author-id="${c.created_by}" data-author-name="${escapeHtml(c.created_by_name || '')}" data-reply-count="${replyCount}">
+        <div class="comment-item-head">
+          ${commentAvatarHtml(c, 'comment-avatar')}
+          ${commentAuthorNameHtml(c)}
+          <span class="comment-time">${formatDate(c.created_at)}</span>
+        </div>
+        <div class="comment-body rich-content clamped" data-comment-body>${c.body || ''}</div>
+        <button type="button" class="comment-readmore" data-action="read-more" style="display:none;">Read more</button>
+        ${viewGalleryHtml(images)}
+        <div class="row-actions comment-item-actions">
+          <a data-action="reply">Reply</a>
+          ${canDelete ? `<a class="danger" data-action="delete">Delete</a>` : ''}
+        </div>
+        <div class="comment-reply-composer" data-reply-composer style="display:none;"></div>
+        <div class="comment-replies" data-replies-list></div>
+        <div class="row-actions" data-replies-toggle style="${replyCount ? '' : 'display:none;'}">
+          <a data-action="load-replies">${replyCount ? `Show ${replyCount} repl${replyCount === 1 ? 'y' : 'ies'}` : ''}</a>
+        </div>
+      </div>`;
+  }
+  function renderReplyHtml(r, topId){
+    if(r.deleted_at){
+      return `
+        <div class="comment-item comment-deleted" data-id="${r.id}" data-top-id="${topId}">
+          <div class="comment-body comment-deleted-msg">This reply has been deleted</div>
+        </div>`;
+    }
+    const canDelete = currentUser && (currentUser.id === r.created_by || currentUser.role === 'superAdmin');
+    const images = Array.isArray(r.images) ? r.images : [];
+    return `
+      <div class="comment-item" data-id="${r.id}" data-top-id="${topId}" data-author-id="${r.created_by}" data-author-name="${escapeHtml(r.created_by_name || '')}">
+        <div class="comment-item-head">
+          ${commentAvatarHtml(r, 'comment-avatar-sm')}
+          ${commentAuthorNameHtml(r)}
+          <span class="comment-time">${formatDate(r.created_at)}</span>
+        </div>
+        <div class="comment-body rich-content clamped" data-comment-body>${r.reply_to_user_name ? `<span class="comment-reply-to">@${escapeHtml(r.reply_to_user_name)}</span> ` : ''}${r.body || ''}</div>
+        <button type="button" class="comment-readmore" data-action="read-more" style="display:none;">Read more</button>
+        ${viewGalleryHtml(images)}
+        <div class="row-actions comment-item-actions">
+          <a data-action="reply">Reply</a>
+          ${canDelete ? `<a class="danger" data-action="delete">Delete</a>` : ''}
+        </div>
+        <div class="comment-reply-composer" data-reply-composer style="display:none;"></div>
+      </div>`;
+  }
+  function replyComposerHtml(replyToName){
+    return `
+      ${replyToName ? `<div class="comment-replying-to">Replying to <span class="comment-reply-to">@${escapeHtml(replyToName)}</span><a class="comment-cancel-reply" data-action="cancel-reply">cancel</a></div>` : ''}
+      <div data-reply-editor></div>
+      <div class="comment-image-gallery" data-reply-image-gallery></div>
+      <div class="comment-composer-actions">
+        <label class="comment-attach-btn" data-reply-attach-label>📷 Photo (0/${MAX_COMMENT_IMAGES})<input type="file" accept="image/*" multiple data-reply-image-file style="display:none;"></label>
+        <div>
+          <a class="comment-cancel-reply" data-action="cancel-reply" style="margin-right:10px;">Cancel</a>
+          <button type="button" class="btn btn-cool btn-sm" data-action="post-reply">Reply</button>
+        </div>
+      </div>`;
+  }
+
+  // -webkit-line-clamp truncates visually but doesn't tell us whether it actually clipped
+  // anything — comparing scrollHeight to clientHeight after insertion is the only reliable
+  // way to know whether a given comment needs a "Read more" toggle at all.
+  function measureClamps(scopeEl){
+    scopeEl.querySelectorAll('[data-comment-body].clamped').forEach(el => {
+      const btn = el.nextElementSibling;
+      if(!btn || !btn.matches('.comment-readmore')) return;
+      btn.style.display = el.scrollHeight > el.clientHeight + 1 ? '' : 'none';
+    });
+  }
+
+  function existingCommentIds(scopeEl){
+    return new Set(Array.from(scopeEl.children).map(el => el.dataset.id));
+  }
+
+  async function loadMoreComments(){
+    if(!commentsState.eventId) return;
+    const limit = commentsState.offset === 0 ? COMMENT_INITIAL_SIZE : COMMENT_PAGE_SIZE;
+    const data = await apiFetch(`/api/events/${commentsState.eventId}/comments?limit=${limit}&offset=${commentsState.offset}`, { auth: false });
+    commentsState.total = data.total;
+    commentsState.offset += data.comments.length;
+    const listEl = document.getElementById('commentList');
+    const seen = existingCommentIds(listEl);
+    const fresh = data.comments.filter(c => !seen.has(c.id));
+    listEl.insertAdjacentHTML('beforeend', fresh.map(renderCommentHtml).join(''));
+    wireCommentAuthorLinks(listEl);
+    measureClamps(listEl);
+    document.getElementById('commentsCount').textContent = commentsState.total ? `(${commentsState.total})` : '';
+    const moreRow = document.getElementById('commentLoadMoreRow');
+    moreRow.style.display = commentsState.offset < commentsState.total ? '' : 'none';
+  }
+
+  function updateRepliesToggle(topItemEl, state){
+    const toggleEl = topItemEl.querySelector(':scope > [data-replies-toggle]');
+    const remaining = state.total - state.offset;
+    if(remaining > 0){
+      toggleEl.innerHTML = `<a data-action="load-more-replies">Load ${Math.min(REPLY_PAGE_SIZE, remaining)} more repl${remaining === 1 ? 'y' : 'ies'}</a>`;
+      toggleEl.style.display = '';
+    } else {
+      toggleEl.style.display = 'none';
+    }
+  }
+  async function loadReplies(topId){
+    const itemEl = document.querySelector(`#commentList > .comment-item[data-id="${topId}"]`);
+    if(!itemEl) return;
+    const state = replyState[topId] || (replyState[topId] = { offset: 0, total: parseInt(itemEl.dataset.replyCount, 10) || 0 });
+    const data = await apiFetch(`/api/comments/${topId}/replies?limit=${REPLY_PAGE_SIZE}&offset=${state.offset}`, { auth: false });
+    state.total = data.total;
+    state.offset += data.replies.length;
+    const listEl = itemEl.querySelector(':scope > [data-replies-list]');
+    const seen = existingCommentIds(listEl);
+    const fresh = data.replies.filter(r => !seen.has(r.id));
+    listEl.insertAdjacentHTML('beforeend', fresh.map(r => renderReplyHtml(r, topId)).join(''));
+    wireCommentAuthorLinks(listEl);
+    measureClamps(listEl);
+    updateRepliesToggle(itemEl, state);
+  }
+
+  // Editable thumbnail gallery for a composer-in-progress — each thumbnail has its own
+  // remove button, distinct from viewGalleryHtml() which renders an already-posted comment.
+  function composerGalleryHtml(images){
+    return images.map((src, i) => `
+      <div class="comment-image-thumb" data-idx="${i}">
+        <img src="${src}" alt="">
+        <button type="button" class="comment-image-remove" data-action="remove-composer-image" aria-label="Remove image">×</button>
+      </div>`).join('');
+  }
+  function renderTopGallery(){
+    document.getElementById('commentImageGalleryTop').innerHTML = composerGalleryHtml(pendingTopCommentImages);
+    const label = document.getElementById('commentAttachLabelTop');
+    const atCap = pendingTopCommentImages.length >= MAX_COMMENT_IMAGES;
+    label.classList.toggle('disabled', atCap);
+    label.childNodes[0].textContent = `📷 Photo (${pendingTopCommentImages.length}/${MAX_COMMENT_IMAGES})`;
+  }
+  function renderReplyGallery(composerEl){
+    composerEl.querySelector('[data-reply-image-gallery]').innerHTML = composerGalleryHtml(pendingReplyImages);
+    const label = composerEl.querySelector('[data-reply-attach-label]');
+    const atCap = pendingReplyImages.length >= MAX_COMMENT_IMAGES;
+    label.classList.toggle('disabled', atCap);
+    label.childNodes[0].textContent = `📷 Photo (${pendingReplyImages.length}/${MAX_COMMENT_IMAGES})`;
+  }
+
+  // Downscales/compresses every file in `fileList` (skipping non-images) and pushes each
+  // onto `pendingArray`, capped at MAX_COMMENT_IMAGES total — calls `onUpdate` after each
+  // one finishes (they load asynchronously, so the gallery fills in incrementally).
+  function attachCommentImages(fileList, pendingArray, onUpdate){
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if(!files.length) return;
+    const room = MAX_COMMENT_IMAGES - pendingArray.length;
+    if(room <= 0){ alert(`You can attach up to ${MAX_COMMENT_IMAGES} images.`); return; }
+    if(files.length > room){
+      alert(`Only ${room} more image${room === 1 ? '' : 's'} can be attached (max ${MAX_COMMENT_IMAGES}).`);
+    }
+    files.slice(0, room).forEach(file => {
+      if(file.size > MAX_COMMENT_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, MAX_COMMENT_IMAGE_WIDTH / img.naturalWidth);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.naturalWidth * scale);
+          canvas.height = Math.round(img.naturalHeight * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = compressImageToDataUrl(canvas, MAX_COMMENT_IMAGE_BYTES);
+          if(!dataUrl){ alert(`"${file.name}" is still too large after compression — try a smaller/simpler source image.`); return; }
+          pendingArray.push(dataUrl);
+          onUpdate();
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function closeReplyComposer(composerEl){
+    composerEl.style.display = 'none';
+    composerEl.innerHTML = '';
+    if(composerEl === currentReplyQuill?.container.closest('[data-reply-composer]')) currentReplyQuill = null;
+    pendingReplyImages = [];
+  }
+  function toggleReplyComposer(itemEl){
+    const composerEl = itemEl.querySelector(':scope > [data-reply-composer]');
+    const isOpen = composerEl.style.display !== 'none' && composerEl.innerHTML.trim() !== '';
+    document.querySelectorAll('#commentList [data-reply-composer]').forEach(el => {
+      if(el !== composerEl) closeReplyComposer(el);
+    });
+    if(isOpen){ closeReplyComposer(composerEl); return; }
+    const topId = itemEl.dataset.topId;
+    const isReplyToReply = itemEl.dataset.id !== topId;
+    composerEl.innerHTML = replyComposerHtml(isReplyToReply ? itemEl.dataset.authorName : null);
+    composerEl.style.display = '';
+    pendingReplyImages = [];
+    currentReplyQuill = createCommentQuill(composerEl.querySelector('[data-reply-editor]'));
+    currentReplyQuill.focus();
+  }
+
+  async function submitReply(itemEl){
+    if(!currentUser || !currentReplyQuill) return;
+    const composerEl = itemEl.querySelector(':scope > [data-reply-composer]');
+    const text = currentReplyQuill.getText().trim();
+    const images = pendingReplyImages.slice();
+    if(!text && !images.length){ alert('Write something or attach an image.'); return; }
+    const bodyHtml = currentReplyQuill.root.innerHTML;
+    const topId = itemEl.dataset.topId;
+    const isReplyToReply = itemEl.dataset.id !== topId;
+    const payload = { body: bodyHtml, parent_comment_id: topId, images };
+    if(isReplyToReply) payload.reply_to_user_id = itemEl.dataset.authorId;
+    const btn = composerEl.querySelector('[data-action="post-reply"]');
+    btn.disabled = true;
+    try{
+      const { comment } = await apiFetch(`/api/events/${commentsState.eventId}/comments`, { method: 'POST', body: payload });
+      const topItemEl = document.querySelector(`#commentList > .comment-item[data-id="${topId}"]`);
+      const listEl = topItemEl.querySelector(':scope > [data-replies-list]');
+      listEl.insertAdjacentHTML('beforeend', renderReplyHtml(comment, topId));
+      wireCommentAuthorLinks(listEl);
+      measureClamps(listEl);
+      const state = replyState[topId] || (replyState[topId] = { offset: 0, total: parseInt(topItemEl.dataset.replyCount, 10) || 0 });
+      state.offset += 1;
+      state.total += 1;
+      updateRepliesToggle(topItemEl, state);
+      closeReplyComposer(composerEl);
+    } catch(e){
+      alert(e.message || 'Could not post reply.');
+      btn.disabled = false;
+    }
+  }
+
+  // Strips a comment/reply down to a plain "This [comment/reply] has been deleted" notice
+  // in place, rather than removing the element — for a top-level comment this deliberately
+  // leaves [data-replies-list]/[data-replies-toggle] untouched, so any replies already
+  // loaded underneath it (and their pagination state in replyState) survive intact.
+  function markCommentDeleted(itemEl, isTop){
+    itemEl.classList.add('comment-deleted');
+    itemEl.removeAttribute('data-author-id');
+    itemEl.removeAttribute('data-author-name');
+    itemEl.querySelector(':scope > .comment-item-head')?.remove();
+    itemEl.querySelector(':scope > .comment-readmore')?.remove();
+    itemEl.querySelector(':scope > .comment-image-view-gallery')?.remove();
+    itemEl.querySelector(':scope > .comment-item-actions')?.remove();
+    const composer = itemEl.querySelector(':scope > [data-reply-composer]');
+    if(composer){ closeReplyComposer(composer); composer.remove(); }
+    const body = itemEl.querySelector(':scope > [data-comment-body]');
+    if(body){
+      body.className = 'comment-body comment-deleted-msg';
+      body.removeAttribute('data-comment-body');
+      body.textContent = isTop ? 'This comment has been deleted' : 'This reply has been deleted';
+    }
+  }
+  async function deleteComment(commentId, itemEl){
+    try{
+      await apiFetch(`/api/comments/${commentId}`, { method: 'DELETE' });
+      markCommentDeleted(itemEl, itemEl.dataset.id === itemEl.dataset.topId);
+    } catch(e){
+      alert(e.message || 'Could not delete comment.');
+    }
+  }
+
+  // ---- image viewer (lightbox) ----
+  function openImageViewer(src){
+    document.getElementById('imageViewerImg').src = src;
+    document.getElementById('imageViewerBackdrop').classList.add('open');
+  }
+  function closeImageViewer(){
+    document.getElementById('imageViewerBackdrop').classList.remove('open');
+    document.getElementById('imageViewerImg').removeAttribute('src');
+  }
+  document.getElementById('imageViewerClose').addEventListener('click', closeImageViewer);
+  document.getElementById('imageViewerBackdrop').addEventListener('click', e => {
+    // Only the backdrop itself (the margin outside the image/close button) closes on click —
+    // e.currentTarget is always the backdrop; e.target is whatever was actually clicked.
+    if(e.target === e.currentTarget) closeImageViewer();
+  });
+
+  document.getElementById('commentPostBtnTop').addEventListener('click', async () => {
+    if(!currentUser || !commentsState.eventId) return;
+    const text = commentQuillTop.getText().trim();
+    const images = pendingTopCommentImages.slice();
+    if(!text && !images.length){ alert('Write something or attach an image.'); return; }
+    const bodyHtml = commentQuillTop.root.innerHTML;
+    const btn = document.getElementById('commentPostBtnTop');
+    btn.disabled = true;
+    try{
+      const { comment } = await apiFetch(`/api/events/${commentsState.eventId}/comments`, { method: 'POST', body: { body: bodyHtml, images } });
+      const listEl = document.getElementById('commentList');
+      listEl.insertAdjacentHTML('afterbegin', renderCommentHtml(comment));
+      wireCommentAuthorLinks(listEl);
+      measureClamps(listEl);
+      commentsState.total += 1;
+      document.getElementById('commentsCount').textContent = commentsState.total ? `(${commentsState.total})` : '';
+      commentQuillTop.setContents([]);
+      pendingTopCommentImages.length = 0;
+      renderTopGallery();
+    } catch(e){
+      alert(e.message || 'Could not post comment.');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  document.getElementById('commentImageFileTop').addEventListener('change', e => {
+    attachCommentImages(e.target.files, pendingTopCommentImages, renderTopGallery);
+    e.target.value = '';
+  });
+  document.getElementById('commentImageGalleryTop').addEventListener('click', e => {
+    if(!e.target.matches('[data-action="remove-composer-image"]')) return;
+    const idx = parseInt(e.target.closest('.comment-image-thumb').dataset.idx, 10);
+    pendingTopCommentImages.splice(idx, 1);
+    renderTopGallery();
+  });
+  document.getElementById('commentSigninNote').addEventListener('click', promptCommentSignIn);
+  document.getElementById('evEngagementBar').addEventListener('click', () => {
+    document.getElementById('commentsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  document.getElementById('commentList').addEventListener('click', async e => {
+    const actionEl = e.target.closest('[data-action]');
+    if(!actionEl) return;
+    const action = actionEl.dataset.action;
+    if(action === 'load-more-comments'){ await loadMoreComments(); return; }
+    if(action === 'view-image' && e.target.tagName === 'IMG'){ openImageViewer(e.target.src); return; }
+
+    const itemEl = e.target.closest('.comment-item');
+    if(!itemEl) return;
+    if(action === 'read-more'){
+      itemEl.querySelector('[data-comment-body]').classList.remove('clamped');
+      actionEl.style.display = 'none';
+    } else if(action === 'reply'){
+      if(!currentUser){ promptCommentSignIn(); return; }
+      toggleReplyComposer(itemEl);
+    } else if(action === 'cancel-reply'){
+      closeReplyComposer(itemEl.querySelector(':scope > [data-reply-composer]'));
+    } else if(action === 'post-reply'){
+      await submitReply(itemEl);
+    } else if(action === 'remove-composer-image'){
+      const idx = parseInt(actionEl.closest('.comment-image-thumb').dataset.idx, 10);
+      pendingReplyImages.splice(idx, 1);
+      renderReplyGallery(itemEl.querySelector(':scope > [data-reply-composer]'));
+    } else if(action === 'load-replies' || action === 'load-more-replies'){
+      await loadReplies(itemEl.dataset.id);
+    } else if(action === 'delete'){
+      if(!(await confirmDialog('Delete this comment?', { title: 'Delete comment', okLabel: 'Delete' }))) return;
+      await deleteComment(itemEl.dataset.id, itemEl);
+    }
+  });
+  document.getElementById('commentList').addEventListener('change', e => {
+    if(!e.target.matches('[data-reply-image-file]')) return;
+    const composerEl = e.target.closest('[data-reply-composer]');
+    attachCommentImages(e.target.files, pendingReplyImages, () => renderReplyGallery(composerEl));
+    e.target.value = '';
+  });
+
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   function formatDate(iso){
     const d = new Date(iso);
