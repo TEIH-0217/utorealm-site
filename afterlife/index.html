@@ -111,6 +111,10 @@
   .nav-links a.active{ color:var(--cool); }
   .nav-links a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-2px; height:1px; background:var(--cool); }
   .nav-links a:hover{ color:var(--text); }
+  /* Discussions isn't a real feature yet — greyed out, no data-path so the generic
+     a[data-path] click handler never touches it, cursor signals it isn't clickable. */
+  .nav-links a.nav-disabled{ cursor:default; opacity:0.4; }
+  .nav-links a.nav-disabled:hover{ color:var(--text-dim); }
   .sync-pill{ font-size:10px; color:var(--text-faint); letter-spacing:0.06em; display:flex; align-items:center; gap:6px; }
   .coord{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; font-variant-numeric:tabular-nums; }
   .sync-dot{ width:6px; height:6px; border-radius:50%; background:var(--cool); }
@@ -154,7 +158,146 @@
   .btn-ghost:hover{ color:var(--text); }
   .btn-sm{ padding:8px 14px; font-size:11px; }
 
-  /* ================= PUBLIC VIEW ================= */
+  /* ================= HOME VIEW (new landing page) ================= */
+  #homeView{ display:none; flex:1; flex-direction:column; min-height:0; }
+  #homeView.active{ display:flex; }
+  .home-scroll{ flex:1; min-height:0; overflow-y:auto; }
+
+  /* ---- Homepage banner (dark/light variants, swapped via the same :root[data-theme]
+     switch the logo already uses) — adapted from a standalone design file, "hb-" prefixed
+     so its fairly generic class names (content/label/wordmark/etc) can never collide with
+     anything elsewhere in this single-file app. ---- */
+  .hb-wrap{ padding:28px 28px 0; max-width:1400px; margin:0 auto; width:100%; box-sizing:border-box; }
+  .hb-banner{ position:relative; width:100%; height:260px; overflow:hidden; border-radius:6px; isolation:isolate; }
+  :root[data-theme="light"] .hb-banner--dark{ display:none; }
+  .hb-banner--light{ display:none; }
+  :root[data-theme="light"] .hb-banner--light{ display:block; }
+  .hb-content{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; }
+  .hb-wordmark{
+    margin:0; font-family:'Arial Narrow','Helvetica Neue',sans-serif; font-stretch:condensed; font-weight:800;
+    font-size:clamp(36px, 6vw, 64px); letter-spacing:8px; text-transform:uppercase;
+    -webkit-mask-image:repeating-linear-gradient(to bottom, #000 0px, #000 30px, transparent 30px, transparent 34px);
+    mask-image:repeating-linear-gradient(to bottom, #000 0px, #000 30px, transparent 30px, transparent 34px);
+  }
+  .hb-tagline{ margin-top:14px; font-family:'Courier New',monospace; font-size:14px; letter-spacing:1.5px; display:flex; align-items:center; gap:10px; text-align:center; max-width:90%; }
+  .hb-cursor{ display:inline-block; width:10px; height:15px; animation:hbBlink 1.1s steps(1) infinite; }
+  @keyframes hbBlink{ 50%{ opacity:0; } }
+
+  .hb-banner--dark{ background:radial-gradient(ellipse at 50% 30%, #0d0f1f 0%, #05060c 65%); }
+  .hb-stars{
+    position:absolute; inset:0; background-repeat:no-repeat; opacity:0.7; animation:hbTwinkle 3.4s ease-in-out infinite alternate;
+    background-image:
+      radial-gradient(1.5px 1.5px at 10% 20%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 80% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 45% 10%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 65% 25%, #fff, transparent),
+      radial-gradient(1px 1px at 25% 35%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 90% 40%, #fff, transparent),
+      radial-gradient(1px 1px at 55% 5%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 15% 45%, #fff, transparent);
+  }
+  @keyframes hbTwinkle{ from{ opacity:0.35; } to{ opacity:0.85; } }
+  .hb-sun--dark{
+    position:absolute; left:50%; top:24px; width:190px; height:190px; transform:translateX(-50%); border-radius:50%;
+    background:repeating-linear-gradient(to bottom, #ffe066 0px, #ffe066 8px, #ff9a3d 8px, #ff9a3d 16px, #ff4d6d 16px, #ff4d6d 24px, #05060c 24px, #05060c 30px);
+    box-shadow:0 0 70px 10px rgba(255,106,61,0.35); animation:hbSunGlow 4s ease-in-out infinite alternate;
+  }
+  @keyframes hbSunGlow{ from{ box-shadow:0 0 60px 6px rgba(255,106,61,0.28); } to{ box-shadow:0 0 95px 16px rgba(255,60,150,0.4); } }
+  .hb-skyline{
+    position:absolute; bottom:88px; left:0; right:0; height:70px; opacity:0.92; filter:drop-shadow(0 0 6px rgba(255,46,196,0.25));
+    background:
+      linear-gradient(#000 100%, #000 100%) 0 100%/6% 55% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 7% 100%/4% 80% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 13% 100%/5% 40% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 20% 100%/3% 95% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 25% 100%/6% 60% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 33% 100%/4% 75% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 40% 100%/7% 50% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 49% 100%/3% 100% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 54% 100%/5% 65% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 61% 100%/4% 85% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 67% 100%/6% 45% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 75% 100%/3% 90% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 80% 100%/5% 55% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 87% 100%/4% 70% no-repeat,
+      linear-gradient(#000 100%, #000 100%) 93% 100%/6% 40% no-repeat;
+  }
+  .hb-grid--dark{ position:absolute; bottom:0; left:0; right:0; height:110px; background:#05060c; perspective:220px; perspective-origin:50% 0%; overflow:hidden; }
+  .hb-grid--dark::before{
+    content:""; position:absolute; left:-50%; right:-50%; top:0; height:400px;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(176,38,255,0.55) 0 2px, transparent 2px 60px),
+      repeating-linear-gradient(0deg, rgba(0,229,255,0.5) 0 2px, transparent 2px 40px);
+    transform:rotateX(60deg); transform-origin:top center; animation:hbGridMove 1.4s linear infinite;
+  }
+  @keyframes hbGridMove{ from{ background-position:0 0, 0 0; } to{ background-position:0 0, 0 40px; } }
+  .hb-scanline{ position:absolute; inset:0; background:linear-gradient(rgba(255,255,255,0.05) 50%, transparent 50%); background-size:100% 4px; mix-blend-mode:overlay; pointer-events:none; }
+  .hb-banner--dark .hb-wordmark{ color:#f3f4f8; text-shadow:-3px 0 0 #00e5ff, 3px 0 0 #ff2ec4; animation:hbFlickerDark 5s ease-in-out infinite; }
+  @keyframes hbFlickerDark{ 0%,92%,100%{ opacity:1; } 93%{ opacity:0.55; } 94%{ opacity:1; } 95%{ opacity:0.7; } 96%{ opacity:1; } }
+  .hb-banner--dark .hb-tagline{ color:#7d8a8a; }
+  .hb-banner--dark .hb-cursor{ background:#39ff14; box-shadow:0 0 10px #39ff14; }
+
+  .hb-banner--light{ background:linear-gradient(180deg, #ffffff 0%, #f4f6fc 55%, #e8ecfb 100%); }
+  .hb-sun--light{
+    position:absolute; left:50%; top:28px; width:170px; height:170px; transform:translateX(-50%); border-radius:50%;
+    background:repeating-linear-gradient(to bottom, #ffffff 0px, #ffffff 10px, #cfe0ff 10px, #cfe0ff 20px, #9fb8f2 20px, #9fb8f2 30px, #f4f6fc 30px, #f4f6fc 36px);
+    box-shadow:0 0 60px 14px rgba(120,150,240,0.25); animation:hbSunGlowLight 4.5s ease-in-out infinite alternate;
+  }
+  @keyframes hbSunGlowLight{ from{ box-shadow:0 0 40px 8px rgba(120,150,240,0.18); } to{ box-shadow:0 0 70px 18px rgba(120,150,240,0.32); } }
+  .hb-mountains{
+    position:absolute; bottom:82px; left:0; right:0; height:60px; background:#ffd9ad; opacity:0.55;
+    clip-path:polygon(0% 100%, 0% 60%, 6% 30%, 12% 55%, 18% 20%, 24% 50%, 30% 15%, 36% 45%, 42% 25%, 50% 5%, 58% 25%, 64% 45%, 70% 15%, 76% 50%, 82% 20%, 88% 55%, 94% 30%, 100% 60%, 100% 100%);
+    filter:drop-shadow(0 -2px 8px rgba(120,150,240,0.25));
+  }
+  .hb-grid--light{ position:absolute; bottom:0; left:0; right:0; height:110px; background:#f4f6fc; perspective:220px; perspective-origin:50% 0%; overflow:hidden; }
+  .hb-grid--light::before{
+    content:""; position:absolute; left:-50%; right:-50%; top:0; height:400px;
+    background-image:
+      repeating-linear-gradient(90deg, rgba(74,99,216,0.4) 0 2px, transparent 2px 60px),
+      repeating-linear-gradient(0deg, rgba(74,99,216,0.35) 0 2px, transparent 2px 40px);
+    transform:rotateX(60deg); transform-origin:top center; animation:hbGridMove 1.8s linear infinite;
+  }
+  .hb-banner--light .hb-wordmark{ color:#12173a; text-shadow:0 0 22px rgba(74,99,216,0.35); }
+  .hb-banner--light .hb-tagline{ color:#5a6390; }
+  .hb-banner--light .hb-cursor{ background:#4a63d8; box-shadow:0 0 8px rgba(74,99,216,0.6); }
+
+  @media (prefers-reduced-motion: reduce){
+    .hb-banner *{ animation:none !important; }
+  }
+  @media (max-width: 640px){
+    .hb-banner{ height:200px; }
+    .hb-wordmark{ letter-spacing:4px; }
+  }
+
+  .home-grid{ display:grid; grid-template-columns:minmax(0,1fr) 540px; gap:32px; align-items:start; }
+  .home-intro-block{ padding:24px; background:var(--surface); border:1px solid var(--border); }
+  .home-intro-block h1{ font-family:var(--display); font-size:26px; margin-bottom:12px; }
+  .home-intro-block h2{ font-family:var(--display); font-size:15px; margin:20px 0 8px; }
+  .home-intro-block p{ font-size:13px; line-height:1.6; color:var(--text-dim); margin-bottom:10px; }
+  .home-intro-block strong{ color:var(--text); }
+  .home-auth-actions{ display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+  .home-auth-actions .btn{ min-width:110px; text-align:center; }
+  .home-greeting{ display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+  .home-greeting-avatar{ width:48px; height:48px; border-radius:50%; background:var(--surface-2, var(--surface)); border:1px solid var(--border); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:15px; color:var(--text-dim); flex-shrink:0; }
+  .home-greeting-text h3{ font-family:var(--display); font-size:16px; margin-bottom:2px; }
+  .home-greeting-text p{ font-size:11px; color:var(--text-faint); }
+  .home-side-block{ margin-bottom:28px; }
+  .home-side-block .panel-head{ padding:0 0 12px; }
+  .home-empty-state{ font-size:11px; color:var(--text-faint); padding:16px; text-align:center; border:1px dashed var(--border); }
+  .home-popular-posts{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .home-dummy-post-cover{ height:90px; background:linear-gradient(160deg,#1c1c28,#0e0e14); border:1px solid var(--border); margin-bottom:6px; }
+  .home-dummy-post-title{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
+  .home-stats-row{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:20px; }
+  .home-stat-block{ padding:14px 16px; background:var(--surface); border:1px solid var(--border); }
+  .home-stat-btn{ margin-top:6px; width:100%; }
+  .home-release-heading{ font-family:var(--display); font-size:13px; margin-bottom:6px; }
+  .home-release-summary{ font-size:12px; line-height:1.55; color:var(--text-dim); }
+  @media (max-width: 860px){
+    .home-grid{ grid-template-columns:1fr; }
+    .home-stats-row{ grid-template-columns:repeat(2,1fr); }
+  }
+
+  /* ================= PUBLIC VIEW (Timeline) ================= */
   #publicView{ flex:1; display:none; min-height:0; }
   #publicView.active{ display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
   main{ flex:1; display:grid; grid-template-columns:340px minmax(0,1fr) 220px; min-height:0; min-width:0; overflow:hidden; }
@@ -339,7 +482,7 @@
   .batch-bar a{ letter-spacing:0.06em; text-transform:uppercase; color:var(--cool); cursor:pointer; text-decoration:none; font-size:10px; }
   .batch-bar a:hover{ color:var(--text); }
   .batch-bar #eventsBatchClear{ color:var(--text-faint); margin-left:auto; }
-  .wrap{ padding:28px; max-width:1200px; margin:0 auto; width:100%; }
+  .wrap{ padding:28px; max-width:1400px; margin:0 auto; width:100%; }
   /* Admin + "My entries" tables have far more columns now (status/review/visibility/
      created-by, plus grouped action buttons) — give them more breathing room than the
      narrower explore/auth-page use of .wrap. */
@@ -763,7 +906,9 @@
     </a>
     <div class="nav-links">
       <a data-path="/home" class="active">Home</a>
+      <a data-path="/timeline">Timeline</a>
       <a data-path="/explore">Explore</a>
+      <a class="nav-disabled" title="Coming soon">Discussions</a>
     </div>
     <div class="topbar-right">
       <div class="sync-pill"><span class="sync-dot"></span><span id="syncStatus">Synced</span></div>
@@ -787,7 +932,105 @@
     </div>
   </div>
 
-  <!-- ================= PUBLIC VIEW ================= -->
+  <!-- ================= HOME VIEW (new landing page) ================= -->
+  <div id="homeView">
+    <div class="home-scroll">
+      <div class="hb-wrap">
+        <div class="hb-banner hb-banner--dark">
+          <div class="hb-stars"></div>
+          <div class="hb-sun--dark"></div>
+          <div class="hb-skyline"></div>
+          <div class="hb-grid--dark"></div>
+          <div class="hb-scanline"></div>
+          <div class="hb-content">
+            <h1 class="hb-wordmark">Afterlife</h1>
+            <p class="hb-tagline"><span class="hb-cursor"></span>The ultimate sci-fi hub for your "afterlife" identity.</p>
+          </div>
+        </div>
+        <div class="hb-banner hb-banner--light">
+          <div class="hb-sun--light"></div>
+          <div class="hb-mountains"></div>
+          <div class="hb-grid--light"></div>
+          <div class="hb-content">
+            <h1 class="hb-wordmark">Afterlife</h1>
+            <p class="hb-tagline"><span class="hb-cursor"></span>The ultimate sci-fi hub for your "afterlife" identity.</p>
+          </div>
+        </div>
+      </div>
+      <div class="wrap">
+        <div class="home-grid">
+          <div>
+            <!-- Anonymous: Sign up / Log in. Logged in: avatar + greeting. Toggled in
+                 renderHomeAuthBlock(), called from renderHomepage() and refreshCurrentUserUI()
+                 so it stays correct on sign-in/out without leaving this view. -->
+            <div class="home-auth-actions" id="homeAuthActions" style="display:none;">
+              <a class="btn btn-primary btn-sm" data-path="/register">Sign up</a>
+              <a class="btn btn-ghost btn-sm" data-path="/log-in">Log in</a>
+            </div>
+            <div class="home-greeting" id="homeGreeting" style="display:none;">
+              <div class="home-greeting-avatar" id="homeGreetingAvatar">—</div>
+              <div class="home-greeting-text">
+                <h3 id="homeGreetingName">—</h3>
+                <p>How are you today?</p>
+              </div>
+            </div>
+            <div class="home-intro-block reticle" id="homeIntroBlock">
+              <div class="rt-mark rt-tl"></div><div class="rt-mark rt-br"></div>
+            </div>
+          </div>
+          <aside>
+            <div class="home-side-block">
+              <div class="panel-head"><h3>Upcoming Event</h3></div>
+              <div id="homeUpcomingEvent"><div class="home-empty-state">No upcoming events yet.</div></div>
+            </div>
+            <div class="home-side-block">
+              <div class="panel-head"><h3>Popular Post</h3></div>
+              <!-- Posts aren't a real module yet — dummy placeholders, not fetched data. -->
+              <div class="home-popular-posts">
+                <div class="home-dummy-post"><div class="home-dummy-post-cover"></div><div class="home-dummy-post-title">Coming soon: community posts</div></div>
+                <div class="home-dummy-post"><div class="home-dummy-post-cover"></div><div class="home-dummy-post-title">Coming soon: community posts</div></div>
+              </div>
+              <div class="home-stats-row">
+                <div class="home-stat-block">
+                  <div class="state-label">Date / Time</div>
+                  <div class="state-value" id="homeDate">—</div>
+                  <div class="state-value accent" id="homeTime">—</div>
+                </div>
+                <div class="home-stat-block">
+                  <div class="state-label">Weather</div>
+                  <div class="state-value" id="homeTemp">—</div>
+                  <div class="state-sub" id="homeCond">Loading…</div>
+                </div>
+                <div class="home-stat-block">
+                  <div class="state-label">Report</div>
+                  <!-- Flow defined later — just the button for now. -->
+                  <button type="button" class="btn btn-ghost btn-sm home-stat-btn" id="homeReportBtn">Report</button>
+                </div>
+                <div class="home-stat-block">
+                  <div class="state-label">Provide Feedback</div>
+                  <!-- Flow defined later — just the button for now. -->
+                  <button type="button" class="btn btn-ghost btn-sm home-stat-btn" id="homeFeedbackBtn">Feedback</button>
+                </div>
+              </div>
+            </div>
+            <div class="home-side-block">
+              <div class="panel-head"><h3>Latest Release</h3></div>
+              <div id="homeLatestRelease"><div class="home-empty-state">No release notes yet.</div></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="footer-left">
+        <span class="barcode"></span>
+        AFTERLIFE INDUSTRIAL // SYSTEM ONLINE // BUILD 2077.08
+      </div>
+      <div class="footer-right"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Status</a><a data-path="/admin" id="homeFooterAdminLink" style="display:none;">Admin</a></div>
+    </footer>
+  </div>
+
+  <!-- ================= PUBLIC VIEW (Timeline) ================= -->
   <div id="publicView" class="active">
     <main>
       <div class="panel timeline-panel reticle">
@@ -857,7 +1100,7 @@
     </main>
     <footer>
       <div class="footer-left">
-        <span id="footBarcode" class="barcode"></span>
+        <span class="barcode"></span>
         AFTERLIFE INDUSTRIAL // SYSTEM ONLINE // BUILD 2077.08
       </div>
       <div class="footer-right"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Status</a><a data-path="/admin" id="footerAdminLink" style="display:none;">Admin</a></div>
@@ -880,6 +1123,7 @@
         <a data-admin-page="users" id="usersTabLink">Users</a>
         <a data-admin-page="taxonomy" id="taxonomyTabLink">Categories &amp; Genres</a>
         <a data-admin-page="comments" id="commentsTabLink">Comments</a>
+        <a data-admin-page="homepage" id="homepageTabLink">Homepage</a>
       </div>
 
       <div class="admin-page active" id="adminEventsPage">
@@ -969,6 +1213,42 @@
         </table>
         <div class="row-actions" id="adminCommentsLoadMoreRow" style="display:none; margin-top:14px;">
           <a data-action="load-more-admin-comments">Load more</a>
+        </div>
+      </div>
+
+      <div class="admin-page" id="adminHomepagePage">
+        <div class="toolbar">
+          <div class="toolbar-left"><h2 style="font-size:16px;">Homepage intro</h2></div>
+        </div>
+        <p class="tag-hint" style="margin-bottom:14px;">This is the welcome/community-policy block shown on the homepage's left column, for both signed-in and anonymous visitors.</p>
+        <div id="homeIntroToolbar">
+          <span class="ql-formats">
+            <button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button>
+          </span>
+          <span class="ql-formats">
+            <select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-blockquote"></button><button class="ql-link"></button><button class="ql-image"></button>
+          </span>
+          <span class="ql-formats">
+            <button class="ql-clean"></button>
+          </span>
+        </div>
+        <div class="home-intro-editor-wrap desc-editor-wrap" style="max-width:760px;">
+          <div id="homeIntroEditor"></div>
+          <div class="img-resize-handle" id="homeIntroImgResizeHandle" title="Drag to resize"></div>
+          <div class="img-caption-box" id="homeIntroImgCaptionBox">
+            <input type="text" id="homeIntroImgCaptionInput" placeholder="Caption / credit (optional)" maxlength="500">
+          </div>
+        </div>
+        <div class="editor-char-count" id="homeIntroCount">0 / 20,000</div>
+        <div class="toolbar" style="margin-top:16px;">
+          <div class="toolbar-left"><span id="homeIntroSaveStatus" class="count-badge"></span></div>
+          <div class="toolbar-right"><button class="btn btn-primary btn-sm" id="homeIntroSaveBtn">Save</button></div>
         </div>
       </div>
     </div>
@@ -1625,7 +1905,9 @@
   }
 
   // ---------------- ROUTER ----------------
-  // URL scheme (BASE_PATH-relative): /home, /home/<slug>, /explore, /admin(#events|#users).
+  // URL scheme (BASE_PATH-relative): /home (new landing page), /timeline, /timeline/<slug>,
+  // /explore, /admin(#events|#users). /home used to be the Timeline before it was renamed
+  // to /timeline and /home became this new landing page instead.
   // switchView()/switchAdminTab() are pure "apply this UI state" functions with no URL
   // knowledge; navigate() is the only thing that touches history, and applyRoute() is
   // the only thing that reads the URL back into UI state — used by both the initial
@@ -1639,7 +1921,11 @@
     return { parts: path.split('/').filter(Boolean) };
   }
   function navLinkForView(view){
-    const path = view === 'admin' ? '/admin' : view === 'explore' ? '/explore' : '/home';
+    // 'home' is this view's internal identifier for the Timeline (kept unchanged from
+    // before the /home → /timeline URL rename, to avoid touching every reference to it
+    // throughout the file) — its nav link now lives at /timeline. Anything else (including
+    // the new landing-page view) falls through to /home, which is now the new homepage.
+    const path = view === 'admin' ? '/admin' : view === 'explore' ? '/explore' : view === 'home' ? '/timeline' : '/home';
     return document.querySelector(`.nav-links a[data-path="${path}"]`);
   }
   async function navigate(path, { replace = false } = {}){
@@ -1656,7 +1942,7 @@
     applyRoute();
   }
   // Only ever follow a `?next=` value that's a same-app, BASE_PATH-relative path (e.g.
-  // "/admin", "/home/some-slug") — anything else (a bare protocol-relative "//evil.com",
+  // "/admin", "/timeline/some-slug") — anything else (a bare protocol-relative "//evil.com",
   // an absolute "https://..." URL, or garbage) falls back to '/home' instead of being
   // used as a redirect target, so this can't be turned into an open-redirect phishing vector.
   function safeNextPath(raw){
@@ -1703,10 +1989,12 @@
       switchView('forgot-password');
     } else if(section === 'reset-password'){
       switchView('reset-password');
-    } else {
-      if(!section) history.replaceState({}, '', BASE_PATH + '/home');
+    } else if(section === 'timeline'){
       switchView('home', navLinkForView('home'));
       if(sub) selectEventBySlug(sub);
+    } else {
+      if(!section) history.replaceState({}, '', BASE_PATH + '/home');
+      switchView('landing', navLinkForView('landing'));
     }
   }
   window.addEventListener('popstate', applyRoute);
@@ -1755,6 +2043,7 @@
     // (harmless: applyRoute() bounces them, and the backend enforces the real boundary).
     document.getElementById('menuAdminPanel').style.display = isSuperAdmin ? '' : 'none';
     document.getElementById('footerAdminLink').style.display = isSuperAdmin ? '' : 'none';
+    document.getElementById('homeFooterAdminLink').style.display = isSuperAdmin ? '' : 'none';
     document.getElementById('menuSignout').style.display = loggedIn ? '' : 'none';
     document.getElementById('menuSignin').style.display = loggedIn ? 'none' : '';
     if(loggedIn){
@@ -1777,6 +2066,8 @@
       document.getElementById('usersTabLink').style.display = 'none';
       document.getElementById('commentsTabLink').style.display = 'none';
     }
+    document.getElementById('homepageTabLink').style.display = isSuperAdmin ? '' : 'none';
+    renderHomeAuthBlock();
   }
 
   // ================= VIEW SWITCHING =================
@@ -1785,6 +2076,7 @@
   function switchView(view, clickedEl){
     document.querySelectorAll('.nav-links a').forEach(x => x.classList.remove('active'));
     if(clickedEl) clickedEl.classList.add('active');
+    document.getElementById('homeView').classList.toggle('active', view === 'landing');
     document.getElementById('publicView').classList.toggle('active', view === 'home');
     document.getElementById('exploreView').classList.toggle('active', view === 'explore');
     document.getElementById('adminView').classList.toggle('active', view === 'admin');
@@ -1800,6 +2092,7 @@
     // review/visibility changes made elsewhere — the admin table, My entries, another tab —
     // are reflected as soon as you navigate back, instead of showing whatever was cached
     // from the last fetch.
+    if(view === 'landing') renderHomepage();
     if(view === 'home') renderTimeline();
     if(view === 'explore') renderTimeline().then(renderExplore);
     if(view === 'admin') renderAdminView();
@@ -1827,6 +2120,7 @@
     const page = location.hash === '#users' ? 'users'
       : location.hash === '#taxonomy' ? 'taxonomy'
       : location.hash === '#comments' ? 'comments'
+      : location.hash === '#homepage' ? 'homepage'
       : 'events';
     switchAdminTab(page);
   }
@@ -2147,10 +2441,12 @@
     document.getElementById('adminUsersPage').classList.toggle('active', page === 'users');
     document.getElementById('adminTaxonomyPage').classList.toggle('active', page === 'taxonomy');
     document.getElementById('adminCommentsPage').classList.toggle('active', page === 'comments');
+    document.getElementById('adminHomepagePage').classList.toggle('active', page === 'homepage');
     if(page === 'events') renderTable();
     if(page === 'users') renderUsers();
     if(page === 'taxonomy') renderTaxonomyPage();
     if(page === 'comments') renderAdminComments(true);
+    if(page === 'homepage') loadHomeIntroAdmin();
   }
   document.querySelectorAll('.admin-tabs a').forEach(a => {
     a.addEventListener('click', () => navigate('/admin#' + a.dataset.adminPage));
@@ -2338,7 +2634,7 @@
         <div class="t-desc">${escapeHtml(desc)}</div>
         ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}
         ${engagementHtml(r, 't-engagement')}`;
-      item.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+      item.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
       wireAuthorLink(item);
       el.appendChild(item);
     });
@@ -2396,7 +2692,7 @@
         ${engagementHtml(r, 'explore-card-engagement')}`;
       card.appendChild(cover);
       card.appendChild(body);
-      card.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+      card.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
       wireAuthorLink(card);
       el.appendChild(card);
     });
@@ -2595,7 +2891,7 @@
   // shared by the "Sign in to leave a comment" note and clicking Reply while signed out.
   function promptCommentSignIn(){
     const row = timelineRows.find(r => r.id === commentsState.eventId);
-    navigate(loginUrlWithNext(row ? '/home/' + slugFor(row) : '/home'));
+    navigate(loginUrlWithNext(row ? '/timeline/' + slugFor(row) : '/timeline'));
   }
   // Guards navigate() against silently discarding an in-progress comment/reply — checks the
   // top composer's Quill instance plus whichever reply composer is currently open (at most
@@ -3108,17 +3404,24 @@
 
   // ================= PUBLIC: STATES PANEL =================
   function pad(n){ return n.toString().padStart(2,'0'); }
+  // Drives both the Timeline sidebar (stDate/stTime/stTemp/stCond) and the homepage's
+  // Date/Time/Weather block (homeDate/homeTime/homeTemp/homeCond) — same clock, two places
+  // it's shown. setText() no-ops on an id that isn't in the DOM's current view.
+  function setText(id, text){ const el = document.getElementById(id); if(el) el.textContent = text; }
   function updateClock(){
     const now = new Date();
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    document.getElementById('stDate').textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
-    document.getElementById('stTime').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const dateText = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
+    const timeText = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    setText('stDate', dateText); setText('homeDate', dateText);
+    setText('stTime', timeText); setText('homeTime', timeText);
   }
   updateClock();
   setInterval(updateClock, 1000);
-  document.getElementById('stTemp').textContent = '18°C';
-  document.getElementById('stCond').textContent = 'Overcast · London';
+  // Hardcoded, not fetched from any weather API — same as before this widget was reused here.
+  setText('stTemp', '18°C'); setText('homeTemp', '18°C');
+  setText('stCond', 'Overcast · London'); setText('homeCond', 'Overcast · London');
 
   // ================= ADMIN: TABLE =================
   const showDeletedBox = document.getElementById('showDeleted');
@@ -3399,7 +3702,7 @@
       openForm(null);
     } else {
       pendingSubmitIntent = true;
-      navigate(loginUrlWithNext('/home')); // handleLogin() picks this flag back up on success
+      navigate(loginUrlWithNext('/timeline')); // handleLogin() picks this flag back up on success
     }
   });
   function closeForm(){ formBackdrop.classList.remove('open'); deselectDescriptionImage(); }
@@ -4015,7 +4318,7 @@
   }
   document.getElementById('publishedNoticeContinue').addEventListener('click', () => {
     document.getElementById('publishedNoticeBackdrop').classList.remove('open');
-    navigate('/home');
+    navigate('/timeline');
   });
   document.getElementById('publishedNoticeAnother').addEventListener('click', () => {
     document.getElementById('publishedNoticeBackdrop').classList.remove('open');
@@ -4391,7 +4694,7 @@
     }
     const topId = adminThreadTopId;
     document.getElementById('adminThreadBackdrop').classList.remove('open');
-    await navigate('/home/' + slugFor(event));
+    await navigate('/timeline/' + slugFor(event));
     // resetComments()'s initial loadMoreComments() call is fire-and-forget, not awaited by
     // navigate() itself — wait for it to actually land (offset advances past 0) before
     // starting the "Show more" search loop below, so the two never race over the same page.
@@ -4676,15 +4979,17 @@
       c.innerHTML = `<span>${(i * 64).toString().padStart(4,'0')}</span>`;
       rLeft.appendChild(c);
     }
-    const bc = document.getElementById('footBarcode');
-    for(let i = 0; i < 24; i++){
-      const bar = document.createElement('i');
-      const w = [1,1,2,1,3,1,1,2][i % 8];
-      const h = 5 + (i * 37 % 9);
-      bar.style.width = w + 'px';
-      bar.style.height = h + 'px';
-      bc.appendChild(bar);
-    }
+    // Two footers now (Timeline + the new homepage) each have their own .barcode span.
+    document.querySelectorAll('.barcode').forEach(bc => {
+      for(let i = 0; i < 24; i++){
+        const bar = document.createElement('i');
+        const w = [1,1,2,1,3,1,1,2][i % 8];
+        const h = 5 + (i * 37 % 9);
+        bar.style.width = w + 'px';
+        bar.style.height = h + 'px';
+        bc.appendChild(bar);
+      }
+    });
   })();
 
   // ================= PUBLIC PROFILE =================
@@ -4749,7 +5054,7 @@
           const row = document.createElement('div');
           row.className = 'profile-entry-row';
           row.innerHTML = `<div class="profile-entry-title">${escapeHtml(r.title)}</div><div class="profile-entry-meta">${formatDate(r.event_published_at)} · ${escapeHtml(r.category)}</div>`;
-          row.addEventListener('click', () => navigate('/home/' + slugFor(r)));
+          row.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
           entriesEl.appendChild(row);
         });
         entriesEmptyEl.style.display = 'none';
@@ -4905,6 +5210,127 @@
     } catch(e){
       statusEl.textContent = '';
       alert('Could not save profile: ' + e.message);
+    }
+  });
+
+  // ================= HOME VIEW (new landing page) =================
+  // Anonymous: Sign up / Log in. Logged in: avatar + "Hello, {name}" greeting. Called both
+  // from renderHomepage() (on arrival) and refreshCurrentUserUI() (on sign-in/out) so this
+  // stays correct without requiring a navigation if the user logs in/out while sitting here.
+  function renderHomeAuthBlock(){
+    const loggedIn = !!currentUser;
+    document.getElementById('homeAuthActions').style.display = loggedIn ? 'none' : '';
+    document.getElementById('homeGreeting').style.display = loggedIn ? '' : 'none';
+    if(!loggedIn) return;
+    const avatarEl = document.getElementById('homeGreetingAvatar');
+    if(currentUser.avatar_image){
+      avatarEl.textContent = '';
+      avatarEl.style.backgroundImage = `url("${currentUser.avatar_image}")`;
+    } else {
+      avatarEl.style.backgroundImage = '';
+      avatarEl.textContent = currentUser.profile_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('homeGreetingName').textContent = `Hello, ${currentUser.profile_name}`;
+  }
+
+  // Nearest future event (by event_published_at, the in-universe date), reusing whatever
+  // renderTimeline() already fetched rather than a dedicated endpoint — same public-visibility
+  // filter, just picked client-side instead of duplicating the query server-side.
+  function renderHomeUpcomingEvent(){
+    const el = document.getElementById('homeUpcomingEvent');
+    const now = Date.now();
+    const upcoming = timelineRows
+      .filter(r => r.event_published_at && Date.parse(r.event_published_at) > now)
+      .sort((a, b) => Date.parse(a.event_published_at) - Date.parse(b.event_published_at))[0];
+    if(!upcoming){
+      el.innerHTML = '<div class="home-empty-state">No upcoming events yet.</div>';
+      return;
+    }
+    const img = getEventImages(upcoming)[0];
+    const card = document.createElement('div');
+    card.className = 'explore-card';
+    const cover = document.createElement('div');
+    cover.className = 'explore-card-cover';
+    if(img && img.url && img.url.startsWith('data:')) cover.style.backgroundImage = `url("${img.url}")`;
+    const body = document.createElement('div');
+    body.className = 'explore-card-body';
+    body.innerHTML = `
+      <div class="explore-card-title">${escapeHtml(upcoming.title)}</div>
+      <div class="explore-card-meta"><span>${formatDate(upcoming.event_published_at)}</span><span class="tag-pill">${escapeHtml(upcoming.category)}</span></div>`;
+    card.appendChild(cover);
+    card.appendChild(body);
+    card.addEventListener('click', () => navigate('/timeline/' + slugFor(upcoming)));
+    el.innerHTML = '';
+    el.appendChild(card);
+  }
+
+  // Static file synced alongside the rest of docs/ (see the repo's FE-deploy step) — not an
+  // API call, since PUBLIC_RELEASE_NOTES.md's frontend copy needs no auth/DB round trip.
+  // Only the newest `## ` section is shown; parsing is intentionally the same shape as
+  // RELEASE_NOTES.md's own heading format, just a separate, non-technical, public file.
+  async function renderHomeLatestRelease(){
+    const el = document.getElementById('homeLatestRelease');
+    try {
+      const res = await fetch('public-release-notes.md');
+      if(!res.ok) throw new Error('not found');
+      const raw = await res.text();
+      const match = raw.match(/^## (.+?)\r?\n([\s\S]*?)(?=\r?\n## |\r?\n?$)/m);
+      if(!match) throw new Error('no entries');
+      el.innerHTML = `
+        <div class="home-release-heading">${escapeHtml(match[1].trim())}</div>
+        <div class="home-release-summary">${escapeHtml(match[2].trim())}</div>`;
+    } catch(e){
+      el.innerHTML = '<div class="home-empty-state">No release notes yet.</div>';
+    }
+  }
+
+  async function renderHomepage(){
+    renderHomeAuthBlock();
+    await renderTimeline(); // repopulates timelineRows — re-fetched on every arrival, same as Explore
+    renderHomeUpcomingEvent();
+    renderHomeLatestRelease();
+    try {
+      const { html } = await apiFetch('/api/site-settings/homepage-intro', { auth: false });
+      document.getElementById('homeIntroBlock').innerHTML = html || '';
+    } catch(e){ /* leave whatever was already rendered */ }
+  }
+
+  // ================= ADMIN: HOMEPAGE INTRO =================
+  const homeIntroRTE = createRichTextField({
+    editorSel: '#homeIntroEditor', toolbarSel: '#homeIntroToolbar', countId: 'homeIntroCount',
+    resizeHandleId: 'homeIntroImgResizeHandle', captionBoxId: 'homeIntroImgCaptionBox', captionInputId: 'homeIntroImgCaptionInput',
+    wrapSel: '.home-intro-editor-wrap', maxChars: 20000, placeholder: 'Welcome copy, what members can do, community policy…',
+  });
+  let homeIntroLoaded = false;
+  async function loadHomeIntroAdmin(){
+    if(homeIntroLoaded) return; // fetched once per page load — Save below keeps the editor in sync after that
+    homeIntroLoaded = true;
+    document.getElementById('homeIntroSaveStatus').textContent = 'Loading…';
+    try {
+      const { html } = await apiFetch('/api/site-settings/homepage-intro', { auth: false });
+      homeIntroRTE.quill.setContents([]);
+      homeIntroRTE.quill.clipboard.dangerouslyPasteHTML(html || '');
+      homeIntroRTE.restoreImageCaptions(html || '');
+      homeIntroRTE.updateCount();
+      document.getElementById('homeIntroSaveStatus').textContent = '';
+    } catch(e){
+      document.getElementById('homeIntroSaveStatus').textContent = 'Could not load — ' + e.message;
+    }
+  }
+  document.getElementById('homeIntroSaveBtn').addEventListener('click', async () => {
+    const statusEl = document.getElementById('homeIntroSaveStatus');
+    statusEl.textContent = 'Saving…';
+    try {
+      const { html } = await apiFetch('/api/site-settings/homepage-intro', {
+        method: 'PUT', body: { html: homeIntroRTE.quill.root.innerHTML },
+      });
+      homeIntroRTE.quill.setContents([]);
+      homeIntroRTE.quill.clipboard.dangerouslyPasteHTML(html || '');
+      homeIntroRTE.restoreImageCaptions(html || '');
+      homeIntroRTE.updateCount();
+      statusEl.textContent = 'Saved.';
+    } catch(e){
+      statusEl.textContent = 'Could not save — ' + e.message;
     }
   });
 
