@@ -277,10 +277,47 @@
   .home-intro-block strong{ color:var(--text); }
   .home-auth-actions{ display:flex; align-items:center; gap:14px; margin-bottom:24px; }
   .home-auth-actions .btn{ min-width:110px; text-align:center; }
-  .home-greeting{ display:flex; align-items:center; gap:14px; margin-bottom:24px; }
-  .home-greeting-avatar{ width:48px; height:48px; border-radius:50%; background:var(--surface-2, var(--surface)); border:1px solid var(--border); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:15px; color:var(--text-dim); flex-shrink:0; }
-  .home-greeting-text h3{ font-family:var(--display); font-size:16px; margin-bottom:2px; }
-  .home-greeting-text p{ font-size:11px; color:var(--text-faint); }
+  .home-greeting{ margin-bottom:28px; }
+
+  /* ---- Greeting "terminal" frame: bordered device box, scanline texture, faint CRT
+     flicker, and an RGB-split glitch on the name every ~4.5s (via ::before/::after
+     duplicating data-text, not real DOM nodes, so the JS only ever sets one string). ---- */
+  .hg-term{ position:relative; background:var(--surface); border:1px solid var(--border-strong); border-radius:4px; padding:18px 20px 20px; overflow:hidden; isolation:isolate; animation:hgFlicker 6s ease-in-out infinite; }
+  .hg-term::before{ content:''; position:absolute; inset:0; pointer-events:none; z-index:5; background:repeating-linear-gradient(to bottom, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 3px); mix-blend-mode:overlay; }
+  @keyframes hgFlicker{
+    0%, 96%, 100% { filter:brightness(1); }
+    97% { filter:brightness(1.08); }
+    97.6% { filter:brightness(0.92); }
+    98.2% { filter:brightness(1.04); }
+  }
+  .hg-term-bar{ display:flex; align-items:center; gap:8px; margin-bottom:16px; font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-faint); position:relative; z-index:1; }
+  .hg-term-dot{ width:6px; height:6px; border-radius:50%; background:var(--cool); box-shadow:0 0 6px var(--cool); animation:hgPulse 1.6s ease-in-out infinite; flex-shrink:0; }
+  @keyframes hgPulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.35; } }
+  .hg-term-tag{ margin-left:auto; opacity:0.6; }
+  .hg-row{ display:flex; align-items:center; gap:18px; position:relative; z-index:1; }
+  .home-greeting-avatar{ width:68px; height:68px; border-radius:50%; background:var(--surface-2, var(--surface)); border:2px solid var(--cool); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-size:20px; color:var(--text-dim); flex-shrink:0; box-shadow:0 0 14px -2px var(--cool); }
+  .hg-name{ position:relative; font-size:28px; margin-bottom:4px; color:var(--cool); }
+  .hg-name::before, .hg-name::after{ content:attr(data-text); position:absolute; left:0; top:0; width:100%; opacity:0; }
+  .hg-name::before{ color:var(--cool); text-shadow:-2px 0 0 var(--cool); animation:hgGlitchCyan 4.5s infinite; }
+  .hg-name::after{ color:var(--hot); text-shadow:2px 0 0 var(--hot); animation:hgGlitchHot 4.5s infinite; }
+  @keyframes hgGlitchCyan{
+    0%, 91%, 100% { clip-path:inset(0 0 0 0); transform:translate(0,0); opacity:0; }
+    92% { clip-path:inset(10% 0 60% 0); transform:translate(-3px,0); opacity:1; }
+    93.5% { clip-path:inset(55% 0 15% 0); transform:translate(2px,0); opacity:1; }
+    95% { clip-path:inset(20% 0 40% 0); transform:translate(-2px,0); opacity:1; }
+    96.5% { opacity:0; }
+  }
+  @keyframes hgGlitchHot{
+    0%, 90.5%, 100% { clip-path:inset(0 0 0 0); transform:translate(0,0); opacity:0; }
+    91.5% { clip-path:inset(65% 0 5% 0); transform:translate(3px,0); opacity:1; }
+    93% { clip-path:inset(5% 0 70% 0); transform:translate(-2px,0); opacity:1; }
+    94.5% { clip-path:inset(35% 0 30% 0); transform:translate(3px,0); opacity:1; }
+    96% { opacity:0; }
+  }
+  .hg-line{ font-size:13px; color:var(--text-dim); margin:0; }
+  @media (prefers-reduced-motion: reduce){
+    .hg-term, .hg-term *{ animation:none !important; }
+  }
   .home-side-block{ margin-bottom:28px; }
   .home-side-block .panel-head{ padding:0 0 12px; }
   .home-empty-state{ font-size:11px; color:var(--text-faint); padding:16px; text-align:center; border:1px dashed var(--border); }
@@ -968,10 +1005,19 @@
               <a class="btn btn-ghost btn-sm" data-path="/log-in">Log in</a>
             </div>
             <div class="home-greeting" id="homeGreeting" style="display:none;">
-              <div class="home-greeting-avatar" id="homeGreetingAvatar">—</div>
-              <div class="home-greeting-text">
-                <h3 id="homeGreetingName">—</h3>
-                <p>How are you today?</p>
+              <div class="hg-term">
+                <div class="hg-term-bar">
+                  <span class="hg-term-dot"></span>
+                  <span>Session active</span>
+                  <span class="hg-term-tag" id="homeGreetingUid">—</span>
+                </div>
+                <div class="hg-row">
+                  <div class="home-greeting-avatar" id="homeGreetingAvatar">—</div>
+                  <div>
+                    <h3 class="hg-name" id="homeGreetingName" data-text="—">—</h3>
+                    <p class="hg-line" id="homeGreetingLine">—</p>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="home-intro-block reticle" id="homeIntroBlock">
@@ -5217,6 +5263,17 @@
   // Anonymous: Sign up / Log in. Logged in: avatar + "Hello, {name}" greeting. Called both
   // from renderHomepage() (on arrival) and refreshCurrentUserUI() (on sign-in/out) so this
   // stays correct without requiring a navigation if the user logs in/out while sitting here.
+  // Picked fresh (not cached) each time this renders, so it changes across visits/sign-ins
+  // within the same session, not just once per page load.
+  const HOME_GREETING_LINES = [
+    'Ready to plug back in?',
+    'What data will you uncover today?',
+    'The network has been waiting for you.',
+    'Ready to log your next memory?',
+    'Checking protocol integrity... All clear.',
+    'The neon lights are on.',
+    'Syncing your digital footprint...',
+  ];
   function renderHomeAuthBlock(){
     const loggedIn = !!currentUser;
     document.getElementById('homeAuthActions').style.display = loggedIn ? 'none' : '';
@@ -5230,7 +5287,15 @@
       avatarEl.style.backgroundImage = '';
       avatarEl.textContent = currentUser.profile_name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
     }
-    document.getElementById('homeGreetingName').textContent = `Hello, ${currentUser.profile_name}`;
+    // data-text mirrors textContent — the glitch layers are ::before/::after reading
+    // attr(data-text), not real DOM nodes, so only one string needs to be kept in sync.
+    const greetingText = `Hello, ${currentUser.profile_name}`;
+    const nameEl = document.getElementById('homeGreetingName');
+    nameEl.textContent = greetingText;
+    nameEl.dataset.text = greetingText;
+    document.getElementById('homeGreetingUid').textContent = `UID // ${currentUser.username}`;
+    document.getElementById('homeGreetingLine').textContent =
+      HOME_GREETING_LINES[Math.floor(Math.random() * HOME_GREETING_LINES.length)];
   }
 
   // Nearest future event (by event_published_at, the in-universe date), reusing whatever
@@ -5254,9 +5319,13 @@
     if(img && img.url && img.url.startsWith('data:')) cover.style.backgroundImage = `url("${img.url}")`;
     const body = document.createElement('div');
     body.className = 'explore-card-body';
+    // Category always shown; genre only when set and not the 'General' default — genre
+    // leads since it's the more specific/interesting classifier, category second.
+    const genreCategory = (upcoming.genre && upcoming.genre !== 'General')
+      ? `${upcoming.genre} · ${upcoming.category}` : upcoming.category;
     body.innerHTML = `
       <div class="explore-card-title">${escapeHtml(upcoming.title)}</div>
-      <div class="explore-card-meta"><span>${formatDate(upcoming.event_published_at)}</span><span class="tag-pill">${escapeHtml(upcoming.category)}</span></div>`;
+      <div class="explore-card-meta"><span>${formatFullDate(upcoming.event_published_at)}</span><span class="tag-pill">${escapeHtml(genreCategory)}</span></div>`;
     card.appendChild(cover);
     card.appendChild(body);
     card.addEventListener('click', () => navigate('/timeline/' + slugFor(upcoming)));
