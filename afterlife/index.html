@@ -321,6 +321,32 @@
   .home-side-block{ margin-bottom:28px; }
   .home-side-block .panel-head{ padding:0 0 12px; }
   .home-empty-state{ font-size:11px; color:var(--text-faint); padding:16px; text-align:center; border:1px dashed var(--border); }
+  /* Generic pulsing loading placeholder — shown only until a section's own fetch resolves.
+     Distinct from .home-empty-state/.explore-empty/.t-empty (a real "nothing here" result)
+     so a visitor never mistakes "still loading" for "there's truly nothing to show" while
+     the request is in flight. Used by the homepage's async sections, Timeline, and Explore. */
+  .loading-state{ font-size:11px; color:var(--text-faint); padding:16px; text-align:center; border:1px dashed var(--border); }
+  .home-intro-block .loading-state{ border:none; padding:0; text-align:left; font-size:13px; }
+  /* A spinner via ::before so every existing .loading-state usage (HTML defaults and
+     JS-generated strings alike) picks this up automatically — no need to touch each spot
+     individually to add an icon. */
+  .loading-state::before{
+    content:''; display:inline-block; width:12px; height:12px; margin-right:8px; vertical-align:-2px;
+    border:2px solid var(--border-strong); border-top-color:var(--cool); border-radius:50%;
+    animation:loadingSpin 0.7s linear infinite;
+  }
+  @keyframes loadingSpin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .loading-state::before{ animation:none; } }
+  /* The "load more" indicator shown at the bottom of an already-populated Timeline/Explore
+     list while the next scroll-triggered page is in flight — distinct styling (no border
+     box, blends into the list) from the full-section loading-state used on first load. */
+  .load-more-state{ display:flex; align-items:center; justify-content:center; gap:8px; padding:20px; font-size:11px; color:var(--text-faint); grid-column:1/-1; }
+  .load-more-state::before{
+    content:''; display:inline-block; width:12px; height:12px;
+    border:2px solid var(--border-strong); border-top-color:var(--cool); border-radius:50%;
+    animation:loadingSpin 0.7s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce){ .load-more-state::before{ animation:none; } }
   .home-popular-posts{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .home-dummy-post-cover{ height:90px; background:linear-gradient(160deg,#1c1c28,#0e0e14); border:1px solid var(--border); margin-bottom:6px; }
   .home-dummy-post-title{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
@@ -356,6 +382,17 @@
   .submit-event-btn .plus{ color:var(--hot); font-size:14px; }
   .submit-event-btn:hover{ background:rgba(43,255,198,0.06); color:var(--text); }
   .submit-event-btn:focus-visible{ outline:1px solid var(--cool); outline-offset:-2px; }
+  /* Same layout as .submit-event-btn, muted color since it's a secondary/utility action —
+     manually recenters the list on whichever event is currently selected/previewed, since
+     scrolling no longer happens automatically on click or on the initial default selection. */
+  .back-to-view-btn{
+    flex:none; margin:0; padding:12px 24px; width:100%;
+    background:transparent; border:none; border-top:1px dashed var(--border-strong);
+    color:var(--text-dim); font-family:var(--mono); font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+    cursor:pointer; text-align:left; display:flex; align-items:center; gap:8px;
+  }
+  .back-to-view-btn:hover{ background:rgba(255,255,255,0.03); color:var(--text); }
+  .back-to-view-btn:focus-visible{ outline:1px solid var(--cool); outline-offset:-2px; }
   .timeline-inner::before{ content:''; position:absolute; left:5px; top:4px; bottom:4px; width:1px; background:var(--border-strong); }
   .t-year{ font-family:var(--display); font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-faint); padding-bottom:8px; margin-bottom:16px; border-bottom:1px solid var(--border); }
   .t-year:not(:first-child){ margin-top:6px; }
@@ -942,7 +979,7 @@
       <img src="logo-light.svg" alt="Afterlife" class="logo-img logo-img--light">
     </a>
     <div class="nav-links">
-      <a data-path="/home" class="active">Home</a>
+      <a data-path="/home">Home</a>
       <a data-path="/timeline">Timeline</a>
       <a data-path="/explore">Explore</a>
       <a class="nav-disabled" title="Coming soon">Discussions</a>
@@ -1022,12 +1059,13 @@
             </div>
             <div class="home-intro-block reticle" id="homeIntroBlock">
               <div class="rt-mark rt-tl"></div><div class="rt-mark rt-br"></div>
+              <div class="loading-state">Loading…</div>
             </div>
           </div>
           <aside>
             <div class="home-side-block">
               <div class="panel-head"><h3>Upcoming Event</h3></div>
-              <div id="homeUpcomingEvent"><div class="home-empty-state">No upcoming events yet.</div></div>
+              <div id="homeUpcomingEvent"><div class="loading-state">Loading…</div></div>
             </div>
             <div class="home-side-block">
               <div class="panel-head"><h3>Popular Post</h3></div>
@@ -1061,7 +1099,7 @@
             </div>
             <div class="home-side-block">
               <div class="panel-head"><h3>Latest Release</h3></div>
-              <div id="homeLatestRelease"><div class="home-empty-state">No release notes yet.</div></div>
+              <div id="homeLatestRelease"><div class="loading-state">Loading…</div></div>
             </div>
           </aside>
         </div>
@@ -1077,12 +1115,13 @@
   </div>
 
   <!-- ================= PUBLIC VIEW (Timeline) ================= -->
-  <div id="publicView" class="active">
+  <div id="publicView">
     <main>
       <div class="panel timeline-panel reticle">
         <div class="rt-mark rt-tl"></div><div class="rt-mark rt-bl"></div>
         <div class="panel-head"><h2>Timeline</h2><span class="count" id="tlCount">0 entries</span></div>
-        <div class="timeline" id="timeline"></div>
+        <div class="timeline" id="timeline"><div class="loading-state">Loading…</div></div>
+        <button type="button" class="back-to-view-btn" id="backToViewBtn">↩ Back to my view</button>
         <button type="button" class="submit-event-btn" id="submitEventBtn"><span class="plus">+</span>Submit a new event</button>
       </div>
       <div class="panel event-panel reticle">
@@ -1157,7 +1196,7 @@
   <div id="exploreView">
     <div class="wrap">
       <div class="panel-head"><h2>Explore</h2><span class="count" id="exploreCount">0 entries</span></div>
-      <div class="explore-grid" id="exploreGrid"></div>
+      <div class="explore-grid" id="exploreGrid"><div class="loading-state">Loading…</div></div>
     </div>
   </div>
 
@@ -1938,18 +1977,33 @@
       navigate('/home');
     }
   }
-  async function restoreSession(){
+  // Split in two on purpose: the synchronous half (localStorage only, no network) is what
+  // initApp() waits on before ever calling applyRoute() — restoring the *previous* /api/auth/me
+  // response instantly means the nav bar and view can render correctly on the very first
+  // paint. Verifying that cached session is still valid against the server happens
+  // separately afterward, in the background, and only updates the UI if something actually
+  // changed (fresher profile data, or the token turning out to be stale/revoked) — it never
+  // blocks the initial route decision the way awaiting it upfront used to.
+  function restoreSessionLocal(){
     const raw = localStorage.getItem(SESSION_KEY);
     if(!raw) return;
     try{
       const { token, user } = JSON.parse(raw);
       authToken = token;
       currentUser = user;
+    } catch(e){
+      clearSession();
+    }
+  }
+  async function verifySessionInBackground(){
+    if(!authToken) return;
+    try{
       const { user: fresh } = await apiFetch('/api/auth/me');
       currentUser = fresh;
     } catch(e){
       clearSession();
     }
+    refreshCurrentUserUI();
   }
 
   // ---------------- ROUTER ----------------
@@ -2039,7 +2093,10 @@
       switchView('reset-password');
     } else if(section === 'timeline'){
       switchView('home', navLinkForView('home'));
-      if(sub) selectEventBySlug(sub);
+      // A specific event permalink needs the complete list (selectEventBySlug searches
+      // timelineRows) — only the bare "just browsing" case uses the paginated loader.
+      if(sub) renderTimeline().then(() => selectEventBySlug(sub));
+      else loadTimelinePage(true);
     } else {
       if(!section) history.replaceState({}, '', BASE_PATH + '/home');
       switchView('landing', navLinkForView('landing'));
@@ -2048,11 +2105,17 @@
   window.addEventListener('popstate', applyRoute);
 
   // ---------------- INIT ----------------
+  // applyRoute() (not a blocking renderTimeline() first) is what decides which view is
+  // visible — every view that needs event data already fetches it itself via switchView's
+  // per-view hooks below (landing/home/explore all call renderTimeline() on arrival). Doing
+  // it in that order, rather than awaiting a network fetch before ever switching views,
+  // is what keeps the correct view's shell on screen immediately instead of showing
+  // whatever the Timeline's static markup default happens to be while data loads.
   async function initApp(){
-    await restoreSession();
+    restoreSessionLocal();
     refreshCurrentUserUI();
-    await renderTimeline();
     applyRoute();
+    verifySessionInBackground();
   }
 
   // Re-fetches the public timeline and, if the admin events table or "My entries"
@@ -2141,8 +2204,12 @@
     // are reflected as soon as you navigate back, instead of showing whatever was cached
     // from the last fetch.
     if(view === 'landing') renderHomepage();
-    if(view === 'home') renderTimeline();
-    if(view === 'explore') renderTimeline().then(renderExplore);
+    // 'home' (Timeline) deliberately has no fetch-on-arrival hook here — applyRoute()'s
+    // 'timeline' branch already decides between the paginated loader and the full-list
+    // fetch (which one depends on whether there's an event slug in the URL) before ever
+    // calling switchView(), so firing another fetch here would just be a redundant,
+    // wasted request racing the one that already started.
+    if(view === 'explore') loadExplorePage(true);
     if(view === 'admin') renderAdminView();
     if(view === 'dashboard') renderMyEntries();
     if(view === 'login') resetLoginView();
@@ -2600,14 +2667,16 @@
     selectedIdx = idx;
     hasSetDefaultSelection = true;
     highlightSelected();
-    scrollSelectedToSecondSlot();
     showEventPreview(timelineRows[idx]);
   }
-  // Scrolls the timeline list so the just-selected item sits in the second visible slot
-  // (one entry — or a year header — showing above it), the way a "now playing" list keeps
-  // context on what came just before. Clamped to the container's real max scroll, so an
-  // item near the bottom just settles as far down as there's content for, rather than
-  // leaving empty space below it.
+  // Scrolls the timeline list so the currently-selected item sits in the second visible
+  // slot (one entry — or a year header — showing above it), the way a "now playing" list
+  // keeps context on what came just before. Only ever called from the "Back to my view"
+  // button — deliberately NOT wired to fire automatically on every selection change (a
+  // click, or the initial default selection), since that used to yank the list's scroll
+  // position out from under anyone who was just browsing elsewhere in it. Clamped to the
+  // container's real max scroll, so an item near the bottom just settles as far down as
+  // there's content for, rather than leaving empty space below it.
   function scrollSelectedToSecondSlot(){
     const container = document.getElementById('timeline');
     const items = document.querySelectorAll('#timeline .t-item');
@@ -2657,7 +2726,7 @@
     }
 
     let currentYear = null;
-    timelineRows.forEach((r, i) => {
+    timelineRows.forEach((r) => {
       const year = new Date(r.event_published_at).getFullYear();
       const yearLabel = isNaN(year) ? 'Undated' : String(year);
       if(yearLabel !== currentYear){
@@ -2667,29 +2736,144 @@
         yearHeader.textContent = yearLabel;
         el.appendChild(yearHeader);
       }
-      const item = document.createElement('div');
-      item.className = 't-item';
-      const dateLabel = formatDate(r.event_published_at);
-      const plainDesc = htmlToPlainText(r.description);
-      const desc = r.subtitle || plainDesc.slice(0,80) + (plainDesc.length>80 ? '…' : '');
-      item.innerHTML = `
-        <div class="t-dot"></div>
-        <div class="t-time">${dateLabel}</div>
-        <div class="t-title-row">
-          <div class="t-title">${escapeHtml(r.title)}</div>
-          <span class="t-tag">${escapeHtml(r.category)}</span>
-        </div>
-        <div class="t-desc">${escapeHtml(desc)}</div>
-        ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}
-        ${engagementHtml(r, 't-engagement')}`;
-      item.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
-      wireAuthorLink(item);
-      el.appendChild(item);
+      el.appendChild(buildTimelineItemEl(r));
     });
 
     highlightSelected();
     showEventPreview(timelineRows[selectedIdx]);
   }
+  // Shared by the full-list render above (used for deep links, Explore, the homepage) and
+  // loadTimelinePage() below (used for plain /timeline browsing) — one place building a
+  // .t-item element, so both paths stay visually identical.
+  function buildTimelineItemEl(r){
+    const item = document.createElement('div');
+    item.className = 't-item';
+    const dateLabel = formatDate(r.event_published_at);
+    const plainDesc = htmlToPlainText(r.description);
+    const desc = r.subtitle || plainDesc.slice(0,80) + (plainDesc.length>80 ? '…' : '');
+    item.innerHTML = `
+      <div class="t-dot"></div>
+      <div class="t-time">${dateLabel}</div>
+      <div class="t-title-row">
+        <div class="t-title">${escapeHtml(r.title)}</div>
+        <span class="t-tag">${escapeHtml(r.category)}</span>
+      </div>
+      <div class="t-desc">${escapeHtml(desc)}</div>
+      ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}
+      ${engagementHtml(r, 't-engagement')}`;
+    item.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
+    wireAuthorLink(item);
+    return item;
+  }
+
+  // ================= PUBLIC: TIMELINE (paginated browse, /timeline with no slug) =================
+  // Separate from timelineRows/renderTimeline() above on purpose: Explore, the homepage's
+  // Upcoming Event card, and deep links to a specific event (/timeline/:slug, via
+  // selectEventBySlug) all need the *complete* list to work correctly, so they keep using
+  // the full, unpaginated fetch. This path is only for the plain "just browsing the
+  // timeline" case, where loading everything up front doesn't scale once there are
+  // hundreds/thousands of events.
+  const TIMELINE_PAGE_SIZE = 20;
+  let timelinePageRows = [];
+  let timelinePageOffset = 0;
+  let timelinePageTotal = null;
+  let timelinePageLoading = false;
+  let timelineLastYear = null;
+
+  async function loadTimelinePage(reset){
+    if(timelinePageLoading) return;
+    if(reset){
+      timelinePageRows = [];
+      // null (not 0) — omits &offset= on the first request so the server can center the
+      // page on "today" instead of always starting at the newest-future end of the list.
+      timelinePageOffset = null;
+      timelinePageTotal = null;
+      timelineLastYear = null;
+      hasSetDefaultSelection = false;
+      document.getElementById('timeline').innerHTML = '<div class="loading-state">Loading…</div>';
+    } else if(timelinePageTotal !== null && timelinePageRows.length >= timelinePageTotal){
+      return; // every page already loaded — nothing more to fetch
+    }
+    timelinePageLoading = true;
+    let loadMoreEl = null;
+    if(!reset){
+      loadMoreEl = document.createElement('div');
+      loadMoreEl.className = 'load-more-state';
+      loadMoreEl.textContent = 'Loading more…';
+      document.getElementById('timeline').appendChild(loadMoreEl);
+    }
+    let events, total, offset;
+    try{
+      const offsetParam = timelinePageOffset === null ? '' : `&offset=${timelinePageOffset}`;
+      ({ events, total, offset } = await apiFetch(`/api/events?limit=${TIMELINE_PAGE_SIZE}${offsetParam}`, { auth: false }));
+    } catch(e){
+      flashSync('Sync failed');
+      console.error('Failed to load events:', e);
+      if(reset) document.getElementById('timeline').innerHTML = '<div class="t-empty">No events yet.</div>';
+      loadMoreEl?.remove();
+      timelinePageLoading = false;
+      return;
+    }
+    loadMoreEl?.remove();
+    timelinePageTotal = total;
+    // On the first (unpositioned) request, timelinePageOffset was null — the server chose
+    // where to start and reports it back via `offset`; every request after that already
+    // knows exactly where it left off.
+    timelinePageOffset = (timelinePageOffset === null ? offset : timelinePageOffset) + events.length;
+    timelinePageRows = timelinePageRows.concat(events);
+
+    const outer = document.getElementById('timeline');
+    if(reset){
+      outer.innerHTML = '';
+      if(!timelinePageRows.length){
+        outer.innerHTML = '<div class="t-empty">No events yet.</div>';
+        clearEventPreview();
+        timelinePageLoading = false;
+        return;
+      }
+    }
+    let el = outer.querySelector('.timeline-inner');
+    if(!el){
+      el = document.createElement('div');
+      el.className = 'timeline-inner';
+      outer.appendChild(el);
+    }
+    events.forEach(r => {
+      const year = new Date(r.event_published_at).getFullYear();
+      const yearLabel = isNaN(year) ? 'Undated' : String(year);
+      if(yearLabel !== timelineLastYear){
+        timelineLastYear = yearLabel;
+        const yearHeader = document.createElement('div');
+        yearHeader.className = 't-year';
+        yearHeader.textContent = yearLabel;
+        el.appendChild(yearHeader);
+      }
+      el.appendChild(buildTimelineItemEl(r));
+    });
+
+    document.getElementById('tlCount').textContent = timelinePageRows.length < timelinePageTotal
+      ? `${timelinePageRows.length} of ${timelinePageTotal} entries`
+      : `${timelinePageTotal} entries`;
+
+    if(reset){
+      selectedIdx = closestToTodayIndex(timelinePageRows);
+      hasSetDefaultSelection = true;
+      highlightSelected();
+      showEventPreview(timelinePageRows[selectedIdx]);
+      // Deliberately no auto-scroll here — see the "Back to my view" button, which does
+      // this same scroll but only when the user actually asks for it. Auto-scrolling
+      // whenever selection changes (on every click, or right on page load) was disruptive
+      // if someone was already scrolled somewhere else browsing the list.
+    }
+    timelinePageLoading = false;
+  }
+  // Scroll-triggered "load more" — fires often during a scroll gesture, but loadTimelinePage()
+  // itself no-ops immediately (timelinePageLoading guard / total-reached check) on all but
+  // the one call that should actually run, so no extra debouncing is needed here.
+  document.getElementById('timeline').addEventListener('scroll', () => {
+    const el = document.getElementById('timeline');
+    if(el.scrollTop + el.clientHeight >= el.scrollHeight - 300) loadTimelinePage(false);
+  });
   function highlightSelected(){
     document.querySelectorAll('.t-item').forEach((el,i)=> el.classList.toggle('active', i===selectedIdx));
   }
@@ -2723,35 +2907,92 @@
 
   // ================= EXPLORE: GRID =================
   // Reuses timelineRows (already fetched by renderTimeline) — no separate API call.
-  function renderExplore(){
-    document.getElementById('exploreCount').textContent = timelineRows.length + ' entries';
-    const el = document.getElementById('exploreGrid');
-    el.innerHTML = '';
-    if(!timelineRows.length){
-      el.innerHTML = '<div class="explore-empty">No events yet.</div>';
+  // Fully paginated, unlike Timeline — Explore has no per-item deep-link of its own (cards
+  // just navigate to /timeline/<slug>, which fetches its own complete list separately), so
+  // there's no case here that ever needs the full dataset up front.
+  const EXPLORE_PAGE_SIZE = 20;
+  let explorePageRows = [];
+  let explorePageOffset = 0;
+  let explorePageTotal = null;
+  let explorePageLoading = false;
+
+  function buildExploreCardEl(r){
+    const card = document.createElement('div');
+    card.className = 'explore-card';
+    const cover = document.createElement('div');
+    cover.className = 'explore-card-cover';
+    const img = getEventImages(r)[0];
+    if(img && isRenderableImageUrl(img.url)) cover.style.backgroundImage = `url("${img.url}")`;
+    const body = document.createElement('div');
+    body.className = 'explore-card-body';
+    body.innerHTML = `
+      <div class="explore-card-title">${escapeHtml(r.title)}</div>
+      <div class="explore-card-meta"><span>${formatDate(r.event_published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
+      ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}
+      ${engagementHtml(r, 'explore-card-engagement')}`;
+    card.appendChild(cover);
+    card.appendChild(body);
+    card.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
+    wireAuthorLink(card);
+    return card;
+  }
+
+  async function loadExplorePage(reset){
+    if(explorePageLoading) return;
+    if(reset){
+      explorePageRows = [];
+      explorePageOffset = 0;
+      explorePageTotal = null;
+      document.getElementById('exploreGrid').innerHTML = '<div class="loading-state">Loading…</div>';
+    } else if(explorePageTotal !== null && explorePageRows.length >= explorePageTotal){
+      return; // every page already loaded — nothing more to fetch
+    }
+    explorePageLoading = true;
+    let loadMoreEl = null;
+    if(!reset){
+      loadMoreEl = document.createElement('div');
+      loadMoreEl.className = 'load-more-state';
+      loadMoreEl.textContent = 'Loading more…';
+      document.getElementById('exploreGrid').appendChild(loadMoreEl);
+    }
+    let events, total;
+    try{
+      ({ events, total } = await apiFetch(`/api/events?limit=${EXPLORE_PAGE_SIZE}&offset=${explorePageOffset}`, { auth: false }));
+    } catch(e){
+      console.error('Failed to load events:', e);
+      if(reset) document.getElementById('exploreGrid').innerHTML = '<div class="explore-empty">No events yet.</div>';
+      loadMoreEl?.remove();
+      explorePageLoading = false;
       return;
     }
-    timelineRows.forEach(r => {
-      const card = document.createElement('div');
-      card.className = 'explore-card';
-      const cover = document.createElement('div');
-      cover.className = 'explore-card-cover';
-      const img = getEventImages(r)[0];
-      if(img && isRenderableImageUrl(img.url)) cover.style.backgroundImage = `url("${img.url}")`;
-      const body = document.createElement('div');
-      body.className = 'explore-card-body';
-      body.innerHTML = `
-        <div class="explore-card-title">${escapeHtml(r.title)}</div>
-        <div class="explore-card-meta"><span>${formatDate(r.event_published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
-        ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}
-        ${engagementHtml(r, 'explore-card-engagement')}`;
-      card.appendChild(cover);
-      card.appendChild(body);
-      card.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
-      wireAuthorLink(card);
-      el.appendChild(card);
-    });
+    loadMoreEl?.remove();
+    explorePageTotal = total;
+    explorePageOffset += events.length;
+    explorePageRows = explorePageRows.concat(events);
+
+    const el = document.getElementById('exploreGrid');
+    if(reset){
+      el.innerHTML = '';
+      if(!explorePageRows.length){
+        el.innerHTML = '<div class="explore-empty">No events yet.</div>';
+        explorePageLoading = false;
+        return;
+      }
+    }
+    events.forEach(r => el.appendChild(buildExploreCardEl(r)));
+
+    document.getElementById('exploreCount').textContent = explorePageRows.length < explorePageTotal
+      ? `${explorePageRows.length} of ${explorePageTotal} entries`
+      : `${explorePageTotal} entries`;
+
+    explorePageLoading = false;
   }
+  // #exploreView (not #exploreGrid) is the actual scroll container — see its CSS
+  // (overflow-y:auto on the view itself, so the toolbar/heading stay in flow above it).
+  document.getElementById('exploreView').addEventListener('scroll', () => {
+    const el = document.getElementById('exploreView');
+    if(el.scrollTop + el.clientHeight >= el.scrollHeight - 300) loadExplorePage(false);
+  });
 
   function setBackgroundFit(el, image, mode){
     mode = mode || 'cover';
@@ -3759,6 +4000,7 @@
       navigate(loginUrlWithNext('/timeline')); // handleLogin() picks this flag back up on success
     }
   });
+  document.getElementById('backToViewBtn').addEventListener('click', scrollSelectedToSecondSlot);
   function closeForm(){ formBackdrop.classList.remove('open'); deselectDescriptionImage(); }
   document.getElementById('formCancel').addEventListener('click', closeForm);
   document.getElementById('formClose').addEventListener('click', closeForm);

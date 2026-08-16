@@ -5,6 +5,9 @@
   alongside (not instead of) the developer-facing RELEASE_NOTES.md at the repo root, as its
   own standing step per PR.
 -->
+## v1.17.0 — August 16, 2026
+Timeline and Explore now load smoothly in small batches as you scroll, with a clear loading indicator and a new "Back to my view" button so you never lose your place.
+
 ## v1.16.1 — August 16, 2026
 Fixed newly uploaded images not showing up around the site.
 
