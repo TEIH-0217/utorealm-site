@@ -2713,6 +2713,13 @@
     if(row && row.cover_image) return [{ url: row.cover_image, caption: '' }];
     return [];
   }
+  // Every image URL in this app is either a base64 data: URI (R2 storage unconfigured —
+  // see server/src/storage.js) or a server-generated https:// R2 URL — never anything else,
+  // by construction on the backend. Renderers must accept both; checking only for `data:`
+  // (as this app did before R2 existed) silently drops every R2-hosted image.
+  function isRenderableImageUrl(url){
+    return typeof url === 'string' && (url.startsWith('data:') || url.startsWith('https://') || url.startsWith('http://'));
+  }
 
   // ================= EXPLORE: GRID =================
   // Reuses timelineRows (already fetched by renderTimeline) — no separate API call.
@@ -2730,7 +2737,7 @@
       const cover = document.createElement('div');
       cover.className = 'explore-card-cover';
       const img = getEventImages(r)[0];
-      if(img && img.url && img.url.startsWith('data:')) cover.style.backgroundImage = `url("${img.url}")`;
+      if(img && isRenderableImageUrl(img.url)) cover.style.backgroundImage = `url("${img.url}")`;
       const body = document.createElement('div');
       body.className = 'explore-card-body';
       body.innerHTML = `
@@ -2749,7 +2756,7 @@
   function setBackgroundFit(el, image, mode){
     mode = mode || 'cover';
     const url = image && image.url;
-    if(url && url.startsWith('data:')){
+    if(isRenderableImageUrl(url)){
       el.style.backgroundImage = `url("${url}")`;
       el.style.backgroundSize = mode;
       el.style.backgroundPosition = 'center';
@@ -2768,7 +2775,7 @@
     const blurEl = document.getElementById('eventHeroBlur');
     const imgEl = document.getElementById('eventHeroImg');
     const url = image && image.url;
-    const css = url && url.startsWith('data:') ? `url("${url}")` : '';
+    const css = isRenderableImageUrl(url) ? `url("${url}")` : '';
     blurEl.style.backgroundImage = css;
     imgEl.style.backgroundImage = css;
   }
@@ -3544,7 +3551,7 @@
       const thumb = document.createElement('div');
       thumb.className = 'cover-thumb';
       const thumbImg = getEventImages(r)[0];
-      if(thumbImg && thumbImg.url && thumbImg.url.startsWith('data:')){
+      if(thumbImg && isRenderableImageUrl(thumbImg.url)){
         thumb.style.backgroundImage = `url("${thumbImg.url}")`;
         thumb.style.backgroundSize = 'cover';
         thumb.style.backgroundPosition = 'center';
@@ -3773,7 +3780,7 @@
       tile.className = 'cover-gallery-edit-tile';
       const thumb = document.createElement('div');
       thumb.className = 'cover-gallery-edit-thumb';
-      if(img.url && img.url.startsWith('data:')){
+      if(isRenderableImageUrl(img.url)){
         thumb.style.backgroundImage = `url("${img.url}")`;
         thumb.title = 'Click to reposition/zoom';
         thumb.addEventListener('click', () => {
@@ -5317,7 +5324,7 @@
     card.className = 'explore-card';
     const cover = document.createElement('div');
     cover.className = 'explore-card-cover';
-    if(img && img.url && img.url.startsWith('data:')) cover.style.backgroundImage = `url("${img.url}")`;
+    if(img && isRenderableImageUrl(img.url)) cover.style.backgroundImage = `url("${img.url}")`;
     const body = document.createElement('div');
     body.className = 'explore-card-body';
     // Category always shown; genre only when set and not the 'General' default — genre
