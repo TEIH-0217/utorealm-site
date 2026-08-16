@@ -1862,8 +1862,10 @@
   function authorLineHtml(r){
     if(!r.created_by_name) return '';
     const name = escapeHtml(r.created_by_name);
-    // Base64 data URIs (the only src format avatar_image is ever validated/stored as)
-    // contain none of &<>"' — safe to interpolate directly into this HTML string.
+    // Safe to interpolate directly: avatar_image is either a base64 data URI (R2 storage
+    // unconfigured — see server/src/storage.js) or a server-generated R2 URL built from a
+    // fixed base URL + hardcoded prefix + random UUID + sanitized extension — neither format
+    // can ever contain &<>"'.
     const avatarHtml = r.created_by_avatar
       ? `<span class="author-avatar" style="background-image:url('${r.created_by_avatar}')"></span>`
       : '';
@@ -2951,8 +2953,7 @@
   }
 
   function commentAvatarHtml(c, sizeClass){
-    // Base64 data URIs (the only src format avatar_image is ever validated/stored as) —
-    // safe to interpolate directly, same reasoning as authorLineHtml() above.
+    // Safe to interpolate directly — same reasoning as authorLineHtml() above.
     return c.created_by_avatar
       ? `<span class="author-avatar ${sizeClass}" style="background-image:url('${c.created_by_avatar}')"></span>`
       : `<span class="author-avatar ${sizeClass}"></span>`;
