@@ -2671,12 +2671,13 @@
   }
   // Scrolls the timeline list so the currently-selected item sits in the second visible
   // slot (one entry — or a year header — showing above it), the way a "now playing" list
-  // keeps context on what came just before. Only ever called from the "Back to my view"
-  // button — deliberately NOT wired to fire automatically on every selection change (a
-  // click, or the initial default selection), since that used to yank the list's scroll
-  // position out from under anyone who was just browsing elsewhere in it. Clamped to the
-  // container's real max scroll, so an item near the bottom just settles as far down as
-  // there's content for, rather than leaving empty space below it.
+  // keeps context on what came just before. Called on the initial default selection (so
+  // landing on /timeline actually shows the relevant entry) and from the "Back to my view"
+  // button — deliberately NOT wired to fire on every subsequent selection change (e.g. a
+  // click via selectEventBySlug), since that used to yank the list's scroll position out
+  // from under anyone who was just browsing elsewhere in it. Clamped to the container's
+  // real max scroll, so an item near the bottom just settles as far down as there's
+  // content for, rather than leaving empty space below it.
   function scrollSelectedToSecondSlot(){
     const container = document.getElementById('timeline');
     const items = document.querySelectorAll('#timeline .t-item');
@@ -2761,9 +2762,35 @@
       <div class="t-desc">${escapeHtml(desc)}</div>
       ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}
       ${engagementHtml(r, 't-engagement')}`;
-    item.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
+    item.addEventListener('click', () => selectTimelineItem(r, item));
     wireAuthorLink(item);
     return item;
+  }
+  // Selects an item that's already rendered on screen (a click, from either the paginated
+  // browse view or the full deep-linked list) without any network fetch or DOM rebuild —
+  // going through navigate()/applyRoute() here would fall into the same full-list fetch
+  // used for genuine deep links, which replaces #timeline's entire contents and resets
+  // scroll to the top, visibly "jumping" even though the clicked item was already loaded
+  // and on screen. Still updates the URL directly (history.pushState, not navigate()) so
+  // the permalink stays shareable and the back button works — a real back/forward
+  // navigation still goes through applyRoute()'s full-fetch path via the popstate listener,
+  // which is correct there since the target might not be currently loaded at all.
+  async function selectTimelineItem(r, itemEl){
+    if(hasUnsavedCommentDraft()){
+      const ok = await confirmDialog('You have an unsaved comment or reply. Leave without posting it?', {
+        title: 'Unsaved changes', okLabel: 'Leave', cancelLabel: 'Stay here',
+      });
+      if(!ok) return;
+    }
+    const items = Array.from(document.querySelectorAll('#timeline .t-item'));
+    const idx = items.indexOf(itemEl);
+    if(idx === -1) return;
+    selectedIdx = idx;
+    hasSetDefaultSelection = true;
+    highlightSelected();
+    showEventPreview(r);
+    const url = BASE_PATH + '/timeline/' + slugFor(r);
+    if(location.pathname + location.hash !== url) history.pushState({}, '', url);
   }
 
   // ================= PUBLIC: TIMELINE (paginated browse, /timeline with no slug) =================
@@ -2860,10 +2887,12 @@
       hasSetDefaultSelection = true;
       highlightSelected();
       showEventPreview(timelinePageRows[selectedIdx]);
-      // Deliberately no auto-scroll here — see the "Back to my view" button, which does
-      // this same scroll but only when the user actually asks for it. Auto-scrolling
-      // whenever selection changes (on every click, or right on page load) was disruptive
-      // if someone was already scrolled somewhere else browsing the list.
+      // Scrolled into view here (first load only) so landing on /timeline actually shows
+      // the relevant "closest to today" entry, not just whatever happens to be at the top
+      // of the server-centered page. Selecting a *different* event afterward (a click, via
+      // selectEventBySlug) deliberately does NOT do this — see "Back to my view" — since
+      // re-scrolling on every click was disruptive to anyone already browsing elsewhere.
+      scrollSelectedToSecondSlot();
     }
     timelinePageLoading = false;
   }
