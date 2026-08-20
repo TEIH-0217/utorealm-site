@@ -478,6 +478,30 @@
     background:var(--surface-2); font-size:12px; color:var(--text-dim); letter-spacing:0.02em;
     cursor:pointer;
   }
+  /* Like controls — one shared visual language across the event detail panel, the
+     Timeline/Explore cards, and comments/replies. `data-liked="1"` is the toggled state,
+     set/read directly (not a CSS class) so the same attribute doubles as the JS-readable
+     "am I currently liked" flag. */
+  .ev-author-row{ display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+  .ev-author-row .ev-author{ margin-bottom:0; }
+  .like-btn{
+    display:inline-flex; align-items:center; gap:6px; padding:6px 12px; flex:none; margin-left:auto;
+    border:1px solid var(--border-strong); background:none; color:var(--text-dim);
+    font-family:var(--mono); font-size:12px; letter-spacing:0.02em; border-radius:2px;
+    text-transform:uppercase; font-variant-numeric:tabular-nums;
+  }
+  .like-btn:hover{ border-color:var(--hot); color:var(--text); }
+  .like-btn[data-liked="1"]{ border-color:var(--hot); color:var(--hot); }
+  /* Passive display only — no border/hover/cursor affordance, since this one isn't
+     clickable (amping happens from the event detail panel's .like-btn instead). */
+  .card-like-badge{
+    margin-left:auto; color:var(--text-dim); font-family:var(--mono); font-size:11px;
+    display:inline-flex; align-items:center; font-variant-numeric:tabular-nums;
+  }
+  /* Pink only marks entries the viewer amped themselves — a plain gray count otherwise, so
+     the color reads as "you did this" rather than just decorating any nonzero count. */
+  .card-like-badge[data-liked="1"]{ color:var(--hot); }
+  .comment-like-link[data-liked="1"]{ color:var(--hot); }
   .ev-engagement-bar:hover{ color:var(--cool); }
   .ev-engagement-bar:hover .engagement-latest{ color:var(--text-dim); }
   .ev-engagement-bar .engagement-latest{ color:var(--text-faint); }
@@ -541,10 +565,11 @@
      cards — muted like the surrounding metadata (author, date) rather than accented, so it
      reads as part of the scan without competing with the title/tag for attention. */
   .t-engagement, .explore-card-engagement{
-    font-size:9px; color:var(--text-dim); letter-spacing:0.04em; margin-top:4px;
+    font-size:9px; color:var(--text-dim); letter-spacing:0.04em;
     display:flex; align-items:center; gap:4px;
   }
   .t-engagement .engagement-latest, .explore-card-engagement .engagement-latest{ color:var(--text-faint); }
+  .t-engagement-row, .explore-card-engagement-row{ display:flex; align-items:center; gap:4px; margin-top:4px; }
   .author-link{ color:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; vertical-align:middle; }
   .author-link:hover{ color:var(--cool); text-decoration:underline; }
   .author-avatar{
@@ -1143,7 +1168,10 @@
           <div class="gallery-caption" id="evImageCaption"></div>
           <div class="ev-engagement-bar" id="evEngagementBar" style="display:none;"></div>
           <div class="event-desc-wrap">
-            <div class="ev-author" id="evAuthor" style="display:none;"></div>
+            <div class="ev-author-row">
+              <div class="ev-author" id="evAuthor" style="display:none;"></div>
+              <button type="button" class="like-btn" id="evLikeBtn" aria-pressed="false" aria-label="Amp this event">♥ Amp</button>
+            </div>
             <div class="ev-event-date" id="evEventDate">—</div>
             <div class="event-desc rich-content" id="evBody">Choose an item on the timeline to preview its details here.</div>
             <div class="tag-chip-list" id="evTags" style="margin-top:12px; display:none;"></div>
@@ -1942,6 +1970,93 @@
     return inner ? `<div class="${className}">${inner}</div>` : '';
   }
 
+  // ---------------- LIKES (shown to users as "Amp") ----------------
+  // "Amp" is the call to action; toggled/active state is conveyed by color (see
+  // .like-btn[data-liked="1"]) rather than switching to a past-tense word like "Amped" —
+  // deliberately avoided so the label never implies the action is over/historical. The heart
+  // is a plain text glyph (not an emoji) specifically so it inherits `color` and tints along
+  // with the rest of the label when data-liked toggles, instead of needing a separate
+  // filled/outline icon swap.
+  function ampLabel(count){
+    const n = count === 1 ? '1 Amp' : count ? `${count} Amps` : 'Amp';
+    return `♥ ${n}`;
+  }
+  // Passive amp count for Timeline rows and Explore cards — deliberately NOT clickable
+  // (amping only happens from the event detail panel's evLikeBtn). Same "hide when there's
+  // nothing to show" rule as engagementHtml's comment/reply line: an event with zero amps
+  // renders no badge at all rather than an empty/zero one cluttering every row.
+  function cardLikeHtml(r){
+    const count = r.like_count || 0;
+    if(!count) return '';
+    return `<span class="card-like-badge" data-like-badge data-id="${r.id}" data-liked="${r.viewer_liked ? '1' : ''}">${ampLabel(count)}</span>`;
+  }
+  // One event can be visible in up to three places at once (a Timeline/Explore card AND the
+  // detail panel) — this is the single place that updates all of them after a like/unlike, so
+  // the three never disagree until the next full fetch. Also patches the in-memory row caches
+  // (not just the DOM) so re-rendering from cached data (pagination, tab switches) doesn't
+  // show stale state.
+  function syncEventLikeUI(eventId, liked, count){
+    // Passive card badges only exist in the DOM when count > 0 (see cardLikeHtml) — hide one
+    // that just dropped to 0, update text otherwise. A first amp (0 -> 1) has no existing
+    // badge to update, so create one in every rendered card for this event instead — every
+    // card carries data-event-id specifically so this can find them without a re-fetch.
+    const existingBadges = document.querySelectorAll(`[data-like-badge][data-id="${eventId}"]`);
+    existingBadges.forEach(badge => {
+      badge.style.display = count ? '' : 'none';
+      badge.dataset.liked = liked ? '1' : '';
+      if(count) badge.textContent = ampLabel(count);
+    });
+    if(count && !existingBadges.length){
+      document.querySelectorAll(`[data-event-id="${eventId}"]`).forEach(cardEl => {
+        const row = cardEl.querySelector('.t-engagement-row, .explore-card-engagement-row');
+        if(!row) return;
+        const span = document.createElement('span');
+        span.className = 'card-like-badge';
+        span.dataset.likeBadge = '';
+        span.dataset.id = eventId;
+        span.dataset.liked = liked ? '1' : '';
+        span.textContent = ampLabel(count);
+        row.appendChild(span);
+      });
+    }
+    if(commentsState.eventId === eventId){
+      const evBtn = document.getElementById('evLikeBtn');
+      evBtn.textContent = ampLabel(count);
+      evBtn.dataset.liked = liked ? '1' : '';
+      evBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+    }
+    [timelineRows, explorePageRows, timelinePageRows].forEach(list => {
+      const row = Array.isArray(list) && list.find(x => x.id === eventId);
+      if(row){ row.like_count = count; row.viewer_liked = liked; }
+    });
+  }
+  async function toggleEventLike(eventId, currentlyLiked, loginNextPath){
+    if(!currentUser){ navigate(loginUrlWithNext(loginNextPath)); return; }
+    try{
+      const data = await apiFetch(`/api/events/${eventId}/likes`, { method: currentlyLiked ? 'DELETE' : 'POST' });
+      syncEventLikeUI(eventId, data.liked, data.likeCount);
+    } catch(e){
+      showToast(e.message || 'Could not update like.');
+    }
+  }
+  function commentLikeHtml(c){
+    const liked = !!c.viewer_liked;
+    const count = c.like_count || 0;
+    return `<a data-action="like" class="comment-like-link" data-liked="${liked ? '1' : ''}">${ampLabel(count)}</a>`;
+  }
+  async function toggleCommentLike(itemEl, linkEl){
+    if(!currentUser){ promptCommentSignIn(); return; }
+    const commentId = itemEl.dataset.id;
+    const liked = linkEl.dataset.liked === '1';
+    try{
+      const data = await apiFetch(`/api/comments/${commentId}/likes`, { method: liked ? 'DELETE' : 'POST' });
+      linkEl.dataset.liked = data.liked ? '1' : '';
+      linkEl.textContent = ampLabel(data.likeCount);
+    } catch(e){
+      showToast(e.message || 'Could not update like.');
+    }
+  }
+
   // ---------------- API CLIENT ----------------
   async function apiFetch(path, { method = 'GET', body, auth = true } = {}){
     const headers = { 'Content-Type': 'application/json' };
@@ -2693,9 +2808,12 @@
   }
 
   async function renderTimeline(){
-    // Latest first; public endpoint, no auth needed.
+    // Public endpoint (works with no auth), but sent WITH the token when logged in anyway —
+    // that's what lets the server compute each row's viewer_liked for the signed-in visitor.
+    // A missing/expired token just falls back to an anonymous (all-unliked) response rather
+    // than an error, so this is safe even if the stored session has gone stale.
     try{
-      const { events } = await apiFetch('/api/events', { auth: false });
+      const { events } = await apiFetch('/api/events');
       timelineRows = events;
     } catch(e){
       flashSync('Sync failed');
@@ -2749,6 +2867,7 @@
   function buildTimelineItemEl(r){
     const item = document.createElement('div');
     item.className = 't-item';
+    item.dataset.eventId = r.id;
     const dateLabel = formatDate(r.event_published_at);
     const plainDesc = htmlToPlainText(r.description);
     const desc = r.subtitle || plainDesc.slice(0,80) + (plainDesc.length>80 ? '…' : '');
@@ -2761,7 +2880,7 @@
       </div>
       <div class="t-desc">${escapeHtml(desc)}</div>
       ${r.created_by_name ? `<div class="t-author">${authorLineHtml(r)}</div>` : ''}
-      ${engagementHtml(r, 't-engagement')}`;
+      <div class="t-engagement-row">${engagementHtml(r, 't-engagement')}${cardLikeHtml(r)}</div>`;
     item.addEventListener('click', () => selectTimelineItem(r, item));
     wireAuthorLink(item);
     return item;
@@ -2832,7 +2951,7 @@
     let events, total, offset;
     try{
       const offsetParam = timelinePageOffset === null ? '' : `&offset=${timelinePageOffset}`;
-      ({ events, total, offset } = await apiFetch(`/api/events?limit=${TIMELINE_PAGE_SIZE}${offsetParam}`, { auth: false }));
+      ({ events, total, offset } = await apiFetch(`/api/events?limit=${TIMELINE_PAGE_SIZE}${offsetParam}`));
     } catch(e){
       flashSync('Sync failed');
       console.error('Failed to load events:', e);
@@ -2948,6 +3067,7 @@
   function buildExploreCardEl(r){
     const card = document.createElement('div');
     card.className = 'explore-card';
+    card.dataset.eventId = r.id;
     const cover = document.createElement('div');
     cover.className = 'explore-card-cover';
     const img = getEventImages(r)[0];
@@ -2958,7 +3078,7 @@
       <div class="explore-card-title">${escapeHtml(r.title)}</div>
       <div class="explore-card-meta"><span>${formatDate(r.event_published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
       ${r.created_by_name ? `<div class="explore-card-author">${authorLineHtml(r)}</div>` : ''}
-      ${engagementHtml(r, 'explore-card-engagement')}`;
+      <div class="explore-card-engagement-row">${engagementHtml(r, 'explore-card-engagement')}${cardLikeHtml(r)}</div>`;
     card.appendChild(cover);
     card.appendChild(body);
     card.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
@@ -2986,7 +3106,7 @@
     }
     let events, total;
     try{
-      ({ events, total } = await apiFetch(`/api/events?limit=${EXPLORE_PAGE_SIZE}&offset=${explorePageOffset}`, { auth: false }));
+      ({ events, total } = await apiFetch(`/api/events?limit=${EXPLORE_PAGE_SIZE}&offset=${explorePageOffset}`));
     } catch(e){
       console.error('Failed to load events:', e);
       if(reset) document.getElementById('exploreGrid').innerHTML = '<div class="explore-empty">No events yet.</div>';
@@ -3100,6 +3220,11 @@
 
     renderGallery(getEventImages(r));
 
+    const evLikeBtn = document.getElementById('evLikeBtn');
+    evLikeBtn.textContent = ampLabel(r.like_count);
+    evLikeBtn.dataset.liked = r.viewer_liked ? '1' : '';
+    evLikeBtn.setAttribute('aria-pressed', r.viewer_liked ? 'true' : 'false');
+
     // Snapshot from whatever events list this row came from (Timeline/Explore fetch) — same
     // as the engagement lines shown there, not re-fetched live as comments get posted below.
     const engagementBar = document.getElementById('evEngagementBar');
@@ -3137,6 +3262,9 @@
     document.getElementById('evCtaBtn').style.display = 'none';
     document.getElementById('evCtaEmpty').style.display = 'inline-block';
     document.getElementById('evEngagementBar').style.display = 'none';
+    document.getElementById('evLikeBtn').textContent = '♥ Amp';
+    document.getElementById('evLikeBtn').dataset.liked = '';
+    document.getElementById('evLikeBtn').setAttribute('aria-pressed', 'false');
     renderGallery([]);
     resetComments(null);
   }
@@ -3284,6 +3412,7 @@
         ${viewGalleryHtml(images)}
         ${c.closed_at ? `<div class="comment-closed-note">This thread is closed to new replies.</div>` : ''}
         <div class="row-actions comment-item-actions">
+          ${commentLikeHtml(c)}
           ${c.closed_at ? '' : `<a data-action="reply">Reply</a>`}
           ${(!currentUser || currentUser.id !== c.created_by) ? `<a data-action="report">Report</a>` : ''}
           ${canDelete ? `<a class="danger" data-action="delete">Delete</a>` : ''}
@@ -3315,6 +3444,7 @@
         <button type="button" class="comment-readmore" data-action="read-more" style="display:none;">Read more</button>
         ${viewGalleryHtml(images)}
         <div class="row-actions comment-item-actions">
+          ${commentLikeHtml(r)}
           ${threadClosed ? '' : `<a data-action="reply">Reply</a>`}
           ${(!currentUser || currentUser.id !== r.created_by) ? `<a data-action="report">Report</a>` : ''}
           ${canDelete ? `<a class="danger" data-action="delete">Delete</a>` : ''}
@@ -3354,7 +3484,9 @@
   async function loadMoreComments(){
     if(!commentsState.eventId) return;
     const limit = commentsState.offset === 0 ? COMMENT_INITIAL_SIZE : COMMENT_PAGE_SIZE;
-    const data = await apiFetch(`/api/events/${commentsState.eventId}/comments?limit=${limit}&offset=${commentsState.offset}`, { auth: false });
+    // Sent WITH the token when logged in — same reasoning as the events list fetch above,
+    // needed so the server can compute each comment's viewer_liked for this visitor.
+    const data = await apiFetch(`/api/events/${commentsState.eventId}/comments?limit=${limit}&offset=${commentsState.offset}`);
     commentsState.total = data.total;
     commentsState.offset += data.comments.length;
     const listEl = document.getElementById('commentList');
@@ -3382,7 +3514,7 @@
     const itemEl = document.querySelector(`#commentList > .comment-item[data-id="${topId}"]`);
     if(!itemEl) return;
     const state = replyState[topId] || (replyState[topId] = { offset: 0, total: parseInt(itemEl.dataset.replyCount, 10) || 0 });
-    const data = await apiFetch(`/api/comments/${topId}/replies?limit=${REPLY_PAGE_SIZE}&offset=${state.offset}`, { auth: false });
+    const data = await apiFetch(`/api/comments/${topId}/replies?limit=${REPLY_PAGE_SIZE}&offset=${state.offset}`);
     state.total = data.total;
     state.offset += data.replies.length;
     const listEl = itemEl.querySelector(':scope > [data-replies-list]');
@@ -3672,6 +3804,11 @@
   document.getElementById('evEngagementBar').addEventListener('click', () => {
     document.getElementById('commentsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  document.getElementById('evLikeBtn').addEventListener('click', () => {
+    if(!commentsState.eventId) return;
+    const btn = document.getElementById('evLikeBtn');
+    toggleEventLike(commentsState.eventId, btn.dataset.liked === '1', location.pathname);
+  });
 
   document.getElementById('commentList').addEventListener('click', async e => {
     const actionEl = e.target.closest('[data-action]');
@@ -3704,6 +3841,8 @@
     } else if(action === 'delete'){
       if(!(await confirmDialog('Delete this comment?', { title: 'Delete comment', okLabel: 'Delete' }))) return;
       await deleteComment(itemEl.dataset.id, itemEl);
+    } else if(action === 'like'){
+      await toggleCommentLike(itemEl, actionEl);
     }
   });
   document.getElementById('commentList').addEventListener('change', e => {
