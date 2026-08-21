@@ -347,6 +347,10 @@
     animation:loadingSpin 0.7s linear infinite;
   }
   @media (prefers-reduced-motion: reduce){ .load-more-state::before{ animation:none; } }
+  .t-end-state{
+    text-align:center; padding:20px 0 4px; font-size:10px; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--text-faint);
+  }
   .home-popular-posts{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .home-dummy-post-cover{ height:90px; background:linear-gradient(160deg,#1c1c28,#0e0e14); border:1px solid var(--border); margin-bottom:6px; }
   .home-dummy-post-title{ font-size:10px; color:var(--text-faint); letter-spacing:0.04em; }
@@ -2858,6 +2862,21 @@
       el.appendChild(buildTimelineItemEl(r));
     });
 
+    // The scroll-triggered "load more" listener (below) always fires against whatever is
+    // currently in #timeline, driven entirely by loadTimelinePage()'s own bookkeeping — but
+    // this full-list render (deep links, Explore, the homepage) never touches that
+    // bookkeeping. Left at its initial null/empty state, loadTimelinePage()'s "already have
+    // everything" guard never trips, so scrolling this fully-populated list re-fetches page 1
+    // and appends a second, duplicate copy onto the end. Syncing it here — "the page loader's
+    // state" now agrees that everything currently shown is already loaded — closes that gap
+    // without the scroll listener needing to know which render path built the current view.
+    timelinePageRows = timelineRows.slice();
+    timelinePageTotal = timelineRows.length;
+    timelinePageOffset = timelineRows.length;
+    timelinePageDone = true;
+    timelineLastYear = currentYear;
+    showTimelineEndMarker(outer);
+
     highlightSelected();
     showEventPreview(timelineRows[selectedIdx]);
   }
@@ -2925,6 +2944,26 @@
   let timelinePageTotal = null;
   let timelinePageLoading = false;
   let timelineLastYear = null;
+  // Whether this forward walk has reached the end of what it can reach — NOT the same as
+  // "accumulated rows === grand total". The first page is centered on "today" rather than
+  // starting at offset 0 (see the offset comment below), so for a dataset with any
+  // future-dated entries this walk skips those earlier (future) rows entirely on its way
+  // forward through the past — accumulated rows can never actually reach the server's total
+  // in that case. The correct end-of-scroll signal is the server handing back fewer rows
+  // than requested (or none at all), same as any standard offset-pagination loop.
+  let timelinePageDone = false;
+
+  // Shown once every page is loaded (paginated /timeline browsing) or a full-list render
+  // (deep link/Explore/homepage) has everything by construction — replaces the "Loading
+  // more…" spinner from just running forever with nothing to show for it once the scroll
+  // guard above starts silently no-opping every further scroll-triggered fetch attempt.
+  function showTimelineEndMarker(container){
+    if(container.querySelector('.t-end-state')) return;
+    const el = document.createElement('div');
+    el.className = 't-end-state';
+    el.textContent = 'End of the line, choom.';
+    container.appendChild(el);
+  }
 
   async function loadTimelinePage(reset){
     if(timelinePageLoading) return;
@@ -2934,11 +2973,12 @@
       // page on "today" instead of always starting at the newest-future end of the list.
       timelinePageOffset = null;
       timelinePageTotal = null;
+      timelinePageDone = false;
       timelineLastYear = null;
       hasSetDefaultSelection = false;
       document.getElementById('timeline').innerHTML = '<div class="loading-state">Loading…</div>';
-    } else if(timelinePageTotal !== null && timelinePageRows.length >= timelinePageTotal){
-      return; // every page already loaded — nothing more to fetch
+    } else if(timelinePageDone){
+      return; // reached the end of what this forward walk can fetch
     }
     timelinePageLoading = true;
     let loadMoreEl = null;
@@ -2967,6 +3007,8 @@
     // knows exactly where it left off.
     timelinePageOffset = (timelinePageOffset === null ? offset : timelinePageOffset) + events.length;
     timelinePageRows = timelinePageRows.concat(events);
+    // A short (or empty) page is the real end-of-scroll signal — see timelinePageDone above.
+    if(events.length < TIMELINE_PAGE_SIZE) timelinePageDone = true;
 
     const outer = document.getElementById('timeline');
     if(reset){
@@ -3000,6 +3042,7 @@
     document.getElementById('tlCount').textContent = timelinePageRows.length < timelinePageTotal
       ? `${timelinePageRows.length} of ${timelinePageTotal} entries`
       : `${timelinePageTotal} entries`;
+    if(timelinePageDone) showTimelineEndMarker(outer);
 
     if(reset){
       selectedIdx = closestToTodayIndex(timelinePageRows);
