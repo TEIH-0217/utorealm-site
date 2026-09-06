@@ -5,6 +5,18 @@
   alongside (not instead of) the developer-facing RELEASE_NOTES.md at the repo root, as its
   own standing step per PR.
 -->
+## v1.19.0 — September 6, 2026
+Public profiles got a refresh: your public entries now show as a browsable tile grid instead of a plain list, and there's a new (for now empty) Achievements panel on your profile — the first step toward future rewards for being active in Afterlife.
+
+## v1.18.1 — August 20, 2026
+Fixed the Timeline occasionally getting stuck loading more entries past the end of the list.
+
+## v1.18.0 — August 20, 2026
+You can now amp your favorite events, comments, and replies — a quick way to show what you love in the chronicle.
+
+## v1.17.1 — August 17, 2026
+Behind-the-scenes security hardening — no visible changes.
+
 ## v1.17.0 — August 16, 2026
 Timeline and Explore now load smoothly in small batches as you scroll, with a clear loading indicator and a new "Back to my view" button so you never lose your place.
 

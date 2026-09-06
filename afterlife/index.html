@@ -940,12 +940,18 @@
 
   /* ---------- PUBLIC PROFILE ---------- */
   .profile-banner{
-    height:200px; background:repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px), var(--surface);
+    height:200px; flex-shrink:0; background:repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px), var(--surface);
     background-repeat:no-repeat; background-size:cover; background-position:center;
     border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center;
   }
   .profile-banner-empty{ font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); }
-  .profile-columns{ display:grid; grid-template-columns:160px minmax(0,1fr) 260px; gap:32px; padding:28px 0; align-items:start; }
+  /* align-items left at its grid default (stretch) on purpose: .profile-col-left needs to
+     span the same height as .profile-col-main (the taller column, once entries load) so
+     .profile-achievements-sticky has room to actually stick while scrolling through the
+     entries grid — a sticky element can never stick past the bottom of its own parent's box,
+     and align-items:start would leave .profile-col-left only as tall as its own short content
+     (avatar + name + joined), unsticking almost immediately. */
+  .profile-columns{ display:grid; grid-template-columns:160px minmax(0,1fr); gap:32px; padding:28px 0; }
   @media (max-width:820px){ .profile-columns{ grid-template-columns:1fr; } }
   .profile-avatar{
     width:100%; aspect-ratio:1/1; background-color:var(--surface-2); background-repeat:no-repeat;
@@ -960,12 +966,19 @@
   .profile-section-head{ font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:10px; }
   .profile-empty-line{ font-size:11px; color:var(--text-faint); font-style:italic; }
   .profile-about{ font-size:12px; color:var(--text-dim); line-height:1.7; }
-  .profile-entries-panel{ border:1px solid var(--border-strong); background:var(--surface); padding:6px 14px; }
-  .profile-entry-row{ padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
-  .profile-entry-row:last-child{ border-bottom:none; }
-  .profile-entry-title{ font-size:12px; color:var(--text); margin-bottom:3px; }
-  .profile-entry-title:hover{ color:var(--cool); }
-  .profile-entry-meta{ font-size:9px; color:var(--text-faint); letter-spacing:0.04em; text-transform:uppercase; }
+  /* .profile-col-left itself stays a plain stretched grid item (see .profile-columns
+     above — stretch, not start, is what gives it room the height of .profile-col-main to
+     stick within) — the sticky element is this inner wrapper instead, so the WHOLE left
+     column (avatar/name/joined/achievements) moves together as one unit rather than just
+     the achievements panel. Sticks to the top of #profileView's own scroll (the topbar
+     above it is a separate, always-visible sibling, not part of this scroll area, so
+     top:0 lands it right at the scrolled content's edge). */
+  .profile-col-left-sticky{ position:sticky; top:0; padding-top:4px; }
+  .profile-achievements-head{ margin-top:24px; }
+  .profile-achievements-panel{
+    border:1px solid var(--border-strong); background:var(--surface); min-height:220px;
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:20px;
+  }
 
   /* ---------- SETTINGS ---------- */
   .settings-page{ max-width:640px; }
@@ -1398,10 +1411,18 @@
     <div class="wrap">
       <div class="profile-columns">
         <div class="profile-col-left">
-          <div class="profile-avatar" id="pfAvatar"><span id="pfAvatarEmpty">No image</span></div>
-          <div class="profile-name" id="pfName">—</div>
-          <div class="profile-meta-label">Joined since</div>
-          <div class="profile-meta-value" id="pfJoined">—</div>
+          <div class="profile-col-left-sticky">
+            <div class="profile-avatar" id="pfAvatar"><span id="pfAvatarEmpty">No image</span></div>
+            <div class="profile-name" id="pfName">—</div>
+            <div class="profile-meta-label">Joined since</div>
+            <div class="profile-meta-value" id="pfJoined">—</div>
+            <div class="profile-section-head profile-achievements-head">Achievements</div>
+            <!-- Placeholder only — no gamification system exists yet. Revisit once there's
+                 something real to show here (badges, milestones, etc.). -->
+            <div class="profile-achievements-panel">
+              <span class="profile-empty-line">Achievements are coming in a future update.</span>
+            </div>
+          </div>
         </div>
         <div class="profile-col-main">
           <div class="profile-section">
@@ -1414,11 +1435,9 @@
             <div class="rich-content profile-about" id="pfAbout"></div>
             <div class="profile-empty-line" id="pfAboutEmpty" style="display:none;">This user hasn't written an about section yet.</div>
           </div>
-        </div>
-        <div class="profile-col-right">
-          <div class="profile-section-head">Public entries</div>
-          <div class="profile-entries-panel">
-            <div id="pfEntries"></div>
+          <div class="profile-section">
+            <div class="profile-section-head">Public entries</div>
+            <div class="explore-grid" id="pfEntries"></div>
             <div class="profile-empty-line" id="pfEntriesEmpty" style="display:none;">No public entries yet.</div>
           </div>
         </div>
@@ -5524,6 +5543,7 @@
       genresEl.innerHTML = ''; genresEmptyEl.style.display = 'block';
       aboutEl.innerHTML = ''; aboutEmptyEl.style.display = 'block';
       entriesEl.innerHTML = ''; entriesEmptyEl.style.display = 'block';
+      profileEntriesPublicId = null; // a since-queued scroll must not try to load entries for this failed profile
       return;
     }
 
@@ -5553,27 +5573,102 @@
       aboutEmptyEl.style.display = 'block';
     }
 
-    try{
-      const { events } = await apiFetch(`/api/profile/${encodeURIComponent(publicId)}/events`, { auth: false });
-      if(events.length){
-        entriesEl.innerHTML = '';
-        events.forEach(r => {
-          const row = document.createElement('div');
-          row.className = 'profile-entry-row';
-          row.innerHTML = `<div class="profile-entry-title">${escapeHtml(r.title)}</div><div class="profile-entry-meta">${formatDate(r.event_published_at)} · ${escapeHtml(r.category)}</div>`;
-          row.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
-          entriesEl.appendChild(row);
-        });
-        entriesEmptyEl.style.display = 'none';
-      } else {
-        entriesEl.innerHTML = '';
-        entriesEmptyEl.style.display = 'block';
-      }
-    } catch(e){
-      entriesEl.innerHTML = '';
-      entriesEmptyEl.style.display = 'block';
-    }
+    loadProfileEntriesPage(publicId, true);
   }
+
+  // Entries tile grid, lazy-loaded exactly like Explore (same page size, same
+  // scroll-near-bottom trigger, same card look via buildExploreCardEl's styling) — a
+  // profile with 100+ public entries used to fetch and render its entire list in one shot,
+  // which is what pushed the header banner out of its expected position on load.
+  const PROFILE_ENTRIES_PAGE_SIZE = 20;
+  let profileEntriesPublicId = null;
+  let profileEntriesRows = [];
+  let profileEntriesOffset = 0;
+  let profileEntriesTotal = null;
+  let profileEntriesLoading = false;
+
+  // Same tile as Explore's card, minus the author line — every card on this page already
+  // belongs to the one profile being viewed, so repeating "Submitted by X" on each would
+  // just be noise.
+  function buildProfileEntryCardEl(r){
+    const card = document.createElement('div');
+    card.className = 'explore-card';
+    card.dataset.eventId = r.id;
+    const cover = document.createElement('div');
+    cover.className = 'explore-card-cover';
+    const img = getEventImages(r)[0];
+    if(img && isRenderableImageUrl(img.url)) cover.style.backgroundImage = `url("${img.url}")`;
+    const body = document.createElement('div');
+    body.className = 'explore-card-body';
+    body.innerHTML = `
+      <div class="explore-card-title">${escapeHtml(r.title)}</div>
+      <div class="explore-card-meta"><span>${formatDate(r.event_published_at)}</span><span class="tag-pill">${escapeHtml(r.category)}</span></div>
+      <div class="explore-card-engagement-row">${engagementHtml(r, 'explore-card-engagement')}${cardLikeHtml(r)}</div>`;
+    card.appendChild(cover);
+    card.appendChild(body);
+    card.addEventListener('click', () => navigate('/timeline/' + slugFor(r)));
+    return card;
+  }
+
+  async function loadProfileEntriesPage(publicId, reset){
+    if(profileEntriesLoading) return;
+    const entriesEl = document.getElementById('pfEntries');
+    const entriesEmptyEl = document.getElementById('pfEntriesEmpty');
+    if(reset){
+      profileEntriesPublicId = publicId;
+      profileEntriesRows = [];
+      profileEntriesOffset = 0;
+      profileEntriesTotal = null;
+      entriesEl.innerHTML = '<div class="loading-state">Loading…</div>';
+      entriesEmptyEl.style.display = 'none';
+    } else if(publicId !== profileEntriesPublicId){
+      return; // a scroll fired for a profile that's no longer the one on screen
+    } else if(profileEntriesTotal !== null && profileEntriesRows.length >= profileEntriesTotal){
+      return; // every page already loaded — nothing more to fetch
+    }
+    profileEntriesLoading = true;
+    let loadMoreEl = null;
+    if(!reset){
+      loadMoreEl = document.createElement('div');
+      loadMoreEl.className = 'load-more-state';
+      loadMoreEl.textContent = 'Loading more…';
+      entriesEl.appendChild(loadMoreEl);
+    }
+    let events, total;
+    try{
+      ({ events, total } = await apiFetch(
+        `/api/profile/${encodeURIComponent(publicId)}/events?limit=${PROFILE_ENTRIES_PAGE_SIZE}&offset=${profileEntriesOffset}`,
+        { auth: false }
+      ));
+    } catch(e){
+      if(reset) entriesEl.innerHTML = '';
+      loadMoreEl?.remove();
+      if(reset) entriesEmptyEl.style.display = 'block';
+      profileEntriesLoading = false;
+      return;
+    }
+    if(publicId !== profileEntriesPublicId){ profileEntriesLoading = false; return; } // navigated away mid-fetch
+    loadMoreEl?.remove();
+    profileEntriesTotal = total;
+    profileEntriesOffset += events.length;
+    profileEntriesRows = profileEntriesRows.concat(events);
+
+    if(reset){
+      entriesEl.innerHTML = '';
+      if(!profileEntriesRows.length){
+        entriesEmptyEl.style.display = 'block';
+        profileEntriesLoading = false;
+        return;
+      }
+    }
+    events.forEach(r => entriesEl.appendChild(buildProfileEntryCardEl(r)));
+    profileEntriesLoading = false;
+  }
+  document.getElementById('profileView').addEventListener('scroll', () => {
+    if(!profileEntriesPublicId) return;
+    const el = document.getElementById('profileView');
+    if(el.scrollTop + el.clientHeight >= el.scrollHeight - 300) loadProfileEntriesPage(profileEntriesPublicId, false);
+  });
 
   // ================= SETTINGS: PROFILE =================
   const pAboutRTE = createRichTextField({
