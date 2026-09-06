@@ -1536,6 +1536,17 @@
           <span class="settings-save-status" id="setAccountSaveStatus"></span>
         </div>
         <div class="field" style="margin-top:34px; padding-top:26px; border-top:1px solid var(--border);">
+          <label>Change password</label>
+          <input type="password" id="setAccountCurrentPassword" placeholder="Current password" autocomplete="current-password" style="margin-bottom:10px;">
+          <div class="pw-field" style="margin-bottom:10px;"><input type="password" id="setAccountNewPassword" placeholder="New password" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="setAccountNewPassword" aria-label="Show password"></button></div>
+          <div class="pw-field"><input type="password" id="setAccountNewPasswordConfirm" placeholder="Confirm new password" autocomplete="new-password"><button type="button" class="pw-toggle" data-toggle-for="setAccountNewPasswordConfirm" aria-label="Show password"></button></div>
+          <div class="form-error" id="setAccountPasswordError"></div>
+          <div class="modal-actions" style="justify-content:flex-start; margin-top:14px;">
+            <button class="btn btn-primary" id="setAccountPasswordSaveBtn">Change password</button>
+            <span class="settings-save-status" id="setAccountPasswordStatus"></span>
+          </div>
+        </div>
+        <div class="field" style="margin-top:34px; padding-top:26px; border-top:1px solid var(--border);">
           <label style="color:var(--hot);">Danger zone</label>
           <p style="font-size:12px; color:var(--text-dim); line-height:1.7; margin:0 0 14px;">
             Deleting your account is permanent. You'll be asked to confirm your password first.
@@ -5870,6 +5881,11 @@
     document.getElementById('setAccountUsername').textContent = currentUser.username || '—';
     document.getElementById('setAccountDob').value = currentUser.date_of_birth || '';
     document.getElementById('setAccountSaveStatus').textContent = '';
+    document.getElementById('setAccountCurrentPassword').value = '';
+    document.getElementById('setAccountNewPassword').value = '';
+    document.getElementById('setAccountNewPasswordConfirm').value = '';
+    document.getElementById('setAccountPasswordError').classList.remove('show');
+    document.getElementById('setAccountPasswordStatus').textContent = '';
   }
   document.getElementById('setAccountSaveBtn').addEventListener('click', async () => {
     if(!currentUser) return;
@@ -5884,6 +5900,45 @@
     } catch(e){
       statusEl.textContent = '';
       alert('Could not save: ' + e.message);
+    }
+  });
+
+  document.getElementById('setAccountPasswordSaveBtn').addEventListener('click', async () => {
+    if(!currentUser) return;
+    const current = document.getElementById('setAccountCurrentPassword').value;
+    const next = document.getElementById('setAccountNewPassword').value;
+    const confirm = document.getElementById('setAccountNewPasswordConfirm').value;
+    const errEl = document.getElementById('setAccountPasswordError');
+    errEl.classList.remove('show');
+    if(!current || !next){
+      errEl.textContent = 'Enter your current password and a new password.';
+      errEl.classList.add('show');
+      return;
+    }
+    if(next !== confirm){
+      errEl.textContent = 'New passwords do not match.';
+      errEl.classList.add('show');
+      return;
+    }
+    const statusEl = document.getElementById('setAccountPasswordStatus');
+    statusEl.textContent = 'Saving…';
+    try{
+      const data = await apiFetch('/api/account/password', {
+        method: 'PUT', body: { current_password: current, new_password: next },
+      });
+      // The endpoint reissues a token specifically so this save doesn't force an
+      // immediate re-login — the bearer token used to make this very request is no
+      // longer valid the instant password_changed_at moves past it.
+      saveSession(data.token, currentUser);
+      document.getElementById('setAccountCurrentPassword').value = '';
+      document.getElementById('setAccountNewPassword').value = '';
+      document.getElementById('setAccountNewPasswordConfirm').value = '';
+      statusEl.textContent = 'Password changed';
+      setTimeout(() => { statusEl.textContent = ''; }, 2500);
+    } catch(e){
+      statusEl.textContent = '';
+      errEl.textContent = e.message || 'Could not change password.';
+      errEl.classList.add('show');
     }
   });
 
