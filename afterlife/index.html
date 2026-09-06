@@ -156,6 +156,8 @@
   .btn-cool:hover{ background:rgba(43,255,198,0.08); }
   .btn-ghost{ color:var(--text-dim); }
   .btn-ghost:hover{ color:var(--text); }
+  .btn-danger{ border-color:var(--hot); background:var(--hot); color:#fff; }
+  .btn-danger:hover{ opacity:0.85; }
   .btn-sm{ padding:8px 14px; font-size:11px; }
 
   /* ================= HOME VIEW (new landing page) ================= */
@@ -1450,8 +1452,9 @@
     <div class="wrap">
       <div class="settings-tabs">
         <a data-settings-page="profile" class="active">Profile settings</a>
+        <a data-settings-page="account">Account settings</a>
       </div>
-      <div class="settings-page">
+      <div class="settings-page" id="settingsProfilePage">
         <div class="field">
           <label>Profile name *</label>
           <input type="text" id="setProfileName" maxlength="60" placeholder="Your display name">
@@ -1517,6 +1520,27 @@
         <div class="modal-actions" style="justify-content:flex-start;">
           <button class="btn btn-primary" id="setSaveBtn">Save changes</button>
           <span class="settings-save-status" id="setSaveStatus"></span>
+        </div>
+      </div>
+      <div class="settings-page" id="settingsAccountPage" style="display:none;">
+        <div class="field">
+          <label>Username</label>
+          <div class="settings-readonly" id="setAccountUsername">—</div>
+        </div>
+        <div class="field">
+          <label>Date of birth</label>
+          <input type="date" id="setAccountDob">
+        </div>
+        <div class="modal-actions" style="justify-content:flex-start;">
+          <button class="btn btn-primary" id="setAccountSaveBtn">Save changes</button>
+          <span class="settings-save-status" id="setAccountSaveStatus"></span>
+        </div>
+        <div class="field" style="margin-top:34px; padding-top:26px; border-top:1px solid var(--border);">
+          <label style="color:var(--hot);">Danger zone</label>
+          <p style="font-size:12px; color:var(--text-dim); line-height:1.7; margin:0 0 14px;">
+            Deleting your account is permanent. You'll be asked to confirm your password first.
+          </p>
+          <button type="button" class="btn btn-danger" id="setDeleteAccountBtn">Delete account</button>
         </div>
       </div>
     </div>
@@ -1750,6 +1774,25 @@
       <div class="modal-actions">
         <button class="btn btn-ghost" id="confirmCancelBtn">Cancel</button>
         <button class="btn btn-primary" id="confirmOkBtn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DELETE ACCOUNT (re-authenticate with password) ================= -->
+  <div class="modal-backdrop" id="deleteAccountBackdrop">
+    <div class="modal bracket">
+      <h2 style="font-size:16px; margin-bottom:14px;">Delete your account?</h2>
+      <p style="font-size:12px; color:var(--text-dim); line-height:1.7; margin:0 0 18px;">
+        This is permanent. Enter your password to confirm.
+      </p>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="deleteAccountPassword" autocomplete="current-password">
+      </div>
+      <div class="form-error" id="deleteAccountError"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="deleteAccountCancelBtn">Cancel</button>
+        <button class="btn btn-danger" id="deleteAccountConfirmBtn">Delete my account</button>
       </div>
     </div>
   </div>
@@ -2378,19 +2421,25 @@
     switchAdminTab(page);
   }
 
-  // Only one tab exists today, but this follows the same hash-routed-tab pattern as
-  // /admin (#events/#users/#taxonomy) so /settings#profile is a real, bookmarkable,
-  // shareable URL from the start rather than something bolted on when a second
-  // settings section shows up.
+  // The Profile tab is still hash-routed (/settings#profile, unchanged) but Account is a
+  // real path segment (/settings/account) — asked for explicitly when the tab was added,
+  // even though it means this view now mixes both conventions rather than only the
+  // hash-routed one /admin uses.
   function renderSettingsView(){
-    switchSettingsTab('profile');
+    const { parts } = currentRoute();
+    switchSettingsTab(parts[1] === 'account' ? 'account' : 'profile');
   }
   function switchSettingsTab(page){
     document.querySelectorAll('.settings-tabs a').forEach(x => x.classList.toggle('active', x.dataset.settingsPage === page));
+    document.getElementById('settingsProfilePage').style.display = page === 'profile' ? '' : 'none';
+    document.getElementById('settingsAccountPage').style.display = page === 'account' ? '' : 'none';
     if(page === 'profile') loadSettingsProfile();
+    else if(page === 'account') loadSettingsAccount();
   }
   document.querySelectorAll('.settings-tabs a').forEach(a => {
-    a.addEventListener('click', () => navigate('/settings#' + a.dataset.settingsPage));
+    a.addEventListener('click', () => {
+      navigate(a.dataset.settingsPage === 'account' ? '/settings/account' : '/settings#profile');
+    });
   });
 
   // ================= AUTH: LOG IN =================
@@ -5812,6 +5861,67 @@
     } catch(e){
       statusEl.textContent = '';
       alert('Could not save profile: ' + e.message);
+    }
+  });
+
+  // ================= SETTINGS: ACCOUNT =================
+  function loadSettingsAccount(){
+    if(!currentUser) return;
+    document.getElementById('setAccountUsername').textContent = currentUser.username || '—';
+    document.getElementById('setAccountDob').value = currentUser.date_of_birth || '';
+    document.getElementById('setAccountSaveStatus').textContent = '';
+  }
+  document.getElementById('setAccountSaveBtn').addEventListener('click', async () => {
+    if(!currentUser) return;
+    const dob = document.getElementById('setAccountDob').value; // '' when cleared
+    const statusEl = document.getElementById('setAccountSaveStatus');
+    statusEl.textContent = 'Saving…';
+    try{
+      const data = await apiFetch('/api/account/me', { method: 'PUT', body: { date_of_birth: dob || null } });
+      saveSession(authToken, { ...currentUser, date_of_birth: data.date_of_birth });
+      statusEl.textContent = 'Saved';
+      setTimeout(() => { statusEl.textContent = ''; }, 2500);
+    } catch(e){
+      statusEl.textContent = '';
+      alert('Could not save: ' + e.message);
+    }
+  });
+
+  // Deleting your own account needs your password re-entered in this modal — a session
+  // left open on a shared/stolen device isn't enough on its own to permanently destroy it.
+  function openDeleteAccountModal(){
+    document.getElementById('deleteAccountPassword').value = '';
+    document.getElementById('deleteAccountError').classList.remove('show');
+    document.getElementById('deleteAccountBackdrop').classList.add('open');
+  }
+  function closeDeleteAccountModal(){
+    document.getElementById('deleteAccountBackdrop').classList.remove('open');
+  }
+  document.getElementById('setDeleteAccountBtn').addEventListener('click', openDeleteAccountModal);
+  document.getElementById('deleteAccountCancelBtn').addEventListener('click', closeDeleteAccountModal);
+  document.getElementById('deleteAccountConfirmBtn').addEventListener('click', async () => {
+    const password = document.getElementById('deleteAccountPassword').value;
+    const errEl = document.getElementById('deleteAccountError');
+    errEl.classList.remove('show');
+    if(!password){
+      errEl.textContent = 'Enter your password to confirm.';
+      errEl.classList.add('show');
+      return;
+    }
+    const btn = document.getElementById('deleteAccountConfirmBtn');
+    btn.disabled = true;
+    try{
+      await apiFetch('/api/account/me', { method: 'DELETE', body: { password } });
+      closeDeleteAccountModal();
+      clearSession();
+      refreshCurrentUserUI();
+      navigate('/home', { replace: true });
+      showToast('Your account has been deleted.');
+    } catch(e){
+      errEl.textContent = e.message || 'Could not delete account.';
+      errEl.classList.add('show');
+    } finally {
+      btn.disabled = false;
     }
   });
 
