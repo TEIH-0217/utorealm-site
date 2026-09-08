@@ -5,6 +5,9 @@
   alongside (not instead of) the developer-facing RELEASE_NOTES.md at the repo root, as its
   own standing step per PR.
 -->
+## v1.21.1 — September 8, 2026
+Cleaned up Folders based on early feedback: clearer breadcrumbs, a wider and more readable entry layout, and folder links that stay put when you refresh or come back. Also fixed a bug where an inline image's resize handle and caption box could drift away from the image while writing.
+
 ## v1.21.0 — September 8, 2026
 Introducing Folders — group related Cores (and other Folders) into a browsable directory. Look for a folder breadcrumb under an entry that belongs to one, and check out the new "Folders" tab in My Entries to create and manage your own.
 
