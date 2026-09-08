@@ -378,6 +378,13 @@
 
   .timeline-panel{ display:flex; flex-direction:column; min-height:0; }
   .timeline{ padding:20px 24px; flex:1; overflow-y:auto; overflow-x:hidden; min-height:0; }
+  /* #timelineDefaultPanel/#folderTocPanel wrap what used to be .timeline-panel's direct flex
+     children (panel-head/#timeline/buttons, or the folder outline) — each needs the same
+     flex-column-that-fills-and-scrolls role its contents relied on getting directly from
+     .timeline-panel above, or #timeline's flex:1/overflow-y:auto has no effect and the
+     whole panel just overflows the page instead of scrolling internally. */
+  #timelineDefaultPanel{ display:flex; flex-direction:column; min-height:0; flex:1; }
+  #folderTocPanel{ flex:1; min-height:0; overflow-y:auto; padding:20px 24px; }
   .timeline-inner{ position:relative; padding-left:22px; }
   .submit-event-btn{
     flex:none; margin:0; padding:14px 24px; width:100%;
@@ -388,6 +395,9 @@
   .submit-event-btn .plus{ color:var(--hot); font-size:14px; }
   .submit-event-btn:hover{ background:rgba(43,255,198,0.06); color:var(--text); }
   .submit-event-btn:focus-visible{ outline:1px solid var(--cool); outline-offset:-2px; }
+  .submit-event-btn:disabled{ color:var(--text-faint); cursor:not-allowed; }
+  .submit-event-btn:disabled .plus{ color:var(--text-faint); }
+  .submit-event-btn:disabled:hover{ background:transparent; color:var(--text-faint); }
   /* Same layout as .submit-event-btn, muted color since it's a secondary/utility action —
      manually recenters the list on whichever event is currently selected/previewed, since
      scrolling no longer happens automatically on click or on the initial default selection. */
@@ -446,6 +456,44 @@
   }
   .event-hero .tag{ font-size:10px; letter-spacing:0.12em; color:var(--hot); text-transform:uppercase; position:absolute; top:16px; left:16px; }
   .event-hero h3{ font-size:26px; color:#F5F5FA; text-shadow:0 2px 12px rgba(0,0,0,0.6); position:relative; }
+  .event-hero-title-block{ position:relative; display:flex; flex-direction:column; gap:6px; }
+  /* Directory info ("📁 Blade Runner / Introduction / …"), now a normal-flow block under
+     the description (not overlaid on the hero photo) — .event-hero clips overflow for its
+     own photo/scrim layers, which made a floating dropdown of "other branches" unusable
+     (sliced to an unreadable sliver). Stacking everything in-flow instead sidesteps that
+     entirely: the primary branch line and every "other branch" line below it share one
+     row style, so the list reads as one consistent block rather than a special popup. */
+  .folder-breadcrumb{ margin-bottom:18px; font-size:12px; }
+  .folder-breadcrumb-row{ display:flex; align-items:center; gap:6px; color:var(--text-dim); }
+  .folder-breadcrumb-row .folder-icon{ flex-shrink:0; color:var(--text-faint); }
+  .folder-breadcrumb-row a{ color:var(--text-dim); text-decoration:none; }
+  .folder-breadcrumb-row a:hover{ color:var(--cool); text-decoration:underline; }
+  .folder-breadcrumb-row .fb-sep{ color:var(--text-faint); margin:0 2px; }
+  /* Toggle for a Core's other approved folder branches — same row style/font-size as the
+     branch lines themselves (just the icon swapped for indent-matching spacing), so it
+     reads as part of the same list rather than a visually distinct control. */
+  .folder-breadcrumb-more-toggle{
+    display:flex; align-items:center; gap:6px; margin-top:6px; padding:0; background:none; border:none;
+    font-family:var(--mono); font-size:12px; color:var(--text-faint); cursor:pointer; text-align:left;
+  }
+  .folder-breadcrumb-more-toggle:hover{ color:var(--cool); }
+  /* Same plus/minus glyph convention as the folder management tree's .fm-toggle. */
+  .folder-breadcrumb-more-toggle .fb-toggle-icon{
+    flex-shrink:0; width:14px; font-size:14px; font-weight:700; line-height:1; color:var(--text-dim);
+  }
+  .folder-breadcrumb-more-toggle:hover .fb-toggle-icon{ color:var(--cool); }
+  .folder-breadcrumb-more-list{ margin-top:6px; padding-left:17px; display:flex; flex-direction:column; gap:8px; }
+  .folder-breadcrumb-more-list[hidden]{ display:none; }
+  .explore-card-breadcrumb{
+    position:absolute; top:8px; right:8px; z-index:2; max-width:calc(100% - 16px);
+    display:flex; align-items:center; gap:4px;
+    font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:#F5F5FA;
+    background:rgba(0,0,0,0.55); padding:4px 7px; cursor:pointer;
+    overflow:hidden;
+  }
+  .explore-card-breadcrumb .folder-icon{ flex-shrink:0; }
+  .explore-card-breadcrumb span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .explore-card-breadcrumb:hover{ color:var(--cool); }
 
   .gallery-wrap{ position:relative; background:var(--border); flex-shrink:0; }
   .gallery-strip{
@@ -595,7 +643,7 @@
   .explore-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:20px; margin-top:20px; }
   .explore-card{ background:var(--surface); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; transition:border-color .15s; }
   .explore-card:hover{ border-color:var(--cool); }
-  .explore-card-cover{ height:150px; background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; flex-shrink:0; }
+  .explore-card-cover{ height:150px; background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; flex-shrink:0; position:relative; }
   .explore-card-body{ padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
   .explore-card-title{ font-family:var(--display); font-size:14px; color:var(--text); text-transform:none; letter-spacing:normal; }
   .explore-card-meta{ display:flex; align-items:center; justify-content:space-between; font-size:10px; color:var(--text-faint); letter-spacing:0.06em; text-transform:uppercase; }
@@ -606,10 +654,10 @@
   .toolbar-right{ display:flex; gap:10px; }
   .count-badge{ font-size:11px; color:var(--text-faint); }
 
-  .admin-tabs, .settings-tabs{ display:flex; gap:28px; border-bottom:1px solid var(--border); margin-bottom:24px; }
-  .admin-tabs a, .settings-tabs a{ padding-bottom:12px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; cursor:pointer; position:relative; }
-  .admin-tabs a.active, .settings-tabs a.active{ color:var(--cool); }
-  .admin-tabs a.active::after, .settings-tabs a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--cool); }
+  .admin-tabs, .settings-tabs, .dashboard-tabs{ display:flex; gap:28px; border-bottom:1px solid var(--border); margin-bottom:24px; }
+  .admin-tabs a, .settings-tabs a, .dashboard-tabs a{ padding-bottom:12px; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-dim); text-decoration:none; cursor:pointer; position:relative; }
+  .admin-tabs a.active, .settings-tabs a.active, .dashboard-tabs a.active{ color:var(--cool); }
+  .admin-tabs a.active::after, .settings-tabs a.active::after, .dashboard-tabs a.active::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:var(--cool); }
   .admin-page{ display:none; }
   .admin-page.active{ display:block; }
 
@@ -708,6 +756,8 @@
   tr:last-child td{ border-bottom:none; }
   tr.deleted-row td{ opacity:0.45; }
   td.title-cell{ color:var(--text); font-family:var(--display); font-size:13px; letter-spacing:0.02em; text-transform:none; }
+  .my-entry-title-link, .my-folder-title-link{ color:inherit; text-decoration:none; }
+  .my-entry-title-link:hover, .my-folder-title-link:hover{ color:var(--cool); text-decoration:underline; }
   .cover-thumb{ width:48px; height:34px; border:1px solid var(--border-strong); flex-shrink:0; background:linear-gradient(160deg,#1c1c28,#0e0e14); background-size:cover; background-position:center; }
   .tag-pill{ font-size:10px; padding:3px 8px; border:1px solid var(--border-strong); color:var(--cool); letter-spacing:0.06em; text-transform:uppercase; display:inline-block; }
   .row-actions{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
@@ -752,6 +802,103 @@
   .meta-readout{ font-size:10px; color:var(--text-faint); margin-top:14px; line-height:1.7; border-top:1px solid var(--border); padding-top:12px; }
   .import-drop{ border:1px dashed var(--border-strong); padding:24px; text-align:center; font-size:11px; color:var(--text-faint); margin-bottom:14px; }
   .import-result{ font-size:11px; color:var(--text-dim); margin-top:12px; line-height:1.6; white-space:pre-wrap; }
+
+  /* ---------- MY ENTRIES: MY FOLDERS DIRECTORY ---------- */
+  .my-folders-dir{ border:1px solid var(--border-strong); }
+  .my-folder-row{ display:flex; align-items:center; gap:14px; padding:12px 16px; border-bottom:1px solid var(--border); }
+  .my-folder-row:last-child{ border-bottom:none; }
+  .my-folder-icon{ color:var(--text-faint); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; flex-shrink:0; }
+  .my-folder-name{ flex:1; font-size:13px; color:var(--cool); cursor:pointer; text-decoration:none; }
+  .my-folder-name:hover{ text-decoration:underline; }
+  .my-folder-count{ font-size:10px; color:var(--text-faint); flex-shrink:0; }
+  .my-folder-pills{ display:flex; gap:6px; flex-shrink:0; }
+  .my-folders-empty{ padding:20px 16px; color:var(--text-faint); font-size:12px; }
+  /* Inline expand — clicking a folder row reveals its contents (the same recursive,
+     collapsible tree as appendFolderManageRow() builds) right here in the directory,
+     instead of navigating anywhere. Kept visually distinct (indented, dashed divider,
+     dimmer background) from the top-level folder rows around it. */
+  .my-folder-children{ width:100%; padding:4px 16px 4px 40px; border-bottom:1px solid var(--border); background:rgba(0,0,0,0.12); }
+  .my-folder-children:empty{ display:none; }
+  .my-folder-row .fm-toggle{ flex-shrink:0; }
+
+  /* ---------- FOLDER BOOK-OF-CONTENTS PANEL ---------- */
+  .folder-toc-return{ display:inline-block; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim); cursor:pointer; margin-bottom:18px; text-decoration:none; }
+  .folder-toc-return:hover{ color:var(--cool); }
+  .folder-toc-eyebrow{ font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:6px; }
+  .folder-toc-name{ font-size:20px; color:var(--cool); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:14px; }
+  .folder-toc-desc{ font-size:11px; color:var(--text-dim); line-height:1.6; margin-bottom:22px; }
+  .folder-toc-list{ display:flex; flex-direction:column; }
+  .folder-toc-row{ padding:8px 0; font-size:13px; }
+  .folder-toc-row--folder{ display:flex; align-items:center; gap:6px; color:var(--text-dim); font-size:11px; letter-spacing:0.04em; text-transform:uppercase; padding-top:16px; }
+  .folder-toc-row--folder [data-fm-toggle]{ cursor:pointer; }
+  .folder-toc-row--folder [data-fm-toggle]:hover{ color:var(--cool); }
+  .folder-toc-children{ width:100%; }
+  .folder-toc-row--core{ color:var(--text); cursor:pointer; }
+  .folder-toc-row--core:hover{ color:var(--cool); }
+  .folder-toc-row--core.active{ color:var(--cool); font-weight:600; }
+  /* Manage mode (folder owner/admin viewing their own folder) — a flat listing of the
+     folder's direct items with per-item action links, instead of the read-only nested
+     outline a public reader gets. Column-like via flex-wrap rather than a rigid <table>,
+     since this panel is the same narrow column the Timeline list uses. */
+  .folder-manage-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:10px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .folder-manage-row:last-child{ border-bottom:none; }
+  .fm-main{ display:flex; align-items:center; gap:6px; flex:1; min-width:140px; }
+  .folder-icon{ flex-shrink:0; color:var(--text-faint); }
+  .fm-type{ font-size:9px; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-faint); flex-shrink:0; }
+  .fm-meta{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .fm-actions{ flex-basis:100%; }
+  .fm-byline{ font-size:10px; color:var(--text-faint); white-space:nowrap; }
+  .fm-toggle, .fm-toggle-spacer{ width:16px; flex-shrink:0; }
+  .fm-toggle{ background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:14px; font-weight:700; line-height:1; padding:0; text-align:left; font-family:var(--mono); }
+  .fm-toggle:hover{ color:var(--cool); }
+  .folder-manage-children{ width:100%; }
+
+  /* ---------- SUBMIT: CONTENT TYPE CHOICE ---------- */
+  .submit-choice-modal{ width:480px; }
+  .submit-choice-options{ display:flex; flex-direction:column; gap:12px; }
+  .submit-choice-option{
+    display:flex; flex-direction:column; gap:4px; text-align:left; padding:16px 18px;
+    background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
+    cursor:pointer; font-family:var(--mono);
+  }
+  .submit-choice-option:hover{ border-color:var(--cool); }
+  .submit-choice-option:disabled{ opacity:0.4; cursor:not-allowed; }
+  .submit-choice-option:disabled:hover{ border-color:var(--border-strong); }
+  .submit-choice-option.selected{ border-color:var(--cool); background:rgba(43,255,198,0.06); }
+  .submit-choice-title{ font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:var(--cool); }
+  .submit-choice-desc{ font-size:11px; color:var(--text-dim); line-height:1.5; }
+
+  /* ---------- FOLDER WIZARD ---------- */
+  .modal--folder{ width:760px; }
+  .wizard-progress{ display:flex; gap:8px; margin-bottom:22px; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-faint); }
+  .wizard-progress span{ padding-bottom:8px; border-bottom:2px solid var(--border); }
+  .wizard-progress span.active{ color:var(--cool); border-color:var(--cool); }
+  .wizard-progress span.done{ color:var(--text-dim); }
+  .wizard-step{ display:none; }
+  .wizard-step.active{ display:block; }
+  .char-counter{ font-size:10px; color:var(--text-faint); text-align:right; margin-top:4px; }
+  .char-counter.over-limit{ color:var(--hot); }
+  .item-picker-controls{ display:flex; gap:10px; margin-bottom:12px; }
+  .item-picker-controls .item-picker-search{ flex:1; margin-bottom:0; }
+  .item-picker-controls select{ flex-shrink:0; width:140px; }
+  .item-picker-table-wrap{ max-height:340px; overflow-y:auto; border:1px solid var(--border-strong); }
+  .item-picker-table-wrap table{ width:100%; }
+  .item-picker-table-wrap th, .item-picker-table-wrap td{ font-size:12px; }
+  .item-picker-empty{ padding:24px; text-align:center; font-size:11px; color:var(--text-faint); }
+  .reorder-list{ border:1px solid var(--border-strong); }
+  .reorder-row{ display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); }
+  .reorder-row:last-child{ border-bottom:none; }
+  .reorder-row .reorder-name{ flex:1; font-size:13px; }
+  .reorder-row .reorder-type{ font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.08em; }
+  .reorder-row .reorder-move{ display:flex; gap:4px; }
+  .reorder-row .reorder-move button{ width:24px; height:24px; background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text-dim); cursor:pointer; font-size:11px; }
+  .reorder-row .reorder-move button:hover{ color:var(--cool); border-color:var(--cool); }
+  .reorder-row .reorder-move button:disabled{ opacity:0.3; cursor:default; }
+  .reorder-empty{ padding:24px; text-align:center; font-size:11px; color:var(--text-faint); border:1px dashed var(--border-strong); }
+  .folder-items-list{ border:1px solid var(--border-strong); margin-bottom:16px; }
+  .folder-items-row{ display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--border); font-size:12px; }
+  .folder-items-row:last-child{ border-bottom:none; }
+  .folder-items-row .fi-name{ flex:1; }
 
   /* ---------- FULL-SCREEN EVENT FORM ---------- */
   .modal-backdrop.fullscreen-backdrop{ padding:0; }
@@ -1163,10 +1310,19 @@
     <main>
       <div class="panel timeline-panel reticle">
         <div class="rt-mark rt-tl"></div><div class="rt-mark rt-bl"></div>
-        <div class="panel-head"><h2>Timeline</h2><span class="count" id="tlCount">0 entries</span></div>
-        <div class="timeline" id="timeline"><div class="loading-state">Loading…</div></div>
-        <button type="button" class="back-to-view-btn" id="backToViewBtn">↩ Back to my view</button>
-        <button type="button" class="submit-event-btn" id="submitEventBtn"><span class="plus">+</span>Submit a new event</button>
+        <div id="timelineDefaultPanel">
+          <div class="panel-head"><h2>Timeline</h2><span class="count" id="tlCount">0 entries</span></div>
+          <div class="timeline" id="timeline"><div class="loading-state">Loading…</div></div>
+          <button type="button" class="back-to-view-btn" id="backToViewBtn">↩ Back to my view</button>
+          <button type="button" class="submit-event-btn" id="submitContentBtn"><span class="plus">+</span>Submit</button>
+        </div>
+        <div id="folderTocPanel" style="display:none;">
+          <a class="folder-toc-return" id="folderTocReturn">↩ Return</a>
+          <div class="folder-toc-eyebrow">Folder</div>
+          <h2 class="folder-toc-name" id="folderTocName"></h2>
+          <p class="folder-toc-desc" id="folderTocDesc"></p>
+          <div class="folder-toc-list" id="folderTocList"></div>
+        </div>
       </div>
       <div class="panel event-panel reticle">
         <div class="rt-mark rt-tr"></div><div class="rt-mark rt-br"></div>
@@ -1176,7 +1332,9 @@
             <div class="event-hero-img" id="eventHeroImg"></div>
             <div class="event-hero-scrim"></div>
             <div class="tag" id="evTag">Tag</div>
-            <h3 id="evTitle">Select an entry</h3>
+            <div class="event-hero-title-block">
+              <h3 id="evTitle">Select an entry</h3>
+            </div>
           </div>
           <div class="gallery-wrap" id="galleryWrap" style="display:none;">
             <div class="gallery-strip" id="eventGallery"></div>
@@ -1187,6 +1345,7 @@
           <div class="gallery-caption" id="evImageCaption"></div>
           <div class="ev-engagement-bar" id="evEngagementBar" style="display:none;"></div>
           <div class="event-desc-wrap">
+            <div class="folder-breadcrumb" id="evFolderBreadcrumb" style="display:none;"></div>
             <div class="ev-author-row">
               <div class="ev-author" id="evAuthor" style="display:none;"></div>
               <button type="button" class="like-btn" id="evLikeBtn" aria-pressed="false" aria-label="Amp this event">♥ Amp</button>
@@ -1252,6 +1411,7 @@
     <div class="wrap">
       <div class="admin-tabs">
         <a data-admin-page="events" class="active">Events</a>
+        <a data-admin-page="folders" id="foldersTabLink">Folders</a>
         <a data-admin-page="users" id="usersTabLink">Users</a>
         <a data-admin-page="taxonomy" id="taxonomyTabLink">Categories &amp; Genres</a>
         <a data-admin-page="comments" id="commentsTabLink">Comments</a>
@@ -1306,8 +1466,31 @@
           </div>
         </div>
         <table>
-          <thead><tr><th>Username</th><th>Profile name</th><th>Role</th><th>Added</th><th>Last login</th><th></th></tr></thead>
+          <thead><tr><th>Username</th><th>Profile name</th><th>Role</th><th>Folders</th><th>Added</th><th>Last login</th><th></th></tr></thead>
           <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-page" id="adminFoldersPage">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h2 style="font-size:16px;">Folders</h2>
+            <span class="count-badge" id="foldersCountBadge">0 folders</span>
+            <label><input type="checkbox" id="showDeletedFolders"> Show deleted</label>
+            <label>Review:
+              <select id="folderReviewFilter">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="locked">Locked</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Name</th><th>Owner</th><th>Items</th><th>Status</th><th>Review</th><th>Created</th><th></th></tr></thead>
+          <tbody id="foldersBody"></tbody>
         </table>
       </div>
 
@@ -1389,19 +1572,36 @@
   <!-- ================= MY ENTRIES (dashboard) ================= -->
   <div id="dashboardView">
     <div class="wrap">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <h2 style="font-size:16px;">My entries</h2>
-          <span class="count-badge" id="myEntriesCountBadge">0 entries</span>
-        </div>
-        <div class="toolbar-right">
-          <button class="btn btn-primary btn-sm" id="myEntriesNewBtn">+ New entry</button>
-        </div>
+      <div class="dashboard-tabs">
+        <a data-dashboard-page="entries" class="active">Cores</a>
+        <a data-dashboard-page="folders" id="myFoldersTabLink">Folders</a>
       </div>
-      <table>
-        <thead><tr><th>Title</th><th>Status</th><th>Review</th><th>Visibility</th><th>Published</th><th></th></tr></thead>
-        <tbody id="myEntriesBody"></tbody>
-      </table>
+
+      <div class="admin-page active" id="myEntriesPage">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h2 style="font-size:16px;">My Core Entries</h2>
+            <span class="count-badge" id="myEntriesCountBadge">0 entries</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary btn-sm" id="myEntriesNewBtn">+ New entry</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Title</th><th>Status</th><th>Review</th><th>Visibility</th><th>Published</th><th></th></tr></thead>
+          <tbody id="myEntriesBody"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-page" id="myFoldersPage">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h2 style="font-size:16px;">My folders</h2>
+            <span class="count-badge" id="myFoldersCountBadge">0 folders</span>
+          </div>
+        </div>
+        <div class="my-folders-dir" id="myFoldersDir"></div>
+      </div>
     </div>
   </div>
 
@@ -1889,6 +2089,7 @@
           <select id="uRole"><option value="user">user</option><option value="superAdmin">superAdmin</option></select>
         </div>
       </div>
+      <div class="field"><label><input type="checkbox" id="uCanCreateFolder"> Allow this user to create folders</label></div>
       <div class="meta-readout" id="userMetaReadout"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="userFormCancel">Cancel</button>
@@ -1913,6 +2114,117 @@
       <div class="modal-actions">
         <button class="btn btn-ghost" id="importCancel">Close</button>
         <button class="btn btn-primary" id="importRun">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOLDER SUBMISSION WIZARD ================= -->
+  <div class="modal-backdrop fullscreen-backdrop" id="folderFormBackdrop">
+    <div class="modal modal--fullscreen">
+      <div class="modal-header">
+        <h2 id="folderFormTitle">Create a folder</h2>
+        <button type="button" class="modal-close" id="fdClose" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-body-inner">
+          <div class="wizard-progress">
+            <span data-wizard-step="1" class="active">1. Info</span>
+            <span data-wizard-step="2">2. Add items</span>
+            <span data-wizard-step="3">3. Reorder</span>
+          </div>
+
+          <div class="wizard-step active" data-step="1">
+            <div class="field">
+              <label>Name * (up to 100 characters)</label>
+              <input type="text" id="fdName" maxlength="100">
+              <div class="char-counter" id="fdNameCount">0 / 100</div>
+            </div>
+            <div class="field">
+              <label>Folder cover image (16:9, optional)</label>
+              <div class="cover-field-preview" id="fdCoverPreview"><span>No cover image selected</span></div>
+              <div class="cover-field-actions">
+                <input type="file" id="fdCoverFile" accept="image/*">
+                <button type="button" class="btn btn-ghost btn-sm" id="fdCoverRemove">Remove</button>
+              </div>
+              <div class="cover-hint">If left blank, the assigned starting Core's cover image is used as a fallback once approved.</div>
+            </div>
+            <div class="field">
+              <label>Description (optional, up to 1000 characters)</label>
+              <textarea id="fdDescription" rows="5" maxlength="1000"></textarea>
+              <div class="char-counter" id="fdDescriptionCount">0 / 1000</div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="2">
+            <div class="item-picker-controls">
+              <input type="text" class="item-picker-search" id="fdItemSearch" placeholder="Search Cores and Folders…">
+              <select id="fdItemTypeFilter">
+                <option value="">All types</option>
+                <option value="core">Core</option>
+                <option value="folder">Folder</option>
+              </select>
+            </div>
+            <div class="item-picker-table-wrap">
+              <table>
+                <thead><tr><th></th><th>Name</th><th>Type</th><th>Status</th></tr></thead>
+                <tbody id="fdItemPickerBody"></tbody>
+              </table>
+              <div class="item-picker-empty" id="fdItemPickerEmpty" style="display:none;">Nothing matches your search.</div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="3">
+            <div class="reorder-list" id="fdReorderList"></div>
+            <div class="reorder-empty" id="fdReorderEmpty" style="display:none;">No items selected — go back to add some.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="fdCancel">Cancel</button>
+        <button class="btn btn-ghost" id="fdBack" style="display:none;">Back</button>
+        <button class="btn btn-ghost" id="fdSaveDraft" style="display:none;">Save draft</button>
+        <button class="btn btn-primary" id="fdNext">Next</button>
+        <button class="btn btn-primary" id="fdSubmit" style="display:none;">Submit for review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SUBMIT: CONTENT TYPE CHOICE ================= -->
+  <div class="modal-backdrop" id="submitChoiceBackdrop">
+    <div class="modal bracket submit-choice-modal">
+      <h2>Which content would you like to submit?</h2>
+      <div class="submit-choice-options">
+        <button type="button" class="submit-choice-option" id="submitChoiceCore">
+          <span class="submit-choice-title">Core event</span>
+          <span class="submit-choice-desc">A single chronicle entry — a movie, book, movement, or moment in sci-fi culture.</span>
+        </button>
+        <button type="button" class="submit-choice-option" id="submitChoiceFolder">
+          <span class="submit-choice-title">Folder</span>
+          <span class="submit-choice-desc">A curated collection grouping Cores and/or other folders together.</span>
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="submitChoiceCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN: FOLDER CURATION MODAL ================= -->
+  <div class="modal-backdrop" id="folderCurateBackdrop">
+    <div class="modal bracket modal--folder">
+      <h2 id="folderCurateTitle">Folder</h2>
+      <div class="meta-readout" id="folderCurateMeta"></div>
+      <div class="field">
+        <label>Items</label>
+        <div class="folder-items-list" id="folderCurateItems"></div>
+      </div>
+      <div class="field">
+        <label>Starting Core (folder's cover page — must be a Core already in this folder)</label>
+        <select id="folderCurateStartingCore"><option value="">— none —</option></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="folderCurateClose">Close</button>
+        <button class="btn btn-cool" id="folderCurateSaveStartingCore">Save starting Core</button>
       </div>
     </div>
   </div>
@@ -1969,7 +2281,7 @@
 
   let currentUser = null;
   let authToken = null;
-  let pendingSubmitIntent = false; // set when an anonymous visitor clicks "Submit a new event"
+  let pendingSubmitIntent = false; // set when an anonymous visitor clicks "Submit"
 
   // ---------------- THEME ----------------
   const THEME_KEY = "afterlife_theme";
@@ -2224,7 +2536,7 @@
   }
   async function navigate(path, { replace = false } = {}){
     const url = BASE_PATH + path;
-    if(!replace && location.pathname + location.hash === url) return; // already there
+    if(!replace && location.pathname + location.search + location.hash === url) return; // already there
     if(hasUnsavedCommentDraft()){
       const ok = await confirmDialog('You have an unsaved comment or reply. Leave without posting it?', {
         title: 'Unsaved changes', okLabel: 'Leave', cancelLabel: 'Stay here',
@@ -2263,9 +2575,13 @@
       switchView('admin', navLinkForView('admin'));
     } else if(section === 'explore'){
       switchView('explore', navLinkForView('explore'));
-    } else if(section === 'my-entries'){
-      if(!currentUser){ navigate(loginUrlWithNext('/my-entries'), { replace: true }); return; }
+    } else if(section === 'cores'){
+      if(!currentUser){ navigate(loginUrlWithNext('/cores'), { replace: true }); return; }
       switchView('dashboard');
+    } else if(section === 'my-entries'){
+      // Old path — /cores and /folders are the real, distinct URLs for the two My
+      // Entries tabs now, so this just redirects to the default one.
+      navigate('/cores', { replace: true });
     } else if(section === 'settings'){
       if(!currentUser){ navigate(loginUrlWithNext('/settings'), { replace: true }); return; }
       switchView('settings');
@@ -2284,11 +2600,33 @@
     } else if(section === 'reset-password'){
       switchView('reset-password');
     } else if(section === 'timeline'){
+      setFolderPanelMode(false);
       switchView('home', navLinkForView('home'));
       // A specific event permalink needs the complete list (selectEventBySlug searches
       // timelineRows) — only the bare "just browsing" case uses the paginated loader.
-      if(sub) renderTimeline().then(() => selectEventBySlug(sub));
-      else loadTimelinePage(true);
+      if(sub) renderTimeline().then(() => {
+        const found = selectEventBySlug(sub);
+        if(!found){
+          // Not on the public list (own draft/pending/private entry) — the id embedded in
+          // the slug, or a `?entry=` param on an older-style link, still resolves it directly.
+          const entryId = new URLSearchParams(location.search).get('entry') || idFromSlug(sub);
+          if(entryId) selectEventById(entryId);
+        }
+      });
+      else {
+        const entryId = new URLSearchParams(location.search).get('entry');
+        loadTimelinePage(true).then(() => { if(entryId) selectEventById(entryId); });
+      }
+    } else if(section === 'folders'){
+      if(sub){
+        // /folders/:id — a specific folder's public book-of-contents page.
+        switchView('home', navLinkForView('home'));
+        renderFolderToc(sub, new URLSearchParams(location.search).get('core'));
+      } else {
+        // /folders (no id) — the My Entries "Folders" tab.
+        if(!currentUser){ navigate(loginUrlWithNext('/folders'), { replace: true }); return; }
+        switchView('dashboard');
+      }
     } else {
       if(!section) history.replaceState({}, '', BASE_PATH + '/home');
       switchView('landing', navLinkForView('landing'));
@@ -2320,7 +2658,9 @@
     await renderTimeline();
     const adminOnScreen = document.getElementById('adminView').classList.contains('active');
     if(adminOnScreen && document.getElementById('adminEventsPage').classList.contains('active')) await renderTable();
-    if(document.getElementById('dashboardView').classList.contains('active')) await renderMyEntries();
+    const dashboardOnScreen = document.getElementById('dashboardView').classList.contains('active');
+    if(dashboardOnScreen && document.getElementById('myEntriesPage').classList.contains('active')) await renderMyEntries(true);
+    if(dashboardOnScreen && document.getElementById('myFoldersPage').classList.contains('active')) await renderMyFolders(true);
   }
 
   function refreshCurrentUserUI(){
@@ -2403,7 +2743,7 @@
     // wasted request racing the one that already started.
     if(view === 'explore') loadExplorePage(true);
     if(view === 'admin') renderAdminView();
-    if(view === 'dashboard') renderMyEntries();
+    if(view === 'dashboard') renderDashboardView();
     if(view === 'login') resetLoginView();
     if(view === 'register') resetRegisterView();
     if(view === 'verify-email') runEmailVerification();
@@ -2424,7 +2764,8 @@
   // is signed in (it redirects to /log-in otherwise) — no signed-out branch needed here.
   function renderAdminView(){
     document.querySelector('.admin-tabs').style.display = '';
-    const page = location.hash === '#users' ? 'users'
+    const page = location.hash === '#folders' ? 'folders'
+      : location.hash === '#users' ? 'users'
       : location.hash === '#taxonomy' ? 'taxonomy'
       : location.hash === '#comments' ? 'comments'
       : location.hash === '#homepage' ? 'homepage'
@@ -2480,7 +2821,7 @@
       if(pendingSubmitIntent){
         pendingSubmitIntent = false;
         navigate(next);
-        openForm(null); // continue what they came here to do
+        openSubmitChoice(); // continue what they came here to do
       } else {
         navigate(next);
       }
@@ -2751,11 +3092,13 @@
   function switchAdminTab(page){
     document.querySelectorAll('.admin-tabs a').forEach(x => x.classList.toggle('active', x.dataset.adminPage === page));
     document.getElementById('adminEventsPage').classList.toggle('active', page === 'events');
+    document.getElementById('adminFoldersPage').classList.toggle('active', page === 'folders');
     document.getElementById('adminUsersPage').classList.toggle('active', page === 'users');
     document.getElementById('adminTaxonomyPage').classList.toggle('active', page === 'taxonomy');
     document.getElementById('adminCommentsPage').classList.toggle('active', page === 'comments');
     document.getElementById('adminHomepagePage').classList.toggle('active', page === 'homepage');
     if(page === 'events') renderTable();
+    if(page === 'folders') renderAdminFolders();
     if(page === 'users') renderUsers();
     if(page === 'taxonomy') renderTaxonomyPage();
     if(page === 'comments') renderAdminComments(true);
@@ -2814,7 +3157,7 @@
       navigate('/admin');
     } else if(action === 'my-entries'){
       if(!currentUser) return;
-      navigate('/my-entries');
+      navigate('/cores');
     } else if(action === 'profile'){
       if(!currentUser) return;
       navigate('/u/' + currentUser.public_id);
@@ -2835,6 +3178,7 @@
   // ================= PUBLIC: TIMELINE =================
   let timelineRows = [];
   let selectedIdx = 0;
+  let currentPreviewEventId = null; // whichever Core is currently in the right-hand detail panel — used by the folder breadcrumb's click target
   let hasSetDefaultSelection = false;
 
   function closestToTodayIndex(rows){
@@ -2854,18 +3198,293 @@
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
-  function slugFor(row){
-    const year = new Date(row.event_published_at).getFullYear();
-    const base = slugify(row.title) || 'event';
-    return isNaN(year) ? base : `${base}-${year}`;
+  // Every Core permalink is "<title-slug>-<year>-<id>" — the id is what actually resolves
+  // the link (see idFromSlug()/selectEventBySlug() below), the title/year are just there to
+  // keep the URL readable. Embedding the id means a shared link keeps working even after the
+  // creator or an admin renames the entry, instead of 404ing the moment the slug drifts.
+  const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function idFromSlug(slug){
+    const m = String(slug || '').match(UUID_RE);
+    return m ? m[0] : null;
   }
+  function eventPermalinkSlug(id, title, dateValue){
+    const year = new Date(dateValue).getFullYear();
+    const base = slugify(title) || 'event';
+    const withYear = isNaN(year) ? base : `${base}-${year}`;
+    return `${withYear}-${id}`;
+  }
+  function slugFor(row){
+    return eventPermalinkSlug(row.id, row.title, row.event_published_at);
+  }
+  // ================= FOLDERS: BOOK-OF-CONTENTS PANEL =================
+  // Swaps the Timeline's left list panel for a Folder's nested outline — the right-hand
+  // event detail panel (showEventPreview() etc.) is untouched either way, since a Core
+  // clicked in the outline just loads into that same panel.
+  function setFolderPanelMode(active){
+    document.getElementById('timelineDefaultPanel').style.display = active ? 'none' : '';
+    document.getElementById('folderTocPanel').style.display = active ? '' : 'none';
+    if(!active) currentBrowsingFolderId = null;
+  }
+  document.getElementById('folderTocReturn').addEventListener('click', () => {
+    navigate(currentPreviewEventId ? `/timeline?entry=${currentPreviewEventId}` : '/timeline');
+  });
+
+  const FOLDER_DESCRIPTION_FALLBACK =
+    'The content in this folder is protected by copyright, and managed by admin — you can create Cores or sub-folders and we will review and organise the content.';
+
+  // "me" when the current viewer made it, otherwise the creator's display name (or a
+  // fallback for a legacy/deleted-account row with no name on record).
+  function creatorLabel(createdById, createdByName){
+    if(currentUser && createdById && createdById === currentUser.id) return 'me';
+    return createdByName || 'someone';
+  }
+
+  // Keeps a folder/Core name from blowing out a narrow row — breadcrumbs, My Folders,
+  // the manage tree, the read-only outline. 40 characters is generous for the kind of
+  // short title these are (folder names cap at 100 server-side, but that's meant for the
+  // full detail view, not a compact list row).
+  const FOLDER_LABEL_MAX_LENGTH = 40;
+  function truncateLabel(text, max = FOLDER_LABEL_MAX_LENGTH){
+    if(typeof text !== 'string' || text.length <= max) return text;
+    return text.slice(0, max - 1).trimEnd() + '…';
+  }
+  // Small inline folder glyph — used wherever a folder shows up in a directory-style list
+  // (breadcrumbs, the manage tree, etc.) so it reads as "folder" at a glance without
+  // relying on emoji rendering, which varies across platforms/fonts.
+  const FOLDER_ICON_SVG = '<svg class="folder-icon" viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M1.5 3A1.5 1.5 0 0 1 3 1.5h3.379a1.5 1.5 0 0 1 1.06.44l1.122 1.12A1.5 1.5 0 0 0 9.62 3.5H13A1.5 1.5 0 0 1 14.5 5v7A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12V3Z"/></svg>';
+
+  // `container`. A folder item is a collapsible header row (no edit/status controls here —
+  // this page stays a plain read-only outline, unlike the My Folders manage tree); a core
+  // item is a clickable row that loads into the shared event detail panel via
+  // showEventPreview(). `depth` only drives indentation. Same default-open rule as the
+  // manage tree: a folder's direct children (depth 0) open automatically, anything nested
+  // deeper starts collapsed behind its own toggle.
+  function renderFolderTocLevel(container, items, depth){
+    items.forEach(item => {
+      if(item.item_type === 'folder'){
+        const hasChildren = Array.isArray(item.items) && item.items.length > 0;
+        const name = item.folder ? item.folder.name : '(missing folder)';
+
+        const header = document.createElement('div');
+        header.className = 'folder-toc-row folder-toc-row--folder';
+        header.style.paddingLeft = (depth * 16) + 'px';
+        const toggleHtml = hasChildren ? `<button type="button" class="fm-toggle" data-fm-toggle aria-label="Expand">+</button>` : `<span class="fm-toggle-spacer"></span>`;
+        header.innerHTML = `${toggleHtml}${FOLDER_ICON_SVG}<span data-fm-toggle title="${escapeHtml(name)}">${escapeHtml(truncateLabel(name))} [Folder]</span>`;
+        container.appendChild(header);
+
+        if(hasChildren){
+          const childWrap = document.createElement('div');
+          childWrap.className = 'folder-toc-children';
+          const startExpanded = depth === 0;
+          childWrap.hidden = !startExpanded;
+          renderFolderTocLevel(childWrap, item.items, depth + 1);
+          container.appendChild(childWrap);
+          header.querySelector('.fm-toggle').textContent = startExpanded ? '−' : '+';
+          header.querySelectorAll('[data-fm-toggle]').forEach(el => el.addEventListener('click', ev => {
+            ev.preventDefault();
+            const collapsed = childWrap.hidden;
+            childWrap.hidden = !collapsed;
+            header.querySelector('.fm-toggle').textContent = collapsed ? '−' : '+';
+          }));
+        }
+      } else if(item.core){
+        const row = document.createElement('div');
+        row.className = 'folder-toc-row folder-toc-row--core';
+        row.style.paddingLeft = (depth * 16) + 'px';
+        row.innerHTML = `<span title="${escapeHtml(item.core.title)}">${escapeHtml(truncateLabel(item.core.title))}</span>`;
+        row.dataset.coreId = item.core.id;
+        row.addEventListener('click', () => selectFolderTocCore(item.core.id, row));
+        container.appendChild(row);
+      }
+    });
+  }
+
+  async function selectFolderTocCore(coreId, rowEl){
+    document.querySelectorAll('.folder-toc-row--core.active').forEach(el => el.classList.remove('active'));
+    rowEl.classList.add('active');
+    try{
+      const { event } = await apiFetch(`/api/events/${coreId}`);
+      showEventPreview(event);
+    } catch(e){
+      alert('Could not load this Core: ' + e.message);
+    }
+  }
+
+  // Per-item action links in the My Folders inline manage tree ("edit-core",
+  // "archive-folder", etc.) — the second half of the action name selects which endpoint
+  // family to hit, the first half which transition. `refresh` is a callback rather than a
+  // hardcoded re-render, since the same tree can be expanded from more than one place.
+  async function runFolderManageAction(action, target, id, refresh){
+    const base = target === 'core' ? '/api/events' : '/api/folders';
+    if(action === 'delete'){
+      if(!(await confirmDialog(`Delete this ${target === 'core' ? 'entry' : 'folder'}? It will be hidden but recoverable by an admin.`, { title: 'Delete', okLabel: 'Delete' }))) return;
+      try{ await apiFetch(`${base}/${id}`, { method: 'DELETE' }); }
+      catch(e){ alert('Could not delete: ' + e.message); return; }
+    } else if(action === 'edit'){
+      let full;
+      try{ full = (await apiFetch(`/api/events/${id}`)).event; }
+      catch(e){ alert('Could not load this entry: ' + e.message); return; }
+      openForm(id, [full]);
+      return; // no refresh needed — the form modal handles its own save/refresh
+    } else {
+      const body = action === 'submit' ? { status: 'published' }
+        : action === 'archive' ? { status: 'archived' }
+        : action === 'unarchive' ? { status: 'published' }
+        : action === 'hide' ? { visibility: 'private' }
+        : action === 'show' ? { visibility: 'public' }
+        : null;
+      if(!body) return;
+      try{ await apiFetch(`${base}/${id}`, { method: 'PUT', body }); }
+      catch(e){ alert('Could not update: ' + e.message); return; }
+    }
+    refresh();
+  }
+
+  // Builds one row (plus, for a folder item, its collapsed children wrapper) and appends
+  // both to `container`. Ownership decides how much a row reveals: the owner (or admin)
+  // gets the full status/review/visibility picture and Edit/Archive/Hide/Delete controls;
+  // anyone else just sees when it was published/created and by whom — matches the same
+  // "you only manage what you own, even inside your own folder" rule the visibility
+  // filtering on the server already enforces (see isItemVisibleToViewer()). A Core's title
+  // opens in a new tab (same convention as My Entries) rather than loading into a preview
+  // panel, since this tree is embedded inline in the My Folders directory, not next to a
+  // detail panel of its own.
+  function appendFolderManageRow(container, item, depth){
+    const isCore = item.item_type === 'core';
+    const details = isCore ? item.core : item.folder;
+    if(!details) return;
+    const owned = currentUser && (currentUser.role === 'superAdmin' || currentUser.id === details.created_by);
+    const title = isCore ? details.title : details.name;
+    const hasChildren = !isCore && Array.isArray(item.items) && item.items.length > 0;
+
+    const row = document.createElement('div');
+    row.className = 'folder-manage-row';
+    row.style.paddingLeft = (depth * 18) + 'px';
+
+    const toggleHtml = hasChildren ? `<button type="button" class="fm-toggle" data-fm-toggle aria-label="Expand">+</button>` : `<span class="fm-toggle-spacer"></span>`;
+    const titleHtml = isCore
+      ? `<a class="my-entry-title-link" href="${BASE_PATH}/timeline/${eventPermalinkSlug(details.id, title, details.published_at)}" target="_blank" rel="noopener" title="${escapeHtml(title)}">${escapeHtml(truncateLabel(title))}</a>`
+      : `${FOLDER_ICON_SVG}<a class="my-folder-title-link" data-fm-toggle title="${escapeHtml(title)}">${escapeHtml(truncateLabel(title))}</a>`;
+
+    const when = isCore ? details.published_at : details.created_at;
+    const byline = `<span class="fm-byline">${when ? formatDate(when) + ' · ' : ''}Created by ${escapeHtml(creatorLabel(details.created_by, details.created_by_name))}</span>`;
+
+    let metaHtml, actionsHtml = '';
+    if(owned){
+      metaHtml = `${statusPill(details.status)}${reviewPill(details.review_status)}${isCore ? visibilityPill(details.visibility) : ''}${byline}`;
+      if(details.review_status === 'locked'){
+        actionsHtml = '<span class="locked-note">Locked by admin</span>';
+      } else {
+        const parts = [];
+        parts.push(`<a data-manage-action="edit-${item.item_type}" data-id="${details.id}">Edit</a>`);
+        if(details.status === 'draft') parts.push(`<a data-manage-action="submit-${item.item_type}" data-id="${details.id}">Submit</a>`);
+        else if(details.status === 'published' && details.review_status === 'rejected') parts.push(`<a data-manage-action="submit-${item.item_type}" data-id="${details.id}">Resubmit</a>`);
+        else if(details.status === 'published') parts.push(`<a data-manage-action="archive-${item.item_type}" data-id="${details.id}">Archive</a>`);
+        else if(details.status === 'archived') parts.push(`<a data-manage-action="unarchive-${item.item_type}" data-id="${details.id}">Unarchive</a>`);
+        if(isCore && details.status === 'published'){
+          parts.push(details.visibility === 'private'
+            ? `<a data-manage-action="show-core" data-id="${details.id}">Make public</a>`
+            : `<a data-manage-action="hide-core" data-id="${details.id}">Hide</a>`);
+        }
+        parts.push(`<a class="danger" data-manage-action="delete-${item.item_type}" data-id="${details.id}">Delete</a>`);
+        actionsHtml = parts.join('');
+      }
+    } else {
+      // Not yours — no controls, just enough to know what it is and who to credit.
+      metaHtml = byline;
+    }
+
+    row.innerHTML = `
+      ${toggleHtml}
+      <div class="fm-main"><span class="fm-type">${isCore ? 'Core' : 'Folder'}</span>${titleHtml}</div>
+      <div class="fm-meta">${metaHtml}</div>
+      ${actionsHtml ? `<div class="row-actions fm-actions">${actionsHtml}</div>` : ''}`;
+    container.appendChild(row);
+
+    if(hasChildren){
+      const childWrap = document.createElement('div');
+      childWrap.className = 'folder-manage-children';
+      // Only the first layer of sub-folders (depth 0, i.e. a direct child of whatever
+      // folder row you just expanded) opens automatically — anything nested deeper than
+      // that starts collapsed, so expanding one folder doesn't cascade the whole subtree
+      // open at once.
+      const startExpanded = depth === 0;
+      childWrap.hidden = !startExpanded;
+      item.items.forEach(child => appendFolderManageRow(childWrap, child, depth + 1));
+      container.appendChild(childWrap);
+      row.querySelector('.fm-toggle').textContent = startExpanded ? '−' : '+';
+      row.querySelectorAll('[data-fm-toggle]').forEach(el => el.addEventListener('click', ev => {
+        ev.preventDefault();
+        const collapsed = childWrap.hidden;
+        childWrap.hidden = !collapsed;
+        row.querySelector('.fm-toggle').textContent = collapsed ? '−' : '+';
+      }));
+    }
+  }
+
+  function renderFolderManageTree(container, items){
+    items.forEach(item => appendFolderManageRow(container, item, 0));
+  }
+
+  async function renderFolderToc(folderId, initialCoreId){
+    setFolderPanelMode(true);
+    currentBrowsingFolderId = folderId;
+    document.getElementById('folderTocName').textContent = 'Loading…';
+    document.getElementById('folderTocDesc').textContent = '';
+    document.getElementById('folderTocList').innerHTML = '';
+    let data;
+    try{
+      data = await apiFetch(`/api/folders/${folderId}/tree`);
+    } catch(e){
+      document.getElementById('folderTocName').textContent = 'Folder not found';
+      document.getElementById('folderTocDesc').textContent = '';
+      return;
+    }
+    document.getElementById('folderTocName').textContent = data.folder.name;
+    document.getElementById('folderTocDesc').textContent = data.folder.description || FOLDER_DESCRIPTION_FALLBACK;
+    // Always the plain read-only outline here, regardless of who's viewing — this page is
+    // the public book-of-contents. Managing a folder's own info/contents (Edit, Archive,
+    // Hide, Delete on what you own) lives entirely in My Entries > Folders instead, as an
+    // inline expandable tree on each row — see renderMyFolders()/toggleMyFolderRow().
+    const list = document.getElementById('folderTocList');
+    list.className = 'folder-toc-list';
+    renderFolderTocLevel(list, data.items, 0);
+    if(initialCoreId){
+      const row = list.querySelector(`[data-core-id="${initialCoreId}"]`);
+      if(row){
+        row.classList.add('active');
+        row.scrollIntoView({ block: 'center' });
+        try{
+          const { event } = await apiFetch(`/api/events/${initialCoreId}`);
+          showEventPreview(event);
+        } catch(e){ /* leave the outline's highlight in place even if the detail fetch fails */ }
+      }
+    }
+  }
+
   function selectEventBySlug(slug){
-    const idx = timelineRows.findIndex(r => slugFor(r) === slug);
-    if(idx === -1) return; // unknown/stale link — leave the default selection in place
+    const id = idFromSlug(slug);
+    // Id-based match first — stable across title edits. Falls back to matching the full
+    // slug text verbatim only for links shared before ids were embedded in the URL.
+    let idx = id ? timelineRows.findIndex(r => r.id === id) : -1;
+    if(idx === -1) idx = timelineRows.findIndex(r => slugFor(r) === slug);
+    if(idx === -1) return false; // unknown/stale link — leave the default selection in place
     selectedIdx = idx;
     hasSetDefaultSelection = true;
     highlightSelected();
     showEventPreview(timelineRows[idx]);
+    return true;
+  }
+  // Fallback for a permalink to an entry that isn't on the public Timeline (own draft/
+  // pending/rejected/private entry, reached via My Entries' title link) — GET /api/events/:id
+  // works for the owner/admin regardless of visibility, unlike the public list
+  // selectEventBySlug() searches. Deliberately doesn't touch selectedIdx/highlightSelected()
+  // since this entry has no row in the public timelineRows list to highlight.
+  async function selectEventById(id){
+    try{
+      const { event } = await apiFetch(`/api/events/${id}`);
+      showEventPreview(event);
+    } catch(e){ /* stale/deleted/no-longer-accessible id — leave the default selection in place */ }
   }
   // Scrolls the timeline list so the currently-selected item sits in the second visible
   // slot (one entry — or a year header — showing above it), the way a "now playing" list
@@ -3194,6 +3813,26 @@
     cover.className = 'explore-card-cover';
     const img = getEventImages(r)[0];
     if(img && isRenderableImageUrl(img.url)) cover.style.backgroundImage = `url("${img.url}")`;
+    if(Array.isArray(r.folder_paths) && r.folder_paths.length){
+      // Card's too small for the hero's "+N" dropdown — just shows the most-recent branch
+      // (folder_paths[0]) plus a "+N" suffix when there are others, with every branch name
+      // listed in the tooltip rather than hidden entirely.
+      const [primary, ...rest] = r.folder_paths;
+      const primaryText = primary.map(f => f.name).join(' / ');
+      const crumb = document.createElement('div');
+      crumb.className = 'explore-card-breadcrumb';
+      crumb.title = r.folder_paths.map(p => p.map(f => f.name).join(' / ')).join('  •  ');
+      crumb.innerHTML = `${FOLDER_ICON_SVG}<span>${escapeHtml(truncateLabel(primaryText))}${rest.length ? ` +${rest.length}` : ''}</span>`;
+      // Lands on the immediate containing folder of the default (most recent) branch
+      // rather than making each name independently clickable — the card only has room for
+      // one target.
+      const leaf = primary[primary.length - 1];
+      crumb.addEventListener('click', e => {
+        e.stopPropagation();
+        navigate(`/folders/${leaf.id}?core=${r.id}`);
+      });
+      cover.appendChild(crumb);
+    }
     const body = document.createElement('div');
     body.className = 'explore-card-body';
     body.innerHTML = `
@@ -3324,9 +3963,67 @@
   document.getElementById('galleryNext').addEventListener('click', () => {
     document.getElementById('eventGallery').scrollBy({ left: 160, behavior: 'smooth' });
   });
+  // Renders "Blade Runner / Introduction / …" over the hero image when this Core belongs
+  // to an approved Folder — each segment links to that Folder's book-of-contents view
+  // (any ancestor is a valid landing point; the Core exists in every one of their trees).
+  // A Core can legitimately live in more than one approved folder branch (see the
+  // duplicate-membership edge case) — folder_paths is every branch, most-recently-updated
+  // first. Renders that first one as the visible breadcrumb; if there's more than one,
+  // adds a small "+N" toggle that reveals the rest underneath, rather than flooding the
+  // hero with every branch at once.
+  // One consistent row style for both the primary branch and every "other branch" line —
+  // same markup shape either way, just reused.
+  function buildBreadcrumbRowHtml(path){
+    const segments = path.map(f =>
+      `<a data-folder-id="${f.id}" title="${escapeHtml(f.name)}">${escapeHtml(truncateLabel(f.name))}</a>`
+    ).join('<span class="fb-sep">/</span>');
+    return `<div class="folder-breadcrumb-row">${FOLDER_ICON_SVG}<span>${segments}</span></div>`;
+  }
+  // Set while a Core is being viewed from within a folder's book-of-contents page
+  // (renderFolderToc/selectFolderTocCore) — null everywhere else (plain Timeline browsing).
+  // Lets the breadcrumb focus on the branch the reader actually navigated through instead
+  // of always defaulting to whichever branch was most recently updated.
+  let currentBrowsingFolderId = null;
+  function renderFolderBreadcrumb(r){
+    const el = document.getElementById('evFolderBreadcrumb');
+    const paths = Array.isArray(r.folder_paths) ? r.folder_paths : [];
+    if(!paths.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+    let orderedPaths = paths;
+    if(currentBrowsingFolderId){
+      const idx = paths.findIndex(p => p.some(seg => seg.id === currentBrowsingFolderId));
+      if(idx > 0) orderedPaths = [paths[idx], ...paths.slice(0, idx), ...paths.slice(idx + 1)];
+    }
+    const [primary, ...rest] = orderedPaths;
+    const moreHtml = rest.length ? `
+      <button type="button" class="folder-breadcrumb-more-toggle" data-breadcrumb-more aria-expanded="false">
+        <span class="fb-toggle-icon">+</span><span>This Core is also located in ${rest.length} other branch${rest.length === 1 ? '' : 'es'}</span>
+      </button>
+      <div class="folder-breadcrumb-more-list" hidden>
+        ${rest.map(p => buildBreadcrumbRowHtml(p)).join('')}
+      </div>` : '';
+    el.innerHTML = buildBreadcrumbRowHtml(primary) + moreHtml;
+    el.style.display = '';
+  }
+  document.getElementById('evFolderBreadcrumb').addEventListener('click', e => {
+    const toggle = e.target.closest('.folder-breadcrumb-more-toggle');
+    if(toggle){
+      const list = toggle.parentElement.querySelector('.folder-breadcrumb-more-list');
+      const expanded = list.hidden; // about to become expanded
+      list.hidden = !expanded;
+      toggle.querySelector('.fb-toggle-icon').textContent = expanded ? '−' : '+';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      return;
+    }
+    const a = e.target.closest('a[data-folder-id]');
+    if(!a) return;
+    navigate(`/folders/${a.dataset.folderId}?core=${currentPreviewEventId || ''}`);
+  });
+
   function showEventPreview(r){
     document.getElementById('evTitle').textContent = r.title;
     document.getElementById('evTag').textContent = (r.genre && r.genre !== 'General') ? `${r.category} · ${r.genre}` : r.category;
+    currentPreviewEventId = r.id;
+    renderFolderBreadcrumb(r);
 
     const descEl = document.getElementById('evBody');
     // r.description is sanitized HTML from the server (allowlisted tags only) — safe to
@@ -4071,7 +4768,7 @@
         <td>${statusPill(r.status)}</td>
         <td>${reviewPill(r.review_status)}</td>
         <td>${visibilityPill(r.visibility)}</td>
-        <td>${escapeHtml(r.created_by_name || '—')}</td>
+        <td>${r.created_by ? escapeHtml(creatorLabel(r.created_by, r.created_by_name)) : '—'}</td>
         <td>${escapeHtml((r.published_at||'').replace('T',' ').slice(0,16))}</td>
         <td>${escapeHtml(r.country || '—')}</td>
         <td>${r.version}</td>
@@ -4164,6 +4861,42 @@
 
   // ================= MY ENTRIES (dashboard) =================
   let myEventRows = [];
+  const MY_ENTRIES_PAGE_SIZE = 20;
+  let myEntriesState = { offset: 0, total: 0 };
+  let myEntriesLoading = false;
+  const MY_FOLDERS_PAGE_SIZE = 20;
+  let myFoldersState = { offset: 0, total: 0 };
+  let myFolderRows = [];
+  let myFoldersLoading = false;
+
+  // /cores and /folders are the real URLs for these two tabs (each independently
+  // deep-linkable/bookmarkable) — this only updates DOM state, same "pure" convention as
+  // switchAdminTab()/switchSettingsTab(); the path itself is decided by applyRoute() via
+  // renderDashboardView() below, or by navigate() when a tab is clicked.
+  function switchDashboardTab(page){
+    document.querySelectorAll('#dashboardView .dashboard-tabs a').forEach(x => x.classList.toggle('active', x.dataset.dashboardPage === page));
+    document.getElementById('myEntriesPage').classList.toggle('active', page === 'entries');
+    document.getElementById('myFoldersPage').classList.toggle('active', page === 'folders');
+    if(page === 'entries') renderMyEntries(true);
+    if(page === 'folders') renderMyFolders(true);
+  }
+  function renderDashboardView(){
+    const { parts } = currentRoute();
+    switchDashboardTab(parts[0] === 'folders' ? 'folders' : 'entries');
+  }
+  document.querySelectorAll('#dashboardView .dashboard-tabs a').forEach(a => {
+    a.addEventListener('click', () => navigate(a.dataset.dashboardPage === 'folders' ? '/folders' : '/cores'));
+  });
+  // Lazy-loads the next page as the dashboard is scrolled — same near-bottom threshold and
+  // container (the view itself scrolls, not an inner element) as Explore's own infinite
+  // scroll. Only one of the two tabs is ever visible/active at a time, so this always
+  // routes to the right loader.
+  document.getElementById('dashboardView').addEventListener('scroll', () => {
+    const el = document.getElementById('dashboardView');
+    if(el.scrollTop + el.clientHeight < el.scrollHeight - 300) return;
+    if(document.getElementById('myEntriesPage').classList.contains('active')) renderMyEntries(false);
+    if(document.getElementById('myFoldersPage').classList.contains('active')) renderMyFolders(false);
+  });
 
   function statusPill(status){
     return `<span class="status-pill status-${escapeHtml(status)}">${escapeHtml(status)}</span>`;
@@ -4176,24 +4909,45 @@
     return `<span class="status-pill visibility-${escapeHtml(visibility)}">${escapeHtml(visibility)}</span>`;
   }
 
-  async function renderMyEntries(){
-    let rows;
+  async function renderMyEntries(reset){
+    if(myEntriesLoading) return;
+    if(reset){
+      myEntriesState = { offset: 0, total: 0 };
+      myEventRows = [];
+    } else if(myEntriesState.total && myEntriesState.offset >= myEntriesState.total){
+      return; // every page already loaded — nothing more to fetch
+    }
+    myEntriesLoading = true;
+    const tbody = document.getElementById('myEntriesBody');
+    let loadMoreEl = null;
+    if(reset){
+      tbody.innerHTML = '<tr><td colspan="6" class="loading-state">Loading…</td></tr>';
+    } else {
+      loadMoreEl = document.createElement('tr');
+      loadMoreEl.innerHTML = '<td colspan="6" class="load-more-state">Loading more…</td>';
+      tbody.appendChild(loadMoreEl);
+    }
+    let data;
     try{
-      const data = await apiFetch('/api/events?mine=true');
-      rows = data.events;
+      data = await apiFetch(`/api/events?mine=true&limit=${MY_ENTRIES_PAGE_SIZE}&offset=${myEntriesState.offset}`);
     } catch(e){
       alert('Could not load your entries: ' + e.message);
+      loadMoreEl?.remove();
+      myEntriesLoading = false;
       return;
     }
-    myEventRows = rows;
-    document.getElementById('myEntriesCountBadge').textContent = rows.length + ' entries';
-    const tbody = document.getElementById('myEntriesBody');
-    tbody.innerHTML = '';
-    if(!rows.length){
+    loadMoreEl?.remove();
+    myEntriesState.total = data.total;
+    myEntriesState.offset += data.events.length;
+    myEventRows = myEventRows.concat(data.events);
+    document.getElementById('myEntriesCountBadge').textContent = myEntriesState.total + ' entries';
+    if(reset) tbody.innerHTML = '';
+    if(!myEventRows.length){
       tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-faint); font-size:12px;">No entries yet — submit your first one from the homepage or the button above.</td></tr>';
+      myEntriesLoading = false;
       return;
     }
-    rows.forEach(r => {
+    data.events.forEach(r => {
       const tr = document.createElement('tr');
       let actions;
       if(r.status === 'published' && r.review_status === 'locked'){
@@ -4221,8 +4975,9 @@
           + (visibilityGroup ? `<span class="action-group">${visibilityGroup}</span>` : '')
           + `<span class="action-group"><a class="danger" data-action="delete" data-id="${r.id}">Delete</a></span>`;
       }
+      const viewHref = `${BASE_PATH}/timeline/${slugFor(r)}`;
       tr.innerHTML = `
-        <td class="title-cell">${escapeHtml(r.title)}</td>
+        <td class="title-cell"><a href="${viewHref}" target="_blank" rel="noopener" class="my-entry-title-link">${escapeHtml(r.title)}</a></td>
         <td>${statusPill(r.status)}</td>
         <td>${reviewPill(r.review_status)}</td>
         <td>${visibilityPill(r.visibility)}</td>
@@ -4230,7 +4985,150 @@
         <td><div class="row-actions">${actions}</div></td>`;
       tbody.appendChild(tr);
     });
+    myEntriesLoading = false;
   }
+
+  // "My folders" — a lightweight directory listing (not the full admin table) of every
+  // folder the current user has created, any status, so they can track a submission from
+  // draft through pending review to published same as My Entries does for Cores. The name
+  // is the actual navigation affordance ("click on and navigate the content added to the
+  // folders") — it opens the same /folders/:id book-of-contents view a reader would land
+  // on, letting the owner preview it exactly as it'll appear once approved.
+  async function renderMyFolders(reset){
+    if(myFoldersLoading) return;
+    if(reset){
+      myFoldersState = { offset: 0, total: 0 };
+      myFolderRows = [];
+    } else if(myFoldersState.total && myFoldersState.offset >= myFoldersState.total){
+      return; // every page already loaded — nothing more to fetch
+    }
+    myFoldersLoading = true;
+    const dir = document.getElementById('myFoldersDir');
+    let loadMoreEl = null;
+    if(reset){
+      dir.innerHTML = '<div class="loading-state">Loading…</div>';
+    } else {
+      loadMoreEl = document.createElement('div');
+      loadMoreEl.className = 'load-more-state';
+      loadMoreEl.textContent = 'Loading more…';
+      dir.appendChild(loadMoreEl);
+    }
+    let data;
+    try{
+      data = await apiFetch(`/api/folders?mine=true&limit=${MY_FOLDERS_PAGE_SIZE}&offset=${myFoldersState.offset}`);
+    } catch(e){
+      alert('Could not load your folders: ' + e.message);
+      loadMoreEl?.remove();
+      myFoldersLoading = false;
+      return;
+    }
+    loadMoreEl?.remove();
+    myFoldersState.total = data.total;
+    myFoldersState.offset += data.folders.length;
+    myFolderRows = myFolderRows.concat(data.folders);
+    document.getElementById('myFoldersCountBadge').textContent = myFoldersState.total + ' folders';
+    if(reset) dir.innerHTML = '';
+    if(!myFolderRows.length){
+      dir.innerHTML = '<div class="my-folders-empty">No folders yet — use "Create a folder" from the Timeline to start one.</div>';
+      myFoldersLoading = false;
+      return;
+    }
+    dir.insertAdjacentHTML('beforeend', data.folders.map(f => {
+      let rowActions;
+      if(f.review_status === 'locked'){
+        rowActions = '<span class="locked-note">Locked by admin</span>';
+      } else {
+        const parts = [`<a data-my-folder-edit="${f.id}">Edit</a>`];
+        if(f.status === 'draft') parts.push(`<a data-my-folder-status="published" data-id="${f.id}">Submit</a>`);
+        else if(f.status === 'published' && f.review_status === 'rejected') parts.push(`<a data-my-folder-status="published" data-id="${f.id}">Resubmit</a>`);
+        else if(f.status === 'published') parts.push(`<a data-my-folder-status="archived" data-id="${f.id}">Archive</a>`);
+        else if(f.status === 'archived') parts.push(`<a data-my-folder-status="published" data-id="${f.id}">Unarchive</a>`);
+        parts.push(`<a class="danger" data-my-folder-delete="${f.id}">Delete</a>`);
+        rowActions = parts.join('');
+      }
+      return `
+        <div class="my-folder-row">
+          <button type="button" class="fm-toggle" data-my-folder-toggle="${f.id}" aria-label="Expand">+</button>
+          <span class="my-folder-icon">[Folder]</span>
+          <a class="my-folder-name" data-my-folder-toggle="${f.id}" title="${escapeHtml(f.name)}">${escapeHtml(truncateLabel(f.name))}</a>
+          <span class="my-folder-count">${f.item_count} item${f.item_count === 1 ? '' : 's'}</span>
+          <div class="my-folder-pills">${statusPill(f.status)}${reviewPill(f.review_status)}</div>
+          <div class="row-actions">${rowActions}</div>
+        </div>
+        <div class="my-folder-children" id="myFolderChildren-${f.id}" hidden></div>`;
+    }).join(''));
+    myFoldersLoading = false;
+  }
+
+  // Expands/collapses a My Folders row's inline contents in place — re-fetches the tree
+  // fresh on every expand (cheap, and keeps it correct after any action taken inside it)
+  // rather than caching, since a nested item's own status can change independently.
+  async function toggleMyFolderRow(folderId){
+    const wrap = document.getElementById('myFolderChildren-' + folderId);
+    if(!wrap) return;
+    const buttons = document.querySelectorAll(`[data-my-folder-toggle="${folderId}"]`);
+    if(!wrap.hidden){
+      wrap.hidden = true;
+      buttons.forEach(b => { if(b.tagName === 'BUTTON') b.textContent = '+'; });
+      return;
+    }
+    wrap.hidden = false;
+    buttons.forEach(b => { if(b.tagName === 'BUTTON') b.textContent = '−'; });
+    await refreshMyFolderChildren(folderId);
+  }
+  async function refreshMyFolderChildren(folderId){
+    const wrap = document.getElementById('myFolderChildren-' + folderId);
+    if(!wrap) return;
+    wrap.innerHTML = '<div class="loading-state">Loading…</div>';
+    let data;
+    try{
+      data = await apiFetch(`/api/folders/${folderId}/tree`);
+    } catch(e){
+      wrap.innerHTML = `<div class="my-folders-empty">Could not load: ${escapeHtml(e.message)}</div>`;
+      return;
+    }
+    wrap.innerHTML = '';
+    if(data.items.length) renderFolderManageTree(wrap, data.items);
+    else wrap.innerHTML = '<div class="my-folders-empty">No items in this folder yet.</div>';
+  }
+
+  document.getElementById('myFoldersDir').addEventListener('click', async e => {
+    const toggle = e.target.closest('[data-my-folder-toggle]');
+    if(toggle){ toggleMyFolderRow(toggle.dataset.myFolderToggle); return; }
+    const editLink = e.target.closest('a[data-my-folder-edit]');
+    if(editLink){ fdOpenForEdit(editLink.dataset.myFolderEdit); return; }
+    const deleteLink = e.target.closest('a[data-my-folder-delete]');
+    if(deleteLink){
+      if(!(await confirmDialog('Delete this folder? It will be hidden but recoverable by an admin.', { title: 'Delete folder', okLabel: 'Delete' }))) return;
+      try{
+        await apiFetch(`/api/folders/${deleteLink.dataset.myFolderDelete}`, { method: 'DELETE' });
+      } catch(err){
+        alert('Could not delete folder: ' + err.message);
+        return;
+      }
+      renderMyFolders(true);
+      return;
+    }
+    const statusLink = e.target.closest('a[data-my-folder-status]');
+    if(statusLink){
+      try{
+        await apiFetch(`/api/folders/${statusLink.dataset.id}`, { method: 'PUT', body: { status: statusLink.dataset.myFolderStatus } });
+      } catch(err){
+        alert('Could not update: ' + err.message);
+        return;
+      }
+      renderMyFolders(true);
+      return;
+    }
+    const actionLink = e.target.closest('a[data-manage-action]');
+    if(actionLink){
+      const [action, target] = actionLink.dataset.manageAction.split('-');
+      if(action === 'edit' && target === 'folder'){ fdOpenForEdit(actionLink.dataset.id); return; }
+      const childWrap = actionLink.closest('.my-folder-children');
+      const folderId = childWrap ? childWrap.id.replace('myFolderChildren-', '') : null;
+      runFolderManageAction(action, target, actionLink.dataset.id, () => { if(folderId) refreshMyFolderChildren(folderId); });
+    }
+  });
 
   // Submit for review / Resubmit / Unarchive are all the same underlying transition —
   // a plain PUT {status:'published'}, resolved server-side by the core status/review rule.
@@ -4241,7 +5139,7 @@
       alert('Could not update entry: ' + e.message);
       return;
     }
-    renderMyEntries();
+    renderMyEntries(true);
   }
 
   async function setMyEntryVisibility(id, visibility){
@@ -4251,7 +5149,7 @@
       alert('Could not update visibility: ' + e.message);
       return;
     }
-    renderMyEntries();
+    renderMyEntries(true);
   }
 
   async function deleteMyEntry(id){
@@ -4262,7 +5160,7 @@
       alert('Could not delete entry: ' + e.message);
       return;
     }
-    renderMyEntries();
+    renderMyEntries(true);
   }
 
   document.getElementById('myEntriesBody').addEventListener('click', e => {
@@ -4282,13 +5180,34 @@
   // ================= ADMIN: CREATE / EDIT FORM =================
   const formBackdrop = document.getElementById('formBackdrop');
   document.getElementById('newEventBtn').addEventListener('click', () => openForm(null));
-  document.getElementById('submitEventBtn').addEventListener('click', () => {
+  // "Submit" is one button for both content types — clicking it asks which kind, then
+  // routes to that upload flow. pendingSubmitIntent (below) re-opens this same choice
+  // after login, rather than assuming which type an anonymous visitor meant.
+  function openSubmitChoice(){
+    const folderBtn = document.getElementById('submitChoiceFolder');
+    const canCreateFolder = currentUser && (currentUser.role === 'superAdmin' || currentUser.can_create_folder);
+    folderBtn.disabled = !canCreateFolder;
+    folderBtn.title = canCreateFolder ? '' : 'You do not have permission to create folders yet.';
+    document.getElementById('submitChoiceBackdrop').classList.add('open');
+  }
+  document.getElementById('submitContentBtn').addEventListener('click', () => {
     if(currentUser){
-      openForm(null);
+      openSubmitChoice();
     } else {
       pendingSubmitIntent = true;
       navigate(loginUrlWithNext('/timeline')); // handleLogin() picks this flag back up on success
     }
+  });
+  document.getElementById('submitChoiceCancel').addEventListener('click', () => document.getElementById('submitChoiceBackdrop').classList.remove('open'));
+  document.getElementById('submitChoiceCore').addEventListener('click', () => {
+    document.getElementById('submitChoiceBackdrop').classList.remove('open');
+    openForm(null);
+  });
+  document.getElementById('submitChoiceFolder').addEventListener('click', () => {
+    if(document.getElementById('submitChoiceFolder').disabled) return;
+    document.getElementById('submitChoiceBackdrop').classList.remove('open');
+    fdResetForm();
+    folderFormBackdrop.classList.add('open');
   });
   document.getElementById('backToViewBtn').addEventListener('click', scrollSelectedToSecondSlot);
   function closeForm(){ formBackdrop.classList.remove('open'); deselectDescriptionImage(); }
@@ -5147,6 +6066,7 @@
         <td class="title-cell">${escapeHtml(r.username)}${isRoot ? ' <span style="color:var(--text-faint);font-size:10px;">(root)</span>' : ''}</td>
         <td>${escapeHtml(r.profile_name)}</td>
         <td><span class="role-pill ${r.role === 'superAdmin' ? 'super' : 'user'}">${r.role}</span></td>
+        <td>${r.role === 'superAdmin' ? '—' : (r.can_create_folder ? 'Yes' : 'No')}</td>
         <td>${(r.created_at||'').replace('T',' ').slice(0,16)}</td>
         <td>${r.last_login_at ? r.last_login_at.replace('T',' ').slice(0,16) : '—'}</td>
         <td><div class="row-actions">${actions}</div></td>`;
@@ -5483,6 +6403,7 @@
       document.getElementById('uPasswordLabel').textContent = 'Password (leave blank to keep current)';
       roleSelect.value = row.role;
       roleSelect.disabled = isRoot;
+      document.getElementById('uCanCreateFolder').checked = !!row.can_create_folder;
       document.getElementById('userMetaReadout').textContent =
         `id: ${row.id}\ncreated: ${row.created_at}\nupdated: ${row.updated_at}\nlast login: ${row.last_login_at || '—'}` +
         (isRoot ? '\n\nRoot super admin — role locked, cannot be deleted.' : '');
@@ -5494,6 +6415,7 @@
       document.getElementById('uPasswordLabel').textContent = 'Password *';
       roleSelect.value = 'user';
       roleSelect.disabled = false;
+      document.getElementById('uCanCreateFolder').checked = false;
     }
     userFormBackdrop.classList.add('open');
   }
@@ -5504,11 +6426,12 @@
     const profileName = document.getElementById('uProfileName').value.trim();
     const password = document.getElementById('uPassword').value;
     const role = document.getElementById('uRole').value;
+    const canCreateFolder = document.getElementById('uCanCreateFolder').checked;
 
     if(!username || !profileName){ alert('Username and profile name are required.'); return; }
     if(!id && !password){ alert('Password is required for a new user.'); return; }
 
-    const payload = { username, profile_name: profileName, role };
+    const payload = { username, profile_name: profileName, role, can_create_folder: canCreateFolder };
     if(password) payload.password = password;
 
     let result;
@@ -5548,6 +6471,425 @@
     }
     renderUsers();
   }
+
+  // ================= FOLDERS: SUBMISSION WIZARD =================
+  const folderFormBackdrop = document.getElementById('folderFormBackdrop');
+  const MAX_FOLDER_NAME_LENGTH = 100;
+  const MAX_FOLDER_DESCRIPTION_LENGTH = 1000;
+  let fdCurrentStep = 1;
+  let fdEditingId = null; // set by fdOpenForEdit() — non-null means fdSubmitFolder() PUTs instead of POSTs
+  let fdCoverImage = null; // data URL or existing URL, or null
+  let fdPickerItems = []; // [{item_type, item_id, name, status}] — everything available to add
+  let fdPickerLoaded = false;
+  let fdSelectedItems = []; // ordered [{item_type, item_id, name, status}]
+
+  function fdUpdateButtons(){
+    document.getElementById('fdBack').style.display = fdCurrentStep > 1 ? '' : 'none';
+    document.getElementById('fdNext').style.display = fdCurrentStep < 3 ? '' : 'none';
+    document.getElementById('fdSaveDraft').style.display = fdCurrentStep === 3 ? '' : 'none';
+    document.getElementById('fdSubmit').style.display = fdCurrentStep === 3 ? '' : 'none';
+  }
+
+  function fdGoToStep(step){
+    fdCurrentStep = step;
+    document.querySelectorAll('.wizard-progress span').forEach(s => {
+      const n = parseInt(s.dataset.wizardStep, 10);
+      s.classList.toggle('active', n === step);
+      s.classList.toggle('done', n < step);
+    });
+    document.querySelectorAll('.wizard-step').forEach(s => {
+      s.classList.toggle('active', parseInt(s.dataset.step, 10) === step);
+    });
+    fdUpdateButtons();
+    if(step === 2 && !fdPickerLoaded) fdLoadPickerItems();
+    if(step === 3) fdRenderReorderList();
+  }
+
+  function fdResetForm(){
+    fdEditingId = null;
+    document.getElementById('folderFormTitle').textContent = 'Create a folder';
+    document.getElementById('fdName').value = '';
+    document.getElementById('fdNameCount').textContent = `0 / ${MAX_FOLDER_NAME_LENGTH}`;
+    document.getElementById('fdDescription').value = '';
+    document.getElementById('fdDescriptionCount').textContent = `0 / ${MAX_FOLDER_DESCRIPTION_LENGTH}`;
+    document.getElementById('fdItemSearch').value = '';
+    document.getElementById('fdItemTypeFilter').value = '';
+    fdCoverImage = null;
+    fdRenderCoverPreview();
+    fdPickerItems = [];
+    fdPickerLoaded = false;
+    fdSelectedItems = [];
+    fdGoToStep(1);
+  }
+
+  function fdRenderCoverPreview(){
+    const el = document.getElementById('fdCoverPreview');
+    if(fdCoverImage){
+      el.style.backgroundImage = `url("${fdCoverImage}")`;
+      el.innerHTML = '';
+    } else {
+      el.style.backgroundImage = '';
+      el.innerHTML = '<span>No cover image selected</span>';
+    }
+  }
+
+  document.getElementById('fdCancel').addEventListener('click', () => folderFormBackdrop.classList.remove('open'));
+  document.getElementById('fdClose').addEventListener('click', () => folderFormBackdrop.classList.remove('open'));
+  document.getElementById('fdBack').addEventListener('click', () => fdGoToStep(fdCurrentStep - 1));
+  document.getElementById('fdNext').addEventListener('click', () => {
+    if(fdCurrentStep === 1){
+      const name = document.getElementById('fdName').value.trim();
+      if(!name){ alert('Name is required.'); return; }
+      if(name.length > MAX_FOLDER_NAME_LENGTH){ alert(`Name must be ${MAX_FOLDER_NAME_LENGTH} characters or fewer.`); return; }
+    }
+    fdGoToStep(fdCurrentStep + 1);
+  });
+
+  document.getElementById('fdName').addEventListener('input', e => {
+    document.getElementById('fdNameCount').textContent = `${e.target.value.length} / ${MAX_FOLDER_NAME_LENGTH}`;
+  });
+  document.getElementById('fdDescription').addEventListener('input', e => {
+    const count = document.getElementById('fdDescriptionCount');
+    count.textContent = `${e.target.value.length} / ${MAX_FOLDER_DESCRIPTION_LENGTH}`;
+    count.classList.toggle('over-limit', e.target.value.length > MAX_FOLDER_DESCRIPTION_LENGTH);
+  });
+
+  document.getElementById('fdCoverPreview').addEventListener('click', () => document.getElementById('fdCoverFile').click());
+  document.getElementById('fdCoverFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ alert(`"${file.name}" is not an image.`); return; }
+    if(file.size > MAX_INLINE_IMAGE_SOURCE_BYTES){ alert(`"${file.name}" is larger than 8MB. Use a smaller source image.`); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      openCropper(reader.result, croppedUrl => {
+        fdCoverImage = croppedUrl;
+        fdRenderCoverPreview();
+      }, { aspectRatio: 16 / 9, outputWidth: 1280 });
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('fdCoverRemove').addEventListener('click', () => {
+    fdCoverImage = null;
+    fdRenderCoverPreview();
+  });
+
+  // Pulls the current user's own Cores/Folders (any status) plus the public sets (approved
+  // Cores/Folders anyone else has published) so the picker covers both "things I made" and
+  // "things already live on the site" — deduped by (type, id) since a user's own published
+  // work would otherwise show up in both fetches. A superAdmin editing gets the full admin
+  // listings instead (every status, every owner) — they're not limited to "mine or public"
+  // the way a regular user creating/editing their own folder is.
+  async function fdLoadPickerItems(){
+    const body = document.getElementById('fdItemPickerBody');
+    body.innerHTML = '<tr><td colspan="4" class="item-picker-empty">Loading…</td></tr>';
+    const isAdmin = currentUser && currentUser.role === 'superAdmin';
+    try{
+      const [mineEvents, publicEvents, mineFolders, publicFolders] = await Promise.all([
+        apiFetch(isAdmin ? '/api/events?includeDeleted=true' : '/api/events?mine=true'),
+        apiFetch('/api/events', { auth: false }),
+        apiFetch(isAdmin ? '/api/folders?includeDeleted=true' : '/api/folders?mine=true'),
+        apiFetch('/api/folders', { auth: false }),
+      ]);
+      const seen = new Set();
+      const items = [];
+      const addAll = (rows, item_type, nameField) => {
+        for(const r of rows){
+          if(r.deleted_at) continue;
+          const key = `${item_type}:${r.id}`;
+          if(seen.has(key)) continue;
+          seen.add(key);
+          items.push({ item_type, item_id: r.id, name: r[nameField], status: r.status });
+        }
+      };
+      addAll(mineEvents.events, 'core', 'title');
+      addAll(publicEvents.events, 'core', 'title');
+      addAll(mineFolders.folders, 'folder', 'name');
+      addAll(publicFolders.folders, 'folder', 'name');
+      fdPickerItems = items;
+      fdPickerLoaded = true;
+      fdRenderPickerTable();
+    } catch(e){
+      body.innerHTML = `<tr><td colspan="4" class="item-picker-empty">Could not load items: ${escapeHtml(e.message)}</td></tr>`;
+    }
+  }
+
+  function fdRenderPickerTable(){
+    const search = document.getElementById('fdItemSearch').value.trim().toLowerCase();
+    const typeFilter = document.getElementById('fdItemTypeFilter').value;
+    const filtered = fdPickerItems.filter(i =>
+      (!search || i.name.toLowerCase().includes(search)) && (!typeFilter || i.item_type === typeFilter)
+    );
+    const body = document.getElementById('fdItemPickerBody');
+    const empty = document.getElementById('fdItemPickerEmpty');
+    if(!filtered.length){
+      body.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+    body.innerHTML = filtered.map(i => {
+      const checked = fdSelectedItems.some(s => s.item_type === i.item_type && s.item_id === i.item_id);
+      return `
+        <tr>
+          <td><input type="checkbox" data-picker-item="${i.item_type}:${i.item_id}" ${checked ? 'checked' : ''}></td>
+          <td>${escapeHtml(i.name)}</td>
+          <td>${i.item_type === 'core' ? 'Core' : 'Folder'}</td>
+          <td>${escapeHtml(i.status)}</td>
+        </tr>`;
+    }).join('');
+  }
+  document.getElementById('fdItemSearch').addEventListener('input', fdRenderPickerTable);
+  document.getElementById('fdItemTypeFilter').addEventListener('change', fdRenderPickerTable);
+  document.getElementById('fdItemPickerBody').addEventListener('change', e => {
+    const box = e.target.closest('input[data-picker-item]');
+    if(!box) return;
+    const [item_type, item_id] = box.dataset.pickerItem.split(':');
+    const item = fdPickerItems.find(i => i.item_type === item_type && i.item_id === item_id);
+    if(box.checked){
+      if(!fdSelectedItems.some(s => s.item_type === item_type && s.item_id === item_id)) fdSelectedItems.push(item);
+    } else {
+      fdSelectedItems = fdSelectedItems.filter(s => !(s.item_type === item_type && s.item_id === item_id));
+    }
+  });
+
+  function fdRenderReorderList(){
+    const list = document.getElementById('fdReorderList');
+    const empty = document.getElementById('fdReorderEmpty');
+    if(!fdSelectedItems.length){
+      list.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = fdSelectedItems.map((item, index) => `
+      <div class="reorder-row">
+        <span class="reorder-type">${item.item_type === 'core' ? 'Core' : 'Folder'}</span>
+        <span class="reorder-name">${escapeHtml(item.name)}</span>
+        <div class="reorder-move">
+          <button type="button" data-reorder-move="up" data-index="${index}" ${index === 0 ? 'disabled' : ''}>↑</button>
+          <button type="button" data-reorder-move="down" data-index="${index}" ${index === fdSelectedItems.length - 1 ? 'disabled' : ''}>↓</button>
+          <button type="button" data-reorder-move="remove" data-index="${index}">✕</button>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('fdReorderList').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-reorder-move]');
+    if(!btn) return;
+    const index = parseInt(btn.dataset.index, 10);
+    const action = btn.dataset.reorderMove;
+    if(action === 'up' && index > 0){
+      [fdSelectedItems[index - 1], fdSelectedItems[index]] = [fdSelectedItems[index], fdSelectedItems[index - 1]];
+    } else if(action === 'down' && index < fdSelectedItems.length - 1){
+      [fdSelectedItems[index + 1], fdSelectedItems[index]] = [fdSelectedItems[index], fdSelectedItems[index + 1]];
+    } else if(action === 'remove'){
+      fdSelectedItems.splice(index, 1);
+    }
+    fdRenderReorderList();
+  });
+
+  async function fdSubmitFolder(status){
+    const name = document.getElementById('fdName').value.trim();
+    const description = document.getElementById('fdDescription').value.trim();
+    if(description.length > MAX_FOLDER_DESCRIPTION_LENGTH){ alert(`Description must be ${MAX_FOLDER_DESCRIPTION_LENGTH} characters or fewer.`); return; }
+    const payload = {
+      name,
+      cover_image: fdCoverImage,
+      description: description || null,
+      items: fdSelectedItems.map(i => ({ item_type: i.item_type, item_id: i.item_id })),
+      status,
+    };
+    try{
+      if(fdEditingId) await apiFetch(`/api/folders/${fdEditingId}`, { method: 'PUT', body: payload });
+      else await apiFetch('/api/folders', { method: 'POST', body: payload });
+    } catch(e){
+      alert('Could not save folder: ' + e.message);
+      return;
+    }
+    const wasEditing = !!fdEditingId;
+    folderFormBackdrop.classList.remove('open');
+    showToast(wasEditing ? 'Folder updated.' : (status === 'published' ? 'Folder submitted for review.' : 'Folder saved as draft.'));
+    // Refresh whatever's currently showing this folder's info, if anything is.
+    if(document.getElementById('adminFoldersPage').classList.contains('active')) renderAdminFolders();
+    if(document.getElementById('myFoldersPage').classList.contains('active')) renderMyFolders(true);
+  }
+  document.getElementById('fdSaveDraft').addEventListener('click', () => fdSubmitFolder('draft'));
+  document.getElementById('fdSubmit').addEventListener('click', () => fdSubmitFolder('published'));
+
+  // Opens the same wizard used to create a folder, prefilled to edit an existing one —
+  // reuses every step's UI as-is, just seeds the fields/selection from the folder's
+  // current data and switches fdSubmitFolder() over to a PUT. Available to the folder's
+  // owner or a superAdmin regardless of can_create_folder — that flag only gates making a
+  // NEW folder, not editing one you already have (same convention as event editing, which
+  // never re-checks any creation-time permission either).
+  async function fdOpenForEdit(folderId){
+    let data;
+    try{
+      data = await apiFetch(`/api/folders/${folderId}`);
+    } catch(e){
+      alert('Could not load folder: ' + e.message);
+      return;
+    }
+    fdResetForm();
+    fdEditingId = folderId;
+    document.getElementById('folderFormTitle').textContent = 'Edit folder';
+    document.getElementById('fdName').value = data.folder.name;
+    document.getElementById('fdName').dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('fdDescription').value = data.folder.description || '';
+    document.getElementById('fdDescription').dispatchEvent(new Event('input', { bubbles: true }));
+    fdCoverImage = data.folder.cover_image || null;
+    fdRenderCoverPreview();
+    fdSelectedItems = data.items.map(i => ({
+      item_type: i.item_type,
+      item_id: i.item_id,
+      name: i.item_type === 'core' ? (i.core?.title || '(unavailable)') : (i.folder?.name || '(unavailable)'),
+      status: i.item_type === 'core' ? i.core?.status : i.folder?.status,
+    }));
+    folderFormBackdrop.classList.add('open');
+  }
+
+  // ================= ADMIN: FOLDERS DASHBOARD =================
+  let adminFolderRows = [];
+  const showDeletedFoldersBox = document.getElementById('showDeletedFolders');
+  const folderReviewFilterSelect = document.getElementById('folderReviewFilter');
+
+  async function renderAdminFolders(){
+    // Always fetches the full superAdmin view (every status/review_status, deleted rows
+    // included) — same convention as renderTable() for events. "Show deleted" and the
+    // review filter are both applied client-side against that same full set.
+    let rows;
+    try{
+      const data = await apiFetch(`/api/folders?includeDeleted=true`);
+      rows = data.folders;
+    } catch(e){
+      alert('Could not load folders: ' + e.message);
+      return;
+    }
+    if(!showDeletedFoldersBox.checked) rows = rows.filter(f => !f.deleted_at);
+    const filter = folderReviewFilterSelect.value;
+    if(filter) rows = rows.filter(f => f.review_status === filter);
+    adminFolderRows = rows;
+    document.getElementById('foldersCountBadge').textContent = rows.length + ' folders';
+    const tbody = document.getElementById('foldersBody');
+    tbody.innerHTML = rows.map(f => {
+      const actions = [];
+      if(f.deleted_at){
+        actions.push(`<a data-folder-action="restore" data-id="${f.id}">Restore</a>`);
+      } else {
+        actions.push(`<a data-folder-action="view" data-id="${f.id}">View / curate</a>`);
+        actions.push(`<a data-folder-action="edit" data-id="${f.id}">Edit</a>`);
+        if(f.review_status !== 'approved') actions.push(`<a data-folder-action="approve" data-id="${f.id}">Approve</a>`);
+        // "Pending" (not "Reject") — an admin declining to publish a folder doesn't deny
+        // it outright, it just keeps it off the public site; the owner can still see/edit/
+        // manage it as their own personal collection, same as before it was ever submitted.
+        if(f.review_status !== 'pending') actions.push(`<a data-folder-action="pending" data-id="${f.id}">Pending</a>`);
+        if(f.review_status !== 'locked') actions.push(`<a data-folder-action="lock" data-id="${f.id}">Lock</a>`);
+        actions.push(`<a class="danger" data-folder-action="delete" data-id="${f.id}">Delete</a>`);
+      }
+      return `
+        <tr${f.deleted_at ? ' class="deleted-row"' : ''}>
+          <td class="title-cell">${escapeHtml(f.name)}</td>
+          <td>${f.created_by ? escapeHtml(creatorLabel(f.created_by, f.created_by_name)) : '—'}</td>
+          <td>${f.item_count ?? '—'}</td>
+          <td>${statusPill(f.status)}</td>
+          <td>${reviewPill(f.review_status)}</td>
+          <td>${(f.created_at||'').replace('T',' ').slice(0,16)}</td>
+          <td><div class="row-actions">${actions.join('')}</div></td>
+        </tr>`;
+    }).join('');
+  }
+  showDeletedFoldersBox.addEventListener('change', () => renderAdminFolders());
+  folderReviewFilterSelect.addEventListener('change', () => renderAdminFolders());
+
+  async function setFolderReviewStatus(id, review_status){
+    try{
+      await apiFetch(`/api/folders/${id}`, { method: 'PUT', body: { review_status } });
+    } catch(e){
+      alert(e.message);
+      return;
+    }
+    renderAdminFolders();
+  }
+  async function deleteFolder(id){
+    if(!(await confirmDialog('Soft-delete this folder? It will be hidden but recoverable.', { title: 'Delete folder', okLabel: 'Delete' }))) return;
+    try{
+      await apiFetch(`/api/folders/${id}`, { method: 'DELETE' });
+    } catch(e){
+      alert(e.message);
+      return;
+    }
+    renderAdminFolders();
+  }
+  async function restoreFolder(id){
+    try{
+      await apiFetch(`/api/folders/${id}/restore`, { method: 'POST' });
+    } catch(e){
+      alert(e.message);
+      return;
+    }
+    renderAdminFolders();
+  }
+
+  document.getElementById('foldersBody').addEventListener('click', e => {
+    const a = e.target.closest('a');
+    if(!a) return;
+    const id = a.dataset.id, action = a.dataset.folderAction;
+    if(action === 'view') openFolderCurateModal(id);
+    if(action === 'edit') fdOpenForEdit(id);
+    if(action === 'approve') setFolderReviewStatus(id, 'approved');
+    if(action === 'pending') setFolderReviewStatus(id, 'pending');
+    if(action === 'lock') setFolderReviewStatus(id, 'locked');
+    if(action === 'delete') deleteFolder(id);
+    if(action === 'restore') restoreFolder(id);
+  });
+
+  // ---------------- ADMIN: FOLDER CURATION MODAL (view items, assign starting Core) ----------------
+  const folderCurateBackdrop = document.getElementById('folderCurateBackdrop');
+  let folderCurateId = null;
+
+  async function openFolderCurateModal(id){
+    let data;
+    try{
+      data = await apiFetch(`/api/folders/${id}`);
+    } catch(e){
+      alert('Could not load folder: ' + e.message);
+      return;
+    }
+    folderCurateId = id;
+    const { folder, items } = data;
+    document.getElementById('folderCurateTitle').textContent = folder.name;
+    document.getElementById('folderCurateMeta').textContent =
+      `id: ${folder.id}\nowner: ${folder.created_by_name || '—'}\nstatus: ${folder.status}\nreview: ${folder.review_status || '—'}`;
+
+    const itemsList = document.getElementById('folderCurateItems');
+    itemsList.innerHTML = items.length
+      ? items.map(i => {
+          const label = i.item_type === 'core' ? (i.core?.title || '(missing Core)') : (i.folder?.name || '(missing Folder)');
+          return `<div class="folder-items-row"><span class="reorder-type">${i.item_type === 'core' ? 'Core' : 'Folder'}</span><span class="fi-name">${escapeHtml(label)}</span></div>`;
+        }).join('')
+      : '<div class="folder-items-row"><span class="fi-name">No items yet.</span></div>';
+
+    const select = document.getElementById('folderCurateStartingCore');
+    const coreItems = items.filter(i => i.item_type === 'core' && i.core);
+    select.innerHTML = '<option value="">— none —</option>' +
+      coreItems.map(i => `<option value="${i.item_id}" ${folder.starting_core_id === i.item_id ? 'selected' : ''}>${escapeHtml(i.core.title)}</option>`).join('');
+
+    folderCurateBackdrop.classList.add('open');
+  }
+  document.getElementById('folderCurateClose').addEventListener('click', () => folderCurateBackdrop.classList.remove('open'));
+  document.getElementById('folderCurateSaveStartingCore').addEventListener('click', async () => {
+    const value = document.getElementById('folderCurateStartingCore').value;
+    try{
+      await apiFetch(`/api/folders/${folderCurateId}`, { method: 'PUT', body: { starting_core_id: value || null } });
+    } catch(e){
+      alert(e.message);
+      return;
+    }
+    showToast('Starting Core updated.');
+    folderCurateBackdrop.classList.remove('open');
+    renderAdminFolders();
+  });
 
   // ---------------- SCHEMATIC CHROME (decorative — ruler ticks + footer barcode) ----------------
   (function renderSchematicChrome(){
