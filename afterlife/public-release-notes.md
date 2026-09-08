@@ -5,6 +5,12 @@
   alongside (not instead of) the developer-facing RELEASE_NOTES.md at the repo root, as its
   own standing step per PR.
 -->
+## v1.21.0 — September 8, 2026
+Introducing Folders — group related Cores (and other Folders) into a browsable directory. Look for a folder breadcrumb under an entry that belongs to one, and check out the new "Folders" tab in My Entries to create and manage your own.
+
+## v1.20.0 — September 6, 2026
+Account settings now let you update your username and date of birth, change your password without leaving the site, and delete your account if you ever want to.
+
 ## v1.19.0 — September 6, 2026
 Public profiles got a refresh: your public entries now show as a browsable tile grid instead of a plain list, and there's a new (for now empty) Achievements panel on your profile — the first step toward future rewards for being active in Afterlife.
 
