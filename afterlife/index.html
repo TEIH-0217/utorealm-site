@@ -469,6 +469,11 @@
   .folder-breadcrumb-row a{ color:var(--text-dim); text-decoration:none; }
   .folder-breadcrumb-row a:hover{ color:var(--cool); text-decoration:underline; }
   .folder-breadcrumb-row .fb-sep{ color:var(--text-faint); margin:0 2px; }
+  /* Accent-colored on just the one segment that's genuinely where the reader is (browsing
+     that folder's outline) — not the whole branch path — ties visually to the folder name/
+     active row highlight on the outline page itself, so it's obvious at a glance which
+     specific folder you're located in. */
+  .folder-breadcrumb-row a.folder-breadcrumb-seg--active{ color:var(--cool); }
   /* Toggle for a Core's other approved folder branches — same row style/font-size as the
      branch lines themselves (just the icon swapped for indent-matching spacing), so it
      reads as part of the same list rather than a visually distinct control. */
@@ -559,8 +564,8 @@
   .ev-engagement-bar:hover{ color:var(--cool); }
   .ev-engagement-bar:hover .engagement-latest{ color:var(--text-dim); }
   .ev-engagement-bar .engagement-latest{ color:var(--text-faint); }
-  .event-desc-wrap{ padding:22px 24px; border-bottom:1px solid var(--border); }
-  .event-desc{ font-size:12px; color:var(--text-dim); line-height:1.7; }
+  .event-desc-wrap{ padding:22px 24px; border-bottom:1px solid var(--border); max-width:960px; margin-left:auto; margin-right:auto; }
+  .event-desc{ font-size:13.5px; color:var(--text-dim); line-height:1.7; }
 
   .event-meta-row{ display:grid; grid-template-columns:repeat(3,1fr); flex:none; border-top:1px solid var(--border); background:var(--surface); }
   .meta-cell{ padding:14px 24px; border-right:1px solid var(--border); min-width:0; }
@@ -826,7 +831,7 @@
   .folder-toc-return:hover{ color:var(--cool); }
   .folder-toc-eyebrow{ font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:6px; }
   .folder-toc-name{ font-size:20px; color:var(--cool); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:14px; }
-  .folder-toc-desc{ font-size:11px; color:var(--text-dim); line-height:1.6; margin-bottom:22px; }
+  .folder-toc-desc{ font-size:13.5px; color:var(--text-dim); line-height:1.6; margin-bottom:22px; }
   .folder-toc-list{ display:flex; flex-direction:column; }
   .folder-toc-row{ padding:8px 0; font-size:13px; }
   .folder-toc-row--folder{ display:flex; align-items:center; gap:6px; color:var(--text-dim); font-size:11px; letter-spacing:0.04em; text-transform:uppercase; padding-top:16px; }
@@ -927,7 +932,7 @@
   .editor-char-count.over-limit{ color:var(--hot); }
   #fDescriptionEditor.ql-container.ql-snow{
     background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
-    font-family:var(--mono); font-size:13px; min-height:220px;
+    font-family:var(--mono); font-size:13.5px; min-height:220px;
   }
   #fDescriptionToolbar.ql-toolbar.ql-snow{
     background:var(--surface-2); border:1px solid var(--border-strong); border-bottom:none;
@@ -986,7 +991,7 @@
      reply composers are created fresh per click, so they can't share a single fixed id. */
   .comment-ql-editor.ql-container.ql-snow{
     background:var(--surface-2); border:1px solid var(--border-strong); color:var(--text);
-    font-family:var(--mono); font-size:13px; min-height:60px;
+    font-family:var(--mono); font-size:13.5px; min-height:60px;
   }
   .comment-ql-toolbar.ql-toolbar.ql-snow{
     background:var(--surface-2); border:1px solid var(--border-strong); border-bottom:none; padding:6px 8px;
@@ -3305,6 +3310,12 @@
     try{
       const { event } = await apiFetch(`/api/events/${coreId}`);
       showEventPreview(event);
+      // Keeps the address bar (and therefore "Return", refresh, and browser back/forward)
+      // pointed at whichever Core is actually on screen, not just whichever one the outline
+      // page happened to load with — same direct-pushState convention as selectTimelineItem,
+      // no navigate()/applyRoute() round trip since the tree is already rendered.
+      const url = BASE_PATH + '/folders/' + currentBrowsingFolderId + '?core=' + coreId;
+      if(location.pathname + location.search !== url) history.pushState({}, '', url);
     } catch(e){
       alert('Could not load this Core: ' + e.message);
     }
@@ -3973,9 +3984,9 @@
   // hero with every branch at once.
   // One consistent row style for both the primary branch and every "other branch" line —
   // same markup shape either way, just reused.
-  function buildBreadcrumbRowHtml(path){
+  function buildBreadcrumbRowHtml(path, activeFolderId){
     const segments = path.map(f =>
-      `<a data-folder-id="${f.id}" title="${escapeHtml(f.name)}">${escapeHtml(truncateLabel(f.name))}</a>`
+      `<a data-folder-id="${f.id}" title="${escapeHtml(f.name)}"${f.id === activeFolderId ? ' class="folder-breadcrumb-seg--active"' : ''}>${escapeHtml(truncateLabel(f.name))}</a>`
     ).join('<span class="fb-sep">/</span>');
     return `<div class="folder-breadcrumb-row">${FOLDER_ICON_SVG}<span>${segments}</span></div>`;
   }
@@ -3989,9 +4000,11 @@
     const paths = Array.isArray(r.folder_paths) ? r.folder_paths : [];
     if(!paths.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
     let orderedPaths = paths;
+    let activeFolderId = null;
     if(currentBrowsingFolderId){
       const idx = paths.findIndex(p => p.some(seg => seg.id === currentBrowsingFolderId));
       if(idx > 0) orderedPaths = [paths[idx], ...paths.slice(0, idx), ...paths.slice(idx + 1)];
+      if(idx !== -1) activeFolderId = currentBrowsingFolderId;
     }
     const [primary, ...rest] = orderedPaths;
     const moreHtml = rest.length ? `
@@ -4001,7 +4014,11 @@
       <div class="folder-breadcrumb-more-list" hidden>
         ${rest.map(p => buildBreadcrumbRowHtml(p)).join('')}
       </div>` : '';
-    el.innerHTML = buildBreadcrumbRowHtml(primary) + moreHtml;
+    // Highlights (accent color) only the one segment that's genuinely where the reader
+    // currently is (browsing that folder's outline) — not the whole branch path — matching
+    // the folder name/active row highlight on the outline page itself. Plain Timeline/
+    // Explore browsing (no folder context) keeps every segment the neutral dim styling.
+    el.innerHTML = buildBreadcrumbRowHtml(primary, activeFolderId) + moreHtml;
     el.style.display = '';
   }
   document.getElementById('evFolderBreadcrumb').addEventListener('click', e => {
@@ -5398,10 +5415,16 @@
     const resizeHandle = document.getElementById(resizeHandleId);
     const captionBox = document.getElementById(captionBoxId);
     const captionInput = document.getElementById(captionInputId);
+    // Resolved once via .closest() from this specific editor's own root, not a fresh
+    // document.querySelector(wrapSel) per call — wrapSel's class is shared for CSS
+    // (position:relative) across all three rich-text instances (description/about-me/
+    // home-intro editors), so a global querySelector(wrapSel) would silently grab whichever
+    // instance's wrap happens to come first in the DOM instead of this one, sending the
+    // resize handle/caption box to wildly wrong (often off-screen) coordinates.
+    const wrap = quill.root.closest(wrapSel);
 
     function positionOverlay(){
       if(!selectedImageEl) return;
-      const wrap = document.querySelector(wrapSel);
       const wrapRect = wrap.getBoundingClientRect();
       const imgRect = selectedImageEl.getBoundingClientRect();
       resizeHandle.style.left = (imgRect.right - wrapRect.left) + 'px';
